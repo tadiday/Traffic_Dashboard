@@ -8,6 +8,8 @@ const upload = multer();
 
 // Enable CORS so no complaints with FE & BE communication
 app.use(cors());
+// express.json() middleware is used to parse incoming requests with JSON payloads
+app.use(express.json());
 
 // Create a sql connection
 const connection = mysql.createConnection({
@@ -24,16 +26,18 @@ connection.connect((err) => {
 });
 
 // Test Select Query
-app.get('/api/select', (req, res) => {
-    var selectQuery = 'SELECT * FROM text_files WHERE user_id = ?';
+app.get('/api/select-uploads', (req, res) => {
+    var selectQuery = 'SELECT file_name FROM text_files WHERE user_id = ? AND collection_id = ?';
     var userId = 1;
-
-    connection.query(selectQuery, [userId], (err, results) => {
+    var collectionId= 1;
+    console.log("Selecting file names.")
+    connection.query(selectQuery, [userId, collectionId], (err, results) => {
         if (err) throw err;
-        console.log('Records found:', results);
+        // Transform the results into an array of file names
+        const fileNames = results.map(row => row.file_name);
+        console.log(fileNames);
+        res.json(fileNames);
     });
-
-    console.log("Selected");
 });
 
 // Upload file Query
@@ -41,7 +45,6 @@ app.post('/api/upload', upload.single('file'),(req, res) => {
     if (!req.file) {
         return res.status(400).send('No file uploaded.');
     }
-    //console.log('File received:', req.file);
     
     const fileData = req.file.buffer.toString('utf-8');
 
@@ -54,6 +57,22 @@ app.post('/api/upload', upload.single('file'),(req, res) => {
 
         res.send('File data inserted successfully.');
         console.log('File data inserted successfully.');
+    });
+});
+
+app.post('/api/delete-upload', (req, res) => {
+    console.log(req.body);
+    let fileName = req.body.fileName;
+    console.log('Removing file_name: ', fileName);
+
+    var DeleteQuery = "DELETE FROM text_files WHERE file_name = ? LIMIT 1";
+    connection.query(DeleteQuery, [fileName], (err, results) => {
+        if(err) {
+            console.error('Error deleting data:', err);
+            return res.status(500).send('Error deleting data.');
+        }
+        res.send("File deletion successfull");
+        console.log("File deleted");
     });
 });
 

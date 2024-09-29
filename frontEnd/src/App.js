@@ -1,11 +1,12 @@
 import './App.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 function App() {
   // Model 
   const [file, setFile] = useState(null);
   const [fileType, setFileType] = useState('summary');
+  const [items, setItems] = useState([]);
 
   const upload = async () => {
     console.log("Upload button clicked");
@@ -21,12 +22,44 @@ function App() {
             }
         });
         console.log('File uploaded successfully:', response.data);
+        // Update the items
+        fetchItems();
     } catch (error) {
         console.error('Error uploading file:', error);
     }
   };
 
+  const fetchItems = async () => {
+    console.log("Fetching items");
+    try {
+      const response = await axios.get('http://localhost:3000/api/select-uploads');
+      setItems(response.data);
+    } catch (error) {
+      console.error('Error fetching entries:', error);
+    }
+    console.log("Got items");
+  };
+
+  const removeItem = async (index) => {
+    // Remove the item from the DB
+    let fileName = items[index];
+
+    console.log("Removing item:", fileName);
+    try {
+      await axios.post('http://localhost:3000/api/delete-upload', { fileName });
+    } catch (error) {
+      console.error('Error removing item:', error);
+    }
+    // Get the updated items
+    fetchItems();
+  };
+
   // Controller
+  // Used to get initial items in the list
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
   function handleFileChange(e){
     setFile(e.target.files[0]);
   };
@@ -54,6 +87,14 @@ function App() {
       </select>
       <input type="file" onChange={handleFileChange} />
       <button onClick={handleUpload}>Upload</button>
+      <br />
+      <ul>
+        {items.map((item, index) => (
+          <li key={index}>
+            {item} <button onClick={() => removeItem(index)}>Remove</button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
