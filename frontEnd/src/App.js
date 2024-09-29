@@ -16,7 +16,7 @@ function App() {
     formData.append('fileType', fileType);
 
     try {
-        const response = await axios.post('http://localhost:3000/api/upload', formData, {
+        const response = await axios.post(`${process.env.REACT_APP_URL}:3000/api/upload`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             }
@@ -30,9 +30,9 @@ function App() {
   };
 
   const fetchItems = async () => {
-    console.log("Fetching items");
+    console.log("Fetching items at", `${process.env.REACT_APP_API_URL}:3000/api/select-uploads`);
     try {
-      const response = await axios.get('http://localhost:3000/api/select-uploads');
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/select-uploads`);
       setItems(response.data);
     } catch (error) {
       console.error('Error fetching entries:', error);
@@ -46,7 +46,7 @@ function App() {
 
     console.log("Removing item:", fileName);
     try {
-      await axios.post('http://localhost:3000/api/delete-upload', { fileName });
+      await axios.post(`${process.env.REACT_APP_URL}:3000/api/delete-upload`, { fileName });
     } catch (error) {
       console.error('Error removing item:', error);
     }
