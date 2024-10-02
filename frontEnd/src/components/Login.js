@@ -3,14 +3,14 @@
 import React, { useState } from 'react';
 import './Login.css';
 
-function Login({ onLogin }) {
+function Login(props) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   
   const handleSubmit = (e) => {
     e.preventDefault();
     // For now, accept any username and password
-    onLogin(username);
+    props.onLogin(username);
   };
 
   return (
