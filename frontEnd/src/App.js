@@ -1,14 +1,45 @@
+// frontEnd/src/App.js
+
+import React, { useState, useEffect } from 'react';
 import './App.css';
-import { useState, useEffect } from 'react';
 import axios from 'axios';
+import Login from './components/Login';
+import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 
 function App() {
-  // Model 
+  // Authentication state
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+
+  // File upload state
   const [file, setFile] = useState(null);
   const [fileType, setFileType] = useState('summary');
   const [items, setItems] = useState([]);
 
+  // Handle login
+  const handleLogin = (username) => {
+    setUsername(username);
+    setIsLoggedIn(true);
+    fetchItems();
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    setUsername('');
+    setIsLoggedIn(false);
+    setItems([]);
+    setFile(null);
+    setFileType('summary');
+  };
+
+  // Upload function
   const upload = async () => {
+    if (!file) {
+      alert("Please select a file to upload.");
+      return;
+    }
+
     console.log("Upload button clicked");
     const formData = new FormData();
     formData.append('file', file);
@@ -16,19 +47,20 @@ function App() {
     formData.append('fileType', fileType);
 
     try {
-        const response = await axios.post(`${process.env.REACT_APP_API_URL}:3000/api/upload`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        });
-        console.log('File uploaded successfully:', response.data);
-        // Update the items
-        fetchItems();
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}:3000/api/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      console.log('File uploaded successfully:', response.data);
+      // Update the items
+      fetchItems();
     } catch (error) {
-        console.error('Error uploading file:', error);
+      console.error('Error uploading file:', error);
     }
   };
 
+  // Fetch items
   const fetchItems = async () => {
     console.log("Fetching items at", `${process.env.REACT_APP_API_URL}:3000/api/select-uploads`);
     try {
@@ -40,6 +72,7 @@ function App() {
     console.log("Got items");
   };
 
+  // Remove item
   const removeItem = async (index) => {
     // Remove the item from the DB
     let fileName = items[index];
@@ -54,47 +87,38 @@ function App() {
     fetchItems();
   };
 
-  // Controller
-  // Used to get initial items in the list
+  // Initial fetch if logged in
   useEffect(() => {
-    fetchItems();
-  }, []);
+    if (isLoggedIn) {
+      fetchItems();
+    }
+  }, [isLoggedIn]);
 
-  function handleFileChange(e){
-    setFile(e.target.files[0]);
-  };
+  // Main App View
+  const mainView = (
+    <div className="app-container">
+      <Navbar username={username} onLogout={handleLogout} />
+      <div className="content">
+        <Sidebar 
+          file={file} 
+          setFile={setFile} 
+          fileType={fileType} 
+          setFileType={setFileType} 
+          handleUpload={upload} 
+          items={items} 
+          removeItem={removeItem} 
+        />
+        <div className="main-content">
+          <h2>Welcome, {username}!</h2>
+          {/* Placeholder for additional content */}
+        </div>
+      </div>
+    </div>
+  );
 
-  function handleUpload(){
-    upload();
-  };
-
-  function handleFileTypeChange(e){
-    setFileType(e.target.value);
-  };
-
-  // View
   return (
-    <div>
-      <select onChange={handleFileTypeChange}>
-        <option value='summary'>Summary</option>
-        <option value='file10'>File 10</option>
-        <option value='file11'>File 11</option>
-        <option value='file12'>File 12</option>
-        <option value='file13'>File 13</option>
-        <option value='file14'>File 14</option>
-        <option value='file15'>File 15</option>
-        <option value='file16'>File 16</option>
-      </select>
-      <input type="file" onChange={handleFileChange} />
-      <button onClick={handleUpload}>Upload</button>
-      <br />
-      <ul>
-        {items.map((item, index) => (
-          <li key={index}>
-            {item} <button onClick={() => removeItem(index)}>Remove</button>
-          </li>
-        ))}
-      </ul>
+    <div className="App">
+      {isLoggedIn ? mainView : <Login onLogin={handleLogin} />}
     </div>
   );
 }
