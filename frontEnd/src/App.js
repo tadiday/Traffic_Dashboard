@@ -9,6 +9,7 @@ import Sidebar from './components/Sidebar';
 import { Chart } from '@antv/g2';
 
 function App() {
+  // Model
   // Authentication state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
@@ -17,22 +18,6 @@ function App() {
   const [file, setFile] = useState(null);
   const [fileType, setFileType] = useState('summary');
   const [items, setItems] = useState([]);
-
-  // Handle login
-  const handleLogin = (username) => {
-    setUsername(username);
-    setIsLoggedIn(true);
-    fetchItems();
-  };
-
-  // Handle logout
-  const handleLogout = () => {
-    setUsername('');
-    setIsLoggedIn(false);
-    setItems([]);
-    setFile(null);
-    setFileType('summary');
-  };
 
   // Upload function
   const upload = async () => {
@@ -72,6 +57,31 @@ function App() {
     }
     console.log("Got items");
   };
+
+  // Controller
+  // Handle login
+  const handleLogin = (username) => {
+    setUsername(username);
+    setIsLoggedIn(true);
+    fetchItems();
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    setUsername('');
+    setIsLoggedIn(false);
+    setItems([]);
+    setFile(null);
+    setFileType('summary');
+  };
+
+  function handleFileTypeChange (e) {
+    setFileType(e.target.value);
+  }
+  
+  function handleFileChange (e) {
+    setFile(e.target.value[0]);
+  }
 
   // Remove item
   const removeItem = async (index) => {
@@ -126,12 +136,12 @@ function App() {
       <div className="content">
         <Sidebar 
           file={file} 
-          setFile={setFile} 
           fileType={fileType} 
-          setFileType={setFileType} 
           handleUpload={upload} 
           items={items} 
-          removeItem={removeItem} 
+          removeItem={removeItem}
+          handleFileChange={handleFileChange}
+          handleFileTypeChange={handleFileTypeChange}
         />
         <div className="main-content">
           <h2>Welcome, {username}!</h2>
