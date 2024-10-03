@@ -23,7 +23,7 @@ function Sidebar(props) {
       <ul>
         {props.items.map((item, index) => (
           <li key={index}>
-            {item} <button onClick={props.removeItem(index)}>Remove</button>
+            {item} <button onClick={() => props.removeItem(index)}>Remove</button>
           </li>
         ))}
       </ul>

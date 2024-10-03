@@ -6,7 +6,7 @@ import axios from 'axios';
 import Login from './components/Login';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import { Chart } from '@antv/g2';
+//import { Chart } from '@antv/g2';
 
 function App() {
   // Model
@@ -26,7 +26,6 @@ function App() {
       return;
     }
 
-    console.log("Upload button clicked");
     const formData = new FormData();
     formData.append('file', file);
     console.log("File Type: ", fileType);
@@ -80,7 +79,7 @@ function App() {
   }
   
   function handleFileChange (e) {
-    setFile(e.target.value[0]);
+    setFile(e.target.files[0]);
   }
 
   // Remove item
@@ -105,29 +104,29 @@ function App() {
     }
   }, [isLoggedIn]);
 
-  const data = [
-    { genre: 'Sports', sold: 275 },
-    { genre: 'Strategy', sold: 115 },
-    { genre: 'Action', sold: 120 },
-    { genre: 'Shooter', sold: 350 },
-    { genre: 'Other', sold: 150 },
-  ];
+  // const data = [
+  //   { genre: 'Sports', sold: 275 },
+  //   { genre: 'Strategy', sold: 115 },
+  //   { genre: 'Action', sold: 120 },
+  //   { genre: 'Shooter', sold: 350 },
+  //   { genre: 'Other', sold: 150 },
+  // ];
   
-  // Instantiate a new chart.
-  const chart = new Chart({
-    container: 'container',
-  });
+  // // Instantiate a new chart.
+  // const chart = new Chart({
+  //   container: 'container',
+  // });
   
-  // Specify visualization.
-  chart
-    .interval() // Create an interval mark and add it to the chart.
-    .data(data) // Bind data for this mark.
-    .encode('x', 'genre') // Assign genre column to x position channel.
-    .encode('y', 'sold') // Assign sold column to y position channel.
-    .encode('color', 'genre'); // Assign genre column to color channel.
+  // // Specify visualization.
+  // chart
+  //   .interval() // Create an interval mark and add it to the chart.
+  //   .data(data) // Bind data for this mark.
+  //   .encode('x', 'genre') // Assign genre column to x position channel.
+  //   .encode('y', 'sold') // Assign sold column to y position channel.
+  //   .encode('color', 'genre'); // Assign genre column to color channel.
   
-  // Render visualization.
-  chart.render();
+  // // Render visualization.
+  // chart.render();
 
   // Main App View
   const mainView = (

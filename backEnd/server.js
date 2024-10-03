@@ -24,14 +24,16 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+const promisePool = pool.promise() // Makes the query commands return a promise
+
 // Select files Query
 app.get('/api/select-uploads', async (req, res) => {
     var selectQuery = 'SELECT file_name FROM text_files WHERE user_id = ? AND collection_id = ?';
     var userId = 1;
     var collectionId= 1;
     try {
-        // console.log("Getting files uploaded")
-        const [results] = await pool.query(selectQuery, [userId, collectionId]);
+        console.log("Getting files uploaded")
+        const [results] = await promisePool.query(selectQuery, [userId, collectionId]);
         const fileNames = results.map(row => row.file_name);
         res.json(fileNames);
       } catch (err) {
@@ -45,12 +47,14 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
       return res.status(400).send('No file uploaded.');
     }
+    console.log("Uploading files")
   
     const fileData = req.file.buffer.toString('utf-8');
     const insertQuery = "INSERT INTO text_files (file_type, file_name, user_id, file_content, collection_id) VALUES (?, ?, 1, ?, 1)";
   
     try {
-      const [results] = await pool.query(insertQuery, [req.body.fileType, req.file.originalname, fileData]);
+      console.log("Uploading files 1")
+      const [results] = await promisePool.query(insertQuery, [req.body.fileType, req.file.originalname, fileData]);
       res.send('File data inserted successfully.');
       console.log('File data inserted successfully.');
     } catch (error) {
@@ -62,11 +66,11 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 // Delete file query
 app.post('/api/delete-upload', async (req, res) => {
     let fileName = req.body.fileName;
-    //console.log('Removing file_name: ', fileName);
-    var DeleteQuery = "DELETE FROM text_files WHERE file_name = ? LIMIT 1";
+    console.log('Removing file_name: ', fileName);
+    var deleteQuery = "DELETE FROM text_files WHERE file_name = ? LIMIT 1";
 
     try {
-        const [results] = await pool.query(deleteQuery, [fileName]);
+        const [results] = await promisePool.query(deleteQuery, [fileName]);
         res.send("File deletion successful");
         console.log("File deleted");
       } catch (err) {
@@ -96,7 +100,7 @@ app.post('/login', (req, res) => {
 async function checkUserLogin(username, password) {
     try {
       // Call the stored procedure
-      const [rows] = await pool.query(
+      const [rows] = await promisePool.query(
         'CALL CheckUserLogin(?, ?)',
         [username, password]
       );
