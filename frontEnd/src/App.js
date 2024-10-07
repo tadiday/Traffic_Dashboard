@@ -1,160 +1,17 @@
 // frontEnd/src/App.js
-
-import React, { useState, useEffect } from 'react';
-import './App.css';
-import axios from 'axios';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Login from './components/Login';
-import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
-//import { Chart } from '@antv/g2';
+import ProtectedRoute from './components/ProtectedRoute';
+import Main from './components/Main';
 
 function App() {
-  // Model
-  // Authentication state
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState('');
-
-  // File upload state
-  const [file, setFile] = useState(null);
-  const [fileType, setFileType] = useState('summary');
-  const [items, setItems] = useState([]);
-
-  // Upload function
-  const upload = async () => {
-    if (!file) {
-      alert("Please select a file to upload.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-    console.log("File Type: ", fileType);
-    formData.append('fileType', fileType);
-
-    try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}:3000/api/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      console.log('File uploaded successfully:', response.data);
-      // Update the items
-      fetchItems();
-    } catch (error) {
-      console.error('Error uploading file:', error);
-    }
-  };
-
-  // Fetch items
-  const fetchItems = async () => {
-    console.log("Fetching items at", `${process.env.REACT_APP_API_URL}:3000/api/select-uploads`);
-    try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/select-uploads`);
-      setItems(response.data);
-    } catch (error) {
-      console.error('Error fetching entries:', error);
-    }
-    console.log("Got items");
-  };
-
-  // Controller
-  // Handle login
-  const handleLogin = (username) => {
-    setUsername(username);
-    setIsLoggedIn(true);
-    fetchItems();
-  };
-
-  // Handle logout
-  const handleLogout = () => {
-    setUsername('');
-    setIsLoggedIn(false);
-    setItems([]);
-    setFile(null);
-    setFileType('summary');
-  };
-
-  function handleFileTypeChange (e) {
-    setFileType(e.target.value);
-  }
-  
-  function handleFileChange (e) {
-    setFile(e.target.files[0]);
-  }
-
-  // Remove item
-  const removeItem = async (index) => {
-    // Remove the item from the DB
-    let fileName = items[index];
-
-    console.log("Removing item:", fileName);
-    try {
-      await axios.post(`${process.env.REACT_APP_API_URL}:3000/api/delete-upload`, { fileName });
-    } catch (error) {
-      console.error('Error removing item:', error);
-    }
-    // Get the updated items
-    fetchItems();
-  };
-
-  // Initial fetch if logged in
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetchItems();
-    }
-  }, [isLoggedIn]);
-
-  // const data = [
-  //   { genre: 'Sports', sold: 275 },
-  //   { genre: 'Strategy', sold: 115 },
-  //   { genre: 'Action', sold: 120 },
-  //   { genre: 'Shooter', sold: 350 },
-  //   { genre: 'Other', sold: 150 },
-  // ];
-  
-  // // Instantiate a new chart.
-  // const chart = new Chart({
-  //   container: 'container',
-  // });
-  
-  // // Specify visualization.
-  // chart
-  //   .interval() // Create an interval mark and add it to the chart.
-  //   .data(data) // Bind data for this mark.
-  //   .encode('x', 'genre') // Assign genre column to x position channel.
-  //   .encode('y', 'sold') // Assign sold column to y position channel.
-  //   .encode('color', 'genre'); // Assign genre column to color channel.
-  
-  // // Render visualization.
-  // chart.render();
-
-  // Main App View
-  const mainView = (
-    <div className="app-container">
-      <Navbar username={username} onLogout={handleLogout} />
-      <div className="content">
-        <Sidebar 
-          file={file} 
-          fileType={fileType} 
-          handleUpload={upload} 
-          items={items} 
-          removeItem={removeItem}
-          handleFileChange={handleFileChange}
-          handleFileTypeChange={handleFileTypeChange}
-        />
-        <div className="main-content">
-          <h2>Welcome, {username}!</h2>
-          {/* Placeholder for additional content */}
-        </div>
-        <div id="container"></div>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="App">
-      {isLoggedIn ? mainView : <Login onLogin={handleLogin} />}
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/home" element={<ProtectedRoute><Main /></ProtectedRoute>} />
+      </Routes>
+    </Router>
   );
 }
 

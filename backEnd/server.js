@@ -7,6 +7,8 @@ require('dotenv').config(); // Gets environment variables working
 // Used for uploading a file, though its not stored locally with this config
 const upload = multer();
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+
 
 // Enable CORS so no complaints with FE & BE communication
 app.use(cors());
@@ -32,7 +34,7 @@ app.get('/api/select-uploads', async (req, res) => {
     var userId = 1;
     var collectionId= 1;
     try {
-        console.log("Getting files uploaded")
+        console.log('Getting files uploaded')
         const [results] = await promisePool.query(selectQuery, [userId, collectionId]);
         const fileNames = results.map(row => row.file_name);
         res.json(fileNames);
@@ -47,13 +49,11 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
       return res.status(400).send('No file uploaded.');
     }
-    console.log("Uploading files")
   
     const fileData = req.file.buffer.toString('utf-8');
     const insertQuery = "INSERT INTO text_files (file_type, file_name, user_id, file_content, collection_id) VALUES (?, ?, 1, ?, 1)";
   
     try {
-      console.log("Uploading files 1")
       const [results] = await promisePool.query(insertQuery, [req.body.fileType, req.file.originalname, fileData]);
       res.send('File data inserted successfully.');
       console.log('File data inserted successfully.');
@@ -79,46 +79,60 @@ app.post('/api/delete-upload', async (req, res) => {
       }
 });
 
-// Route to login and generate a JWT
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
+app.get('/api/verify-token', async (req, res) => {
+    console.log("Verifying Token")
+    // Get the token from the request header (or from a cookie if needed)
+    const token = req.headers['authorization'];
 
-    // Implement
-
-    if (username === 'user' && password === 'password') {
-        const user = { username }; // Payload data for the token
-
-        // Sign the token with the secret key
-        const token = jwt.sign(user, process.env.SECRET_KEY, { expiresIn: '1h' });
-
-        return res.json({ token: encryptedToken });
+    if (!token) {
+        return res.status(403).json({ message: 'No token provided!' });
     }
 
-    return res.status(401).json({ message: 'Invalid credentials' });
+    // The token is expected to be in the form 'Bearer <token>'
+    const actualToken = token.split(' ')[1];
+
+    // Verify the token using the secret key
+    jwt.verify(actualToken, process.env.SECRET_KEY, (err, decoded) => {
+        if (err) {
+            console.log("Invalid Token");
+            return res.status(401).json({ message: 'Failed to authenticate token.' });
+        }
+        console.log("Verified");
+        // If token is valid, return a success message
+        res.status(200).json({ message: 'Token is valid' });
+    });
 });
 
-async function checkUserLogin(username, password) {
+// Route to login and generate a JWT
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    console.log('Login Requested with:', username, password)
     try {
-      // Call the stored procedure
-      const [rows] = await promisePool.query(
-        'CALL CheckUserLogin(?, ?)',
-        [username, password]
-      );
-  
-      // Check the value of 'is_valid_user' returned by the procedure
-      if (rows.length > 0 && rows[0].is_valid_user === 1) {
-        console.log('User is valid');
-        return true;  // User exists and credentials are correct
-      } else {
-        console.log('Invalid username or password');
-        return false; // User doesn't exist or credentials are incorrect
-      }
-    } catch (error) {
-      console.error('Error checking user login:', error);
-      return false;
-    }
-  }
+        // Call the stored procedure
+        const [rows] = await promisePool.query(
+          'CALL CheckUserLogin(?, ?)',
+          [username, password]
+        );
+        //console.log(rows)
+        // Check the value of 'is_valid_user' returned by the procedure
+        if (rows.length > 0 && rows[0][0].is_valid_user === 1) {
+          console.log('User is valid');
+          // Generate token
+          const user = { username }; // Payload data for the token
 
+          // Sign the token with the secret key
+          const token = jwt.sign(user, process.env.SECRET_KEY, { expiresIn: '1h' });
+
+          return res.json({ token: token });
+        } else {
+          console.log('Invalid username or password');
+          return res.status(401).json({ message: 'Invalid credentials' });
+        }
+      } catch (error) {
+        console.error('Error checking user login:', error);
+        return res.status(401).json({ message: 'Query Failed' });
+    }
+});
 
 app.listen(3000, () => {
     console.log('Server.js App is listening on port 3000');
