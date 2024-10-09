@@ -9,7 +9,6 @@ const upload = multer();
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
-
 // Enable CORS so no complaints with FE & BE communication
 app.use(cors());
 // express.json() middleware is used to parse incoming requests with JSON payloads
@@ -28,20 +27,51 @@ const pool = mysql.createPool({
 
 const promisePool = pool.promise() // Makes the query commands return a promise
 
+// Returns the username of the token if it is valid
+function verifyToken(req, callback) {
+  const token = req.headers['authorization'];
+  if (!token) {
+    return callback({ status: 403, message: 'No token provided!' });
+  }
+  const actualToken = token.split(' ')[1];
+
+  jwt.verify(actualToken, process.env.SECRET_KEY, (err, decoded) => {
+    if (err) {
+      return callback({ status: 401, message: 'Failed to authenticate token.' });
+    }
+    callback(null, decoded.username);  // Pass username with no error
+  });
+}
+
+const userID = async (username) => {
+  var selectQuery = 'SELECT user_id FROM users WHERE username = ? LIMIT 1';
+  var userId = 0;
+  try {
+    const [results] = await promisePool.query(selectQuery, [username]);
+    console.log(results)
+    userId = results.user_id
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 // Select files Query
 app.get('/api/select-uploads', async (req, res) => {
-    var selectQuery = 'SELECT file_name FROM text_files WHERE user_id = ? AND collection_id = ?';
-    var userId = 1;
-    var collectionId= 1;
-    try {
-        console.log('Getting files uploaded')
-        const [results] = await promisePool.query(selectQuery, [userId, collectionId]);
-        const fileNames = results.map(row => row.file_name);
-        res.json(fileNames);
+    // const username = verifyToken(req, res);
+    // console.log('GET files uploaded by:', String(username));
+    // if(username) { // Username is not null
+      var selectQuery = 'SELECT file_name FROM text_files WHERE user_id = ? AND collection_id = ?';
+      var userId = 1;
+      var collectionId= 1;
+      try {
+          const [results] = await promisePool.query(selectQuery, [userId, collectionId]);
+          const fileNames = results.map(row => row.file_name);
+          res.json(fileNames);
       } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
+          console.error(err);
+          res.status(500).send('Server Error');
       }
+    //} // Otherwise, returns what res was set to in verify token    
 });
 
 // Upload file Query
@@ -80,27 +110,12 @@ app.post('/api/delete-upload', async (req, res) => {
 });
 
 app.get('/api/verify-token', async (req, res) => {
-    console.log("Verifying Token")
-    // Get the token from the request header (or from a cookie if needed)
-    const token = req.headers['authorization'];
-
-    if (!token) {
-        return res.status(403).json({ message: 'No token provided!' });
+  verifyToken(req, (err, username) => {
+    if (err) {
+      return res.status(err.status).json({ message: err.message });
     }
-
-    // The token is expected to be in the form 'Bearer <token>'
-    const actualToken = token.split(' ')[1];
-
-    // Verify the token using the secret key
-    jwt.verify(actualToken, process.env.SECRET_KEY, (err, decoded) => {
-        if (err) {
-            console.log("Invalid Token");
-            return res.status(401).json({ message: 'Failed to authenticate token.' });
-        }
-        console.log("Verified");
-        // If token is valid, return a success message
-        res.status(200).json({ message: 'Token is valid' });
-    });
+    res.status(200).json({ message: 'Token is valid', username: username });
+  });
 });
 
 // Route to login and generate a JWT
