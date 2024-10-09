@@ -66,9 +66,13 @@ function Main(props) {
 
     // Fetch items
     const fetchItems = async () => {
-        console.log("Fetching items at", `${process.env.REACT_APP_API_URL}:3000/api/select-uploads`);
+        const token = sessionStorage.getItem('token');
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/select-uploads`);
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/select-uploads`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+            });
             setItems(response.data);
         } catch (error) {
             console.error('Error fetching entries:', error);
