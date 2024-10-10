@@ -12,7 +12,7 @@ import Charts from '../components/Charts';
 function Main(props) {
     const [username, setUsername] = useState('')
     const [file, setFile] = useState(null);
-    const [fileType, setFileType] = useState('summary');
+    const [collectionName, setCollectionName] = useState('');
     const [items, setItems] = useState([]);
     const navigate = useNavigate()
     
@@ -33,39 +33,48 @@ function Main(props) {
     }, [navigate])
 
 
-    function handleFileTypeChange (e) {
-        setFileType(e.target.value);
+    function handleNameChange (e) {
+        setCollectionName(e.target.value);
     }
       
     function handleFileChange (e) {
         setFile(e.target.files[0]);
     }
 
-    // Upload function
+    // Upload Function
     const upload = async () => {
+        const token = sessionStorage.getItem('token');
         if (!file) {
-            alert("Please select a file to upload.");
+            alert("Please select a zip file to upload.");
             return;
         }
-
+    
+        // Check if the file is a zip file
+        if (file.type !== 'application/zip' && file.type !== 'application/x-zip-compressed') {
+            alert("Please select a valid zip file.");
+            return;
+        }
+    
         const formData = new FormData();
         formData.append('file', file);
-        console.log("File Type: ", fileType);
-        formData.append('fileType', fileType);
-
+        console.log("Collection name: ", collectionName);
+        formData.append('collectionName', collectionName);
+    
         try {
             const response = await axios.post(`${process.env.REACT_APP_API_URL}:3000/api/upload`, formData, {
                 headers: {
-                'Content-Type': 'multipart/form-data'
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}`
                 }
             });
-            console.log('File uploaded successfully:', response.data);
+            console.log('Collection uploaded successfully:', response.data);
             // Update the items
             fetchItems();
         } catch (error) {
             console.error('Error uploading file:', error);
         }
     };
+    
 
     // Fetch items
     const fetchItems = async () => {
@@ -111,12 +120,12 @@ function Main(props) {
           <div className="content">
             <Sidebar 
               file={file} 
-              fileType={fileType} 
+              collectionName={collectionName} 
               handleUpload={upload} 
               items={items} 
               removeItem={removeItem}
               handleFileChange={handleFileChange}
-              handleFileTypeChange={handleFileTypeChange}
+              handleNameChange={handleNameChange}
             />
             <div className="main-content">
               <h2>Welcome, {username}!</h2>

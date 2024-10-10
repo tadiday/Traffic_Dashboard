@@ -3,11 +3,13 @@ const app = express()
 const mysql = require('mysql2');
 const multer = require('multer');
 const cors = require('cors');
+const AdmZip = require('adm-zip');
+//const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const path = require('path');
 require('dotenv').config(); // Gets environment variables working
 // Used for uploading a file, though its not stored locally with this config
 const upload = multer();
-const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
 
 // Enable CORS so no complaints with FE & BE communication
 app.use(cors());
@@ -66,21 +68,61 @@ app.get('/api/select-uploads', async (req, res) => {
 
 // Upload file Query
 app.post('/api/upload', upload.single('file'), async (req, res) => {
-    if (!req.file) {
+  const collectionName = req.body.collectionName;
+  if (!req.file) {
       return res.status(400).send('No file uploaded.');
-    }
+  }
+  const file = req.file;
   
-    const fileData = req.file.buffer.toString('utf-8');
-    const insertQuery = "INSERT INTO text_files (file_type, file_name, user_id, file_content, collection_id) VALUES (?, ?, 1, ?, 1)";
+  // Check if the uploaded file is a zip file
+  if (file.mimetype !== 'application/zip' && file.mimetype !== 'application/x-zip-compressed') {
+      return res.status(400).send('Please upload a valid zip file.');
+  }
+
+  const zip = new AdmZip(file.buffer);
+  const zipEntries = zip.getEntries();
   
-    try {
-      const [results] = await promisePool.query(insertQuery, [req.body.fileType, req.file.originalname, fileData]);
+  // Run file Integrity verification here, identify file types and ensure one of each kind
+    // TBD if necessary ask Client
+  //
+  // Verify the token
+  verifyToken(req, async (err, username) => {
+    if (err) {
+      return res.status(err.status).json({ message: err.message });
+    } // Username is not null
+    try{
+      // Step 1: Get user_id
+      const [userResult] = await promisePool.query('SELECT user_id FROM users WHERE username = ?', [username]);
+      if (userResult.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      const userId = userResult[0].user_id;
+
+      // Step 2: Insert into collections
+      await promisePool.query('INSERT INTO collections (collection_name, user_id) VALUES (?, ?)', [collectionName, userId]);
+
+      // Step 3: Get collection_id
+      const [collectionResult] = await promisePool.query('SELECT collection_id FROM collections WHERE collection_name = ? AND user_id = ?', [collectionName, userId]);
+      if (collectionResult.length === 0) {
+          return res.status(404).json({ message: 'New collection not found' });
+      }
+      const collectionId = collectionResult[0].collection_id;
+
+      // Step 4: Insert into text_files
+      for (const entry of zipEntries) {
+        if (!entry.isDirectory) {
+            const fileContent = entry.getData().toString('utf8');
+            const insertQuery = "INSERT INTO text_files (file_type, file_name, file_content, collection_id) VALUES (?, ?, ?, ?)";
+            await promisePool.query(insertQuery, [' ', path.basename(entry.entryName), fileContent, collectionId]);
+        } 
+      }
       res.send('File data inserted successfully.');
       console.log('File data inserted successfully.');
     } catch (error) {
       console.error('Error inserting data:', error);
       res.status(500).send('Error inserting data.');
     }
+  });       
 });
 
 // Delete file query
@@ -144,7 +186,7 @@ app.listen(3000, () => {
 });
 
 // Closes DB Connections on receiving end signals
-const shutdown =  async () => {
+const shutdown = async () => {
     try {
         await pool.end();
         console.log('Connection pool closed.');

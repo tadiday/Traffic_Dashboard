@@ -6,17 +6,11 @@ import './Sidebar.css';
 function Sidebar(props) {
   return (
     <div className="sidebar">
-      <h3>Upload Files</h3>
-      <select value={props.fileType} onChange={props.handleFileTypeChange}>
-        <option value='summary'>Summary</option>
-        <option value='file10'>File 10</option>
-        <option value='file11'>File 11</option>
-        <option value='file12'>File 12</option>
-        <option value='file13'>File 13</option>
-        <option value='file14'>File 14</option>
-        <option value='file15'>File 15</option>
-        <option value='file16'>File 16</option>
-      </select>
+      <h3>Upload Collection Zip</h3>
+      <label>
+        Enter Collection Name:
+        <input type="text" value={props.collectionName} onChange={props.handleNameChange} required/>
+      </label>
       <input type="file" onChange={props.handleFileChange} />
       <button onClick={props.handleUpload}>Upload</button>
       <h3>Uploaded Files</h3>
