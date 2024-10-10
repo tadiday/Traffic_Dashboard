@@ -45,8 +45,45 @@ function verifyToken(req, callback) {
   });
 }
 
-// Select files Query
+// Verifies User token
+app.get('/api/verify-token', async (req, res) => {
+  verifyToken(req, (err, username) => {
+    if (err) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    res.status(200).json({ message: 'Token is valid', username: username });
+  });
+});
+
+// Gets Collections associated with the token
+app.get('/api/get-collections', async (req, res) => {
+  verifyToken(req, async (err, username) => {
+    if (err) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    
+    try {
+      const [rows] = await promisePool.query('SELECT collection_name FROM collections c JOIN users u ON c.user_id = u.user_id WHERE username = ?', [username]);
+      
+      // If no collections found
+      if (!rows.length) {
+        return res.json([]); // No collections, return empty array
+      }
+      
+      // Extract collection names
+      const collectionNames = rows.map(row => row.collection_name);
+      return res.json(collectionNames);
+      
+    } catch (err) {
+      console.error("Error getting collections:", err);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+});
+
+// Selects files from a given collection_name and username from verified token
 app.get('/api/select-uploads', async (req, res) => {
+    const { collection_name } = req.query;
     // Verify the token
     verifyToken(req, async (err, username) => {
       if (err) {
@@ -54,9 +91,9 @@ app.get('/api/select-uploads', async (req, res) => {
       } // Username is not null
       console.log('GET collections uploaded by:', username);
       
-      var selectQuery = 'SELECT tf.file_name FROM text_files tf JOIN collections c ON tf.collection_id = c.collection_id JOIN users u ON c.user_id = u.user_id WHERE u.username = ?';
+      var selectQuery = 'SELECT tf.file_name FROM text_files tf JOIN collections c ON tf.collection_id = c.collection_id JOIN users u ON c.user_id = u.user_id WHERE u.username = ? AND c.collection_name = ?';
       try {
-          const [results] = await promisePool.query(selectQuery, [username]);
+          const [results] = await promisePool.query(selectQuery, [username, collection_name]);
           const fileNames = results.map(row => row.file_name);
           res.json(fileNames);
       } catch (err) {
@@ -64,6 +101,61 @@ app.get('/api/select-uploads', async (req, res) => {
           res.status(500).send('Server Error');
       }
     });   
+});
+
+// Delete Collection query
+app.post('/api/delete-collection', async (req, res) => {
+  const { collection_name } = req.query;
+
+  // Verify the token
+  verifyToken(req, async (err, username) => {
+    if (err) {
+      return res.status(err.status).json({ message: err.message });
+    } // Username is not null
+
+    console.log('Removing collection:', collection_name);
+
+    try {
+      const [results] = await promisePool.query(
+        "SELECT collection_id FROM collections c JOIN users u ON c.user_id = u.user_id WHERE u.username = ? AND c.collection_name = ?",
+        [username, collection_name]
+      );
+
+      if (!results.length) {
+        return res.status(404).json({ message: 'Collection not found' });
+      }
+
+      const collection_id = results[0].collection_id;
+
+      // Delete from text_files
+      await promisePool.query("DELETE FROM text_files WHERE collection_id = ?", [collection_id]);
+
+      // Delete from collections
+      await promisePool.query("DELETE FROM collections WHERE collection_id = ?", [collection_id]);
+
+      return res.json({ message: 'Collection deleted successfully' });
+
+    } catch (err) {
+      console.error("Error deleting collection:", err);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+});
+
+// Delete file query - Removed
+app.post('/api/delete-upload', async (req, res) => {
+  let fileName = req.body.fileName;
+  console.log('Removing file_name: ', fileName);
+  var deleteQuery = "DELETE FROM text_files WHERE file_name = ? LIMIT 1";
+
+  try {
+      const [results] = await promisePool.query(deleteQuery, [fileName]);
+      res.send("File deletion successful");
+      console.log("File deleted");
+    } catch (err) {
+      console.error('Error deleting data:', err);
+      res.status(500).send('Error deleting data.');
+    }
 });
 
 // Upload file Query
@@ -123,31 +215,6 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       res.status(500).send('Error inserting data.');
     }
   });       
-});
-
-// Delete file query
-app.post('/api/delete-upload', async (req, res) => {
-    let fileName = req.body.fileName;
-    console.log('Removing file_name: ', fileName);
-    var deleteQuery = "DELETE FROM text_files WHERE file_name = ? LIMIT 1";
-
-    try {
-        const [results] = await promisePool.query(deleteQuery, [fileName]);
-        res.send("File deletion successful");
-        console.log("File deleted");
-      } catch (err) {
-        console.error('Error deleting data:', err);
-        res.status(500).send('Error deleting data.');
-      }
-});
-
-app.get('/api/verify-token', async (req, res) => {
-  verifyToken(req, (err, username) => {
-    if (err) {
-      return res.status(err.status).json({ message: err.message });
-    }
-    res.status(200).json({ message: 'Token is valid', username: username });
-  });
 });
 
 // Route to login and generate a JWT

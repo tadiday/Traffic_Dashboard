@@ -13,7 +13,7 @@ function Sidebar(props) {
       </label>
       <input type="file" onChange={props.handleFileChange} />
       <button onClick={props.handleUpload}>Upload</button>
-      <h3>Uploaded Files</h3>
+      <h3>Uploaded Collections</h3>
       <ul>
         {props.items.map((item, index) => (
           <li key={index}>

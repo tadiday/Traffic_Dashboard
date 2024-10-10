@@ -79,11 +79,16 @@ function Main(props) {
     // Fetch items
     const fetchItems = async () => {
         const token = sessionStorage.getItem('token');
+        const collectionName = "Hard coded"; // Brett change this to be the selected collection name
+        //, it should not work right now unless you call a collection 'Hard coded' 
         try {
             const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/select-uploads`, {
                 headers: {
                   'Authorization': `Bearer ${token}`,
                 },
+                params: {
+                    collection_name: collectionName
+                }
             });
             setItems(response.data);
         } catch (error) {
