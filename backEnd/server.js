@@ -43,35 +43,25 @@ function verifyToken(req, callback) {
   });
 }
 
-const userID = async (username) => {
-  var selectQuery = 'SELECT user_id FROM users WHERE username = ? LIMIT 1';
-  var userId = 0;
-  try {
-    const [results] = await promisePool.query(selectQuery, [username]);
-    console.log(results)
-    userId = results.user_id
-  } catch (err) {
-    console.error(err);
-  }
-}
-
 // Select files Query
 app.get('/api/select-uploads', async (req, res) => {
-    // const username = verifyToken(req, res);
-    // console.log('GET files uploaded by:', String(username));
-    // if(username) { // Username is not null
-      var selectQuery = 'SELECT file_name FROM text_files WHERE user_id = ? AND collection_id = ?';
-      var userId = 1;
-      var collectionId= 1;
+    // Verify the token
+    verifyToken(req, async (err, username) => {
+      if (err) {
+        return res.status(err.status).json({ message: err.message });
+      } // Username is not null
+      console.log('GET collections uploaded by:', username);
+      
+      var selectQuery = 'SELECT tf.file_name FROM text_files tf JOIN collections c ON tf.collection_id = c.collection_id JOIN users u ON c.user_id = u.user_id WHERE u.username = ?';
       try {
-          const [results] = await promisePool.query(selectQuery, [userId, collectionId]);
+          const [results] = await promisePool.query(selectQuery, [username]);
           const fileNames = results.map(row => row.file_name);
           res.json(fileNames);
       } catch (err) {
           console.error(err);
           res.status(500).send('Server Error');
       }
-    //} // Otherwise, returns what res was set to in verify token    
+    });   
 });
 
 // Upload file Query
