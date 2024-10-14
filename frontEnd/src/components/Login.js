@@ -1,7 +1,5 @@
-// frontEnd/src/components/Login.js
-
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import './Login.css';
 
@@ -11,21 +9,18 @@ function Login(props) {
   const navigate = useNavigate(); // Ensure this is used inside a Router context
   
   const handleSubmit = async(e) => {
-    e.preventDefault()
-    console.log("Attempting submission:", username)
+    e.preventDefault();
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}:3000/login`, {
         username,
         password,
       });
-      console.log('Login successful:', response.data);
       // Save the token to sessionStorage
       sessionStorage.setItem('token', response.data.token);
       // Redirect to the home page
-      navigate('/home')
+      navigate('/home');
     } catch (error) {
       console.error('Error logging in:', error);
-      console.log('Invalid username or password');
     }
   };
 
@@ -49,6 +44,9 @@ function Login(props) {
         />
         <button type="submit">Login</button>
       </form>
+      <div style={{ marginTop: '15px' }}>
+        <p>Don't have an account? <Link to="/register">Sign up</Link></p> {/* Link to the register page */}
+      </div>
     </div>
   );
 }

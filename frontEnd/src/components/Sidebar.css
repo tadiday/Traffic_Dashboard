@@ -1,69 +1,112 @@
-/* frontEnd/src/components/Sidebar.css */
+/* Sidebar.css */
 
+/* Style the remove button */
+.remove-btn {
+  background-color: transparent !important;
+  border: none !important;
+  color: #cc0000 !important; /* Red color for the X */
+  font-size: 10px !important;  /* Smaller font size for the X */
+  padding: 2px 5px !important; /* Reduced padding */
+  cursor: pointer !important;
+  font-weight: bold !important;
+  line-height: 1 !important; /* Reduce the button height */
+  width: 20px !important;    /* Explicit width to control size */
+  height: 20px !important;   /* Explicit height to control size */
+  text-align: center !important;
+  float: right; /* Align the X button to the right of the collection name */
+}
+
+/* Add a hover effect */
+.remove-btn:hover {
+  color: #ff6666 !important;  /* Lighter red when hovered */
+}
+
+/* Sidebar container */
 .sidebar {
-    width: 250px;
-    background-color: #fff;
-    border-right: 1px solid #ddd;
-    padding: 20px;
-    box-sizing: border-box;
-    height: calc(100vh - 50px); /* Adjust based on navbar height */
-    overflow-y: auto;
-  }
-  
-  .sidebar h3 {
-    color: #660000;
-    margin-bottom: 10px;
-  }
-  
-  .sidebar select, 
-  .sidebar input[type="file"] {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  .sidebar button {
-    width: 100%;
-    background-color: #660000;
-    color: #fff;
-    border: none;
-    padding: 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-  }
-  
-  .sidebar button:hover {
-    background-color: #8b0000;
-  }
-  
-  .sidebar ul {
-    list-style-type: none;
-    padding: 0;
-  }
-  
-  .sidebar li {
-    background-color: #eee;
-    margin: 10px 0;
-    padding: 10px;
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .sidebar li button {
-    background-color: #cc0000;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .sidebar li button:hover {
-    background-color: #ff6666;
-  }
-  
+  width: 250px;
+  background-color: #fff;
+  border-right: 1px solid #ddd;
+  padding: 20px;
+  box-sizing: border-box;
+  height: calc(100vh - 50px); /* Adjust based on navbar height */
+  overflow-y: auto;
+}
+
+.sidebar h3 {
+  color: #660000;
+  margin-bottom: 10px;
+}
+
+.sidebar input[type="file"],
+.sidebar input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.sidebar button {
+  width: 100%;
+  background-color: #660000;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.sidebar button:hover {
+  background-color: #8b0000;
+}
+
+.sidebar ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.sidebar li {
+  background-color: #eee;
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 4px;
+  display: block; /* Ensure vertical stacking */
+  position: relative; /* Keep the X button aligned */
+  word-wrap: break-word; /* Allow wrapping of long words */
+  overflow-wrap: break-word; /* Ensure words wrap to fit within the container */
+}
+
+/* Style for the collection name */
+.collection-name {
+  cursor: pointer;
+  font-weight: bold;
+  display: inline-block; /* Keep it inline with the X button */
+  max-width: 80%; /* Ensure collection name does not take up full width */
+  word-wrap: break-word; /* Enable wrapping for long names */
+  white-space: normal; /* Prevent overflow by allowing line breaks */
+}
+
+/* Style for the file list under the collection */
+.file-list {
+  margin-left: 0;
+  list-style-type: none;
+  padding: 5px 0;
+}
+
+.file-list li {
+  background-color: #f9f9f9;
+  padding: 5px;
+  margin-bottom: 5px;
+  border-radius: 3px;
+  width: calc(100% - 10px); /* Keep the file list within the container */
+  box-sizing: border-box; /* Include padding in width */
+  word-wrap: break-word; /* Ensure long filenames wrap within the container */
+  white-space: normal; /* Allow line breaks */
+  overflow-wrap: break-word; /* Handle long words properly */
+}
+
+/* Adjust hover effect */
+.file-list li:hover {
+  background-color: #ececec;
+}

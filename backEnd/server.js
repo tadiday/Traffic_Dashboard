@@ -65,6 +65,8 @@ app.get('/api/get-collections', async (req, res) => {
     try {
       const [rows] = await promisePool.query('SELECT collection_name FROM collections c JOIN users u ON c.user_id = u.user_id WHERE username = ?', [username]);
       
+      console.log("Collections fetched:", rows); // <-- Add this log
+      
       // If no collections found
       if (!rows.length) {
         return res.json([]); // No collections, return empty array
@@ -246,6 +248,26 @@ app.post('/login', async (req, res) => {
         console.error('Error checking user login:', error);
         return res.status(401).json({ message: 'Query Failed' });
     }
+});
+
+// Route to register a new user
+app.post('/register', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+      // Check if the username already exists
+      const [existingUser] = await promisePool.query('SELECT * FROM users WHERE username = ?', [username]);
+      if (existingUser.length > 0) {
+          return res.status(409).json({ message: 'Username already exists' });
+      }
+
+      // Insert new user
+      await promisePool.query('INSERT INTO users (username, password) VALUES (?, ?)', [username, password]);
+      return res.status(201).json({ message: 'User created successfully. Please log in.' });
+  } catch (error) {
+      console.error('Error registering user:', error);
+      return res.status(500).json({ message: 'Server error' });
+  }
 });
 
 app.listen(3000, () => {
