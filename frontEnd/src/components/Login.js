@@ -21,6 +21,9 @@ function Login(props) {
       navigate('/home');
     } catch (error) {
       console.error('Error logging in:', error);
+      if(error.response.data.message){
+        alert(error.response.data.message);
+      }
     }
   };
 

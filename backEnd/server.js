@@ -55,7 +55,7 @@ app.get('/api/verify-token', async (req, res) => {
   });
 });
 
-// Gets Collections associated with the token
+// Gets Collection Names associated with the token
 app.get('/api/get-collections', async (req, res) => {
   verifyToken(req, async (err, username) => {
     if (err) {
@@ -83,7 +83,7 @@ app.get('/api/get-collections', async (req, res) => {
   });
 });
 
-// Selects files from a given collection_name and username from verified token
+// Selects file names from a given collection_name and username from verified token
 app.get('/api/select-uploads', async (req, res) => {
     const { collection_name } = req.query;
     // Verify the token

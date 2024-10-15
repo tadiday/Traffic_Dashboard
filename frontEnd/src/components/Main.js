@@ -72,6 +72,9 @@ function Main(props) {
             fetchItems();
         } catch (error) {
             console.error('Error uploading file:', error);
+            if(error.response.data.message){
+                alert(error.response.data.message);
+            }
         }
     };
 
