@@ -46,7 +46,11 @@ function Main(props) {
             alert("Please select a zip file to upload.");
             return;
         }
-    
+        if(collectionName === ''){
+            alert("Please enter a collection name.");
+            return;
+        }
+
         if (file.type !== 'application/zip' && file.type !== 'application/x-zip-compressed') {
             alert("Please select a valid zip file.");
             return;
