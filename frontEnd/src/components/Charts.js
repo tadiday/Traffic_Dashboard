@@ -208,6 +208,7 @@ function Charts() {
     return (
         <div id="charts">
             <table>
+                <tbody>
                 <tr height="500" width="100%">
                     <td id="node">
                         <div ref={nodeGraphRef} style={{ width: '100%', height: '300px' }}></div> 
@@ -234,6 +235,7 @@ function Charts() {
                         <button>Rose</button>
                     </td>
                 </tr>
+                </tbody>
             </table>
         </div>
     );
