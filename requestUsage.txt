@@ -1,0 +1,111 @@
+[/api/file-summary?sim=0]
+
+  query "sim" = simulation ID to access
+
+  Returns the summary file's info for the specified simulation.
+    If the request is made without login, the file will still be
+    accessible (for testing)
+
+  This is the format of what is returned:
+  {
+    "total": {
+      "vehicle trips": [
+        3898,
+        1088,
+        261,
+        1164,
+        577,
+        6988
+      ],
+      ...
+    }
+    "average" : {
+      "vehicle trips": [
+        3898,
+        1088,
+        261,
+        1164,
+        577,
+        6988
+      ],
+      ...
+    }
+  }
+
+
+
+
+[/api/file-nodes?sim=0]
+
+  query "sim" = simulation ID to access
+
+  Returns file1's info for the specified simulation. If the 
+    request is made without login, the file will still be
+    accessible (for testing)
+
+  This is the format of what is returned:
+  {
+    "xScale" : 1,
+    "yScale" : 1,
+    "nodes" : [
+      {
+        "id" : 1,
+        "x" : 0.25
+        "y" : 1.5
+        "type" : 1
+        "zone" : -1
+        "info" : 0         // will only exist if non-zero
+        "tag" : "zone 1"   // will only exist if non-empty
+      },
+      ...
+    ]
+  }
+
+
+
+
+[api/get-collections]
+  
+  Returns an array of the names of all the simulations of the 
+    logged in user sending the request.
+
+  This is the format of what is returned:
+  [ "simulation1", "simulation2", ... ]
+
+
+
+
+[/api/get-directory]
+
+  Returns an array of the names, upload dates, and simulation IDs
+   of all the simulations of the logged in user sending the request.
+
+  This is the format of what is returned:
+  [
+    {
+      "sim_name" : "simulation1",
+      "sim_date" : "..."
+      "sim_id" : 1
+    },
+    ...
+  ]
+
+
+
+
+[/api/select-uploads]
+
+  Returns an array of all the valid files (file titles) found in 
+    an uploaded simulation. Simulation is accessed by name.
+
+  This is the format of what is returned:
+  [ "Summary", "Nodes", "Signals", ... ]
+
+
+
+
+
+
+
+
+
