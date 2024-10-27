@@ -134,11 +134,12 @@ app.get('/api/select-uploads', async (req, res) => {
 
      // bad, but this entire thing is bad
      const [[{sim_id}]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_owner = ? AND sim_name = ?", [user_id, sim_name]);
-     const [files] = await promisePool.query("SELECT file_type FROM text_files WHERE file_sim = ?", [sim_id]);
+     const [[files, big_files],_] = await promisePool.query("SELECT file_type FROM text_files WHERE file_sim = ?; SELECT file_type FROM big_Files WHERE file_sim = ?;", [sim_id, sim_id]);
 
      // convert returned object to strings
      const fileNames = files.map((file) => (FileTypeToName(file.file_type)));
-     res.json(fileNames);
+     const bigFileNames = big_files.map((file) => (FileTypeToName(file.file_type)));
+     res.json(fileNames.concat(bigFileNames));
 
     }catch(err){
 	  console.error(err);
@@ -164,12 +165,8 @@ app.post('/api/delete-collection', async (req, res) => {
     // bad, but this entire thing is bad
     const [[{sim_id}]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_owner = ? AND sim_name = ?", [user_id, collection_name]);
 
-    const deleteFileQuery = "DELETE FROM text_files WHERE file_sim = ?";
-	const deleteSimQuery = "DELETE FROM simulations WHERE sim_id = ?";
-	var awaitA = promisePool.query(deleteFileQuery, [sim_id]);
-	var awaitB = promisePool.query(deleteSimQuery, [sim_id]);
-	await awaitA;
-	await awaitB;
+    const deleteFileQuery = "DELETE FROM text_files WHERE file_sim = ?; DELETE FROM big_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
+	await promisePool.query(deleteFileQuery, [sim_id, sim_id, sim_id]);
 	res.send("File deletion successful");
   } catch (err) {
 	console.error('Error deleting data:', err);
@@ -209,6 +206,10 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   const file = req.file;
   if (file.mimetype !== 'application/zip' && file.mimetype !== 'application/x-zip-compressed')
     return res.status(400).send('Please upload a valid zip file.');
+
+  // make sure its only simple strings
+  if(!IsValidUserInfo(req.body.collectionName))
+	return res.status(403).send("Invalid username or password");
 
   // get the username
   try{
@@ -256,140 +257,113 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   res.send('File data inserted successfully.');
 });
 
+
 /*
- * Gets the summary file for a specific simulation
+ * Gets a specific file for a specific simulation based
+ * on the variables in the request and the constant file type
  * The query value "sim" is specified to be the simulation
  *   id of the simulation being accessed
  */
-app.get('/api/file-summary', async (req, res) => {
+async function tryGetFile(req, res, fileType, isBig){
+	if(!isBig) isBig = 0;
 
-  // get the username
-  try{
-   var username = verifyToken(req);
-
-   // get the user_id
+	// get the username
 	try{
-  	  // get user_id
-  	  var [[{user_id}]] = await promisePool.query("SELECT user_id FROM users WHERE username = ?", [username]);
-	}catch(err){
-      return res.status(500).send("No such user");
+		var username = verifyToken(req);
+
+		// get the user_id
+		try{
+			// get user_id
+			var [[{user_id}]] = await promisePool.query("SELECT user_id FROM users WHERE username = ?", [username]);
+		}catch(err){
+			return res.status(500).send("No such user");
+		}
+	} catch(exception) {
+		var user_id = 1;
+		//return res.status(exception.status).json({ message: exception.message });
 	}
-  } catch(exception) {
-    var user_id = 1;
-    //return res.status(exception.status).json({ message: exception.message });
-  }
 
 
 	try {
 		const sim_id = parseInt(req.query.sim); // to throw exception
-		const query = "SELECT file_owner, file_content FROM text_files WHERE file_type = 4 AND file_sim = ?";
-		const [[entry]] = await promisePool.query(query, [sim_id]);
+		let query;
+		if(isBig)
+			query = "SELECT file_owner, file_content FROM big_files WHERE file_type = ? AND file_sim = ?";
+		else
+			query = "SELECT file_owner, file_content FROM text_files WHERE file_type = ? AND file_sim = ?";
+		const [[entry]] = await promisePool.query(query, [fileType, sim_id]);
 
 		if(!entry)
 		  return res.status(500).send("File not found");
 
 		if(entry.file_owner != user_id)
-			console.log("file-summary: Wrong owner! (" + user_id + " != " + entry.file_owner + ")");
+			console.log("tryGetFile: Wrong owner! (" + user_id + " != " + entry.file_owner + ")");
 		let buf = Buffer.from(entry.file_content);
-		let obj = ReadFile_summary(buf);
-		res.json(obj);
+		let obj = ReadFile_Any(buf, fileType);
+		return res.json(obj);
 	} catch (err) {
 		console.error(err);
-		res.status(500).send("Server Error: Couldn't retrieve directory");
+		return res.status(500).send("Server Error: Couldn't retrieve directory");
 	}
-});
-
+}
 
 /*
- * Gets input file 1 (node file) for a specific simulation
- * The query value "sim" is specified to be the simulation
- *   id of the simulation being accessed
+ * Gets the summary file
  */
-app.get("/api/file-nodes", async (req, res) => {
-
-  // get the username
-  try{
-   var username = verifyToken(req);
-
-   // get the user_id
-	try{
-  	  // get user_id
-  	  var [[{user_id}]] = await promisePool.query("SELECT user_id FROM users WHERE username = ?", [username]);
-	}catch(err){
-      return res.status(500).send("No such user");
-	}
-  } catch(exception) {
-    var user_id = 1;
-    //return res.status(exception.status).json({ message: exception.message });
-  }
-
-
-	try {
-		const sim_id = parseInt(req.query.sim); // to throw exception
-		const query = "SELECT file_owner, file_content FROM text_files WHERE file_type = 7 AND file_sim = ?";
-		const [[entry]] = await promisePool.query(query, [sim_id]);
-
-		if(!entry)
-		  return res.status(500).send("File not found");
-
-		if(entry.file_owner != user_id)
-			console.log("file-summary: Wrong owner! (" + user_id + " != " + entry.file_owner + ")");
-		let buf = Buffer.from(entry.file_content);
-		let obj = ReadFile_nodes(buf);
-		res.json(obj);
-	} catch (err) {
-		console.error(err);
-		res.status(500).send("Server Error: Couldn't retrieve directory");
-	}
-});
+app.get('/api/file-summary', async (req, res) => await tryGetFile(req,res, FILE_SUMMARY));
 
 /*
- * Gets input file 1 (node file) for a specific simulation
- * The query value "sim" is specified to be the simulation
- *   id of the simulation being accessed
+ * Gets the node file (input file 1)
  */
-app.get('/api/file-signals', async (req, res) => {
+app.get("/api/file-nodes", async (req, res) => await tryGetFile(req, res, FILE_NODES));
 
-  // get the username
-  try{
-   var username = verifyToken(req);
+/*
+ * Gets the edge file (input file 2)
+ */
+app.get('/api/file-edges', async (req, res) => await tryGetFile(req, res, FILE_EDGES));
 
-   // get the user_id
-	try{
-  	  // get user_id
-  	  var [[{user_id}]] = await promisePool.query("SELECT user_id FROM users WHERE username = ?", [username]);
-	}catch(err){
-      return res.status(500).send("No such user");
+/*
+ * Gets the signals file (input file 3)
+ */
+app.get('/api/file-signals', async (req, res) => await tryGetFile(req, res, FILE_SIGNALS));
+
+/*
+ * Gets the shortest paths file (output file 13)
+ */
+app.get('/api/file-avgconds', async (req, res) => await tryGetFile(req, res, FILE_AVGCONDS));
+
+/*
+ * Gets the shortest paths file (output file 13)
+ */
+app.get('/api/file-paths', async (req, res) => await tryGetFile(req, res, FILE_PATHS, 1));
+
+
+function IsValidUserInfo(str){
+	if(!str || !("" + str === str))
+		return 0;
+	const len = str.length;
+	const n0 = "0".charCodeAt(0);
+	const n1 = "9".charCodeAt(0);
+	const a0 = "a".charCodeAt(0);
+	const a1 = "z".charCodeAt(0);
+	const A0 = "A".charCodeAt(0);
+	const A1 = "Z".charCodeAt(0);
+	for(let i = 0; i < len; i++){
+		const c = str.charCodeAt(i);
+		if(!(c == " " || (c >= n0 && c <= n1) || (c >= a0 && c <= a1) || (c >= A0 && c <= A1)))
+			return 0;
 	}
-  } catch(exception) {
-    var user_id = 1;
-    //return res.status(exception.status).json({ message: exception.message });
-  }
-
-
-	try {
-		const sim_id = parseInt(req.query.sim); // to throw exception
-		const query = "SELECT file_owner, file_content FROM text_files WHERE file_type = ? AND file_sim = ?";
-		const [[entry]] = await promisePool.query(query, [FILE_SIGNALS, sim_id]);
-
-		if(!entry)
-		  return res.status(500).send("File not found");
-
-		if(entry.file_owner != user_id)
-			console.log("file-summary: Wrong owner! (" + user_id + " != " + entry.file_owner + ")");
-		let buf = Buffer.from(entry.file_content);
-		let obj = ReadFile_signals(buf);
-		res.json(obj);
-	} catch (err) {
-		console.error(err);
-		res.status(500).send("Server Error: Couldn't retrieve directory");
-	}
-});
+	return 1;
+}
 
 // Route to login and generate a JWT
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     console.log('Login Requested with:', username, password);
+
+    // make sure its only simple strings
+    if(!IsValidUserInfo(username) || !IsValidUserInfo(password))
+	  return res.status(403).send("Invalid username or password");
 
     try{
       const [[user]] = await promisePool.query("SELECT user_id FROM users WHERE username = ? AND password = ?", [username, password]);
@@ -415,6 +389,10 @@ app.post('/login', async (req, res) => {
 // Route to register a new user
 app.post('/register', async (req, res) => {
   const { username, password } = req.body;
+
+  // make sure its only simple strings
+  if(!IsValidUserInfo(username) || !IsValidUserInfo(password))
+	return res.status(403).send("Invalid username or password");
 
   try {
       // Check if the username already exists
@@ -458,10 +436,106 @@ process.on('SIGINT', shutdown);
 
 // file read and write functions //
 
+const FILE_AVGCONDS = 1;
+const FILE_PATHS = 3;
 const FILE_SUMMARY = 4;
-const FILE_NODE = 7;
+const FILE_NODES = 7;
 const FILE_EDGES = 8;
 const FILE_SIGNALS = 9;
+
+
+/*
+ * Reads floats from a nodejs buffer and puts them into
+ *   an object at specific names
+ * @param obj (table) Where the resulting values are placed into
+ * @param names (string[]) The indexs, in order, that the values should put at in the object/table
+ * @param buf (nodejs buffer) The buffer to read from
+ * @param off (int) The offset in the buffer to read from
+ * @return (int) The resulting offset from all of the reads
+ */
+function ReadFromBufFloats(obj, names, buf, off){
+  for(let i = 0; i < names.length; i++){
+  	obj[names[i]] = buf.readFloatLE(off);
+  	off += 4;
+  }
+  return off;
+}
+
+/*
+ * Reads ints from a nodejs buffer and puts them into
+ *   an object at specific names
+ * @param obj (table) Where the resulting values are placed into
+ * @param names (string[]) The indexs, in order, that the values should put at in the object/table
+ * @param buf (nodejs buffer) The buffer to read from
+ * @param off (int) The offset in the buffer to read from
+ * @return (int) The resulting offset from all of the reads
+ */
+function ReadFromBufInts(obj, names, buf, off){
+  for(let i = 0; i < names.length; i++){
+  	obj[names[i]] = buf.readInt32LE(off);
+  	off += 4;
+  }
+  return off;
+}
+
+/*
+ * Reads shorts from a nodejs buffer and puts them into
+ *   an object at specific names
+ * @param obj (table) Where the resulting values are placed into
+ * @param names (string[]) The indexs, in order, that the values should put at in the object/table
+ * @param buf (nodejs buffer) The buffer to read from
+ * @param off (int) The offset in the buffer to read from
+ * @return (int) The resulting offset from all of the reads
+ */
+function ReadFromBufShorts(obj, names, buf, off){
+  for(let i = 0; i < names.length; i++){
+  	obj[names[i]] = buf.readInt16LE(off);
+  	off += 2;
+  }
+  return off;
+}
+
+/*
+ * Reads a string from a nodejs buffer that was written
+ *   with WriteString().
+ * The string should be stored by a single byte specifying
+ *   its length, then the actual string
+ * @param buf (nodejs buffer) The buffer to read from
+ * @param off (int) The offset to read from
+ * @return ([int, string]) The resulting offset and string
+ */
+function ReadString(buf, off){
+  const len = buf.readInt8(off);
+  const tag = buf.toString("ascii", off + 1, off + 1 + len);
+  return [off + 1 + len, tag];
+}
+
+/*
+ * Reads some number of shorts from a buffer and makes an
+ *   array of them. A "short" is 2 bytes
+ * @param buf (nodejs buffer) The buffer to read from
+ * @param len (int) The number of shorts to read
+ * @param off (int) The initial offset in "buf" to read from
+ * @return ([int, int[]]) The resulting offset and array
+ */
+function ReadFromBufShortArray(buf, len, off){
+	let arr = new Array(len);
+	for(let i = 0; i < len; i++)
+		arr[i] = buf.readInt16LE(off + 2 * i);
+	return [off + 2 * len, arr];
+}
+
+/*
+ * Same as ReadFromBufShortArray(), but with floats
+ */
+function ReadFromBufFloatArray(buf, len, off){
+	let arr = new Array(len);
+	for(let i = 0; i < len; i++)
+		arr[i] = buf.readFloatLE(off + 4 * i);
+	return [off + 4 * len, arr];
+}
+
+
 
 /*
  * Reads an input as a summary file.
@@ -535,6 +609,38 @@ function ReadFile_nodes(buf){
 	return out;
 }
 
+/*
+ * Reads an input as input file 1 (node file)
+ * @param buf (nodejs buffer) The nodejs buffer to read from
+ * @return (table) The summary file as a table/object
+ */
+function ReadFile_edges(buf){
+	let out = {};
+
+	// define and read initial values
+	out.count = buf.readInt16LE(0);
+	out.lengthScale = buf.readFloatLE(2);
+	out.freeSpeedScale = buf.readFloatLE(6);
+	out.flowRateScale = buf.readFloatLE(10);
+	out.capSpeedScale = buf.readFloatLE(14);
+	out.jamScale = buf.readFloatLE(18);
+	out.edges = new Array(out.count);
+
+	// read each node
+	let off = 22;
+	for(let i = 0; i < out.count; i++){
+	  let node = {};
+	  off = ReadFromBufShorts(node, ["id", "start", "end"], buf, off);
+	  off = ReadFromBufFloats(node, ["length", "freeSpeed", "satFlowRate", "numOfLanes", "speedVar", "capSpeed", "jamDensity"], buf, off);
+	  off = ReadFromBufShorts(node, ["prohIndc"], buf, off);
+	  off = ReadFromBufInts(node, ["enableTime", "disableTime"], buf, off);
+	  off = ReadFromBufShorts(node, ["oppose1", "oppose2", "signal", "phase1", "phase2", "vehProhIndc", "survLevel"], buf, off);
+	  [off, node.tag] = ReadString(buf, off);
+	  out.edges[i] = node;
+	}
+
+	return out;
+}
 
 /*
  * Reads an input as input file 1 (signals file)
@@ -575,6 +681,127 @@ function ReadFile_signals(buf){
 	return out;
 }
 
+/*
+ * Reads an input as output file 11 (average traffic conditions file)
+ * @param buf (nodejs buffer) The nodejs buffer to read from
+ * @return (table) The summary file as a table/object
+ */
+function ReadFile_AvgConditions(buf){
+	let out = {};
+
+	let off = 0;
+	out.time = buf.readInt32LE(off + 0);
+
+	const edgeCount = buf.readInt16LE(off + 4);
+	out.flow = Array(edgeCount).fill([]);
+	out.conditions = Array(edgeCount).fill({});
+
+	// 5s6fsssssss7ffffffffffff6fffAffffff9ffffff
+	// 5s7s5sss7s5sss7s5sss7s5sss7s5sss
+
+	const countA = buf.readInt16LE(off + 6);
+	off += 8;
+
+	for(let i = 0; i < countA; i++){
+		let obj = {};
+		const index = buf.readInt16LE(off) - 1;
+		obj.length = buf.readFloatLE(off + 2);
+		off = ReadFromBufShorts(obj, ["baseCapacity", "totalFlow"], buf, off + 6);
+		[off, obj["flow"]] = ReadFromBufShortArray(buf, 5, off);
+		off = ReadFromBufFloats(obj, ["freeSpeedTime", "totalAverageTime"],  buf, off);
+		[off, obj["averageTime"]] = ReadFromBufFloatArray(buf, 5, off);
+		[off, obj["averageToll"]] = ReadFromBufFloatArray(buf, 5, off);
+		off = ReadFromBufFloats(obj, ["averageVehicles", "averageQueue", "averageStops"],  buf, off);
+		off = ReadFromBufFloats(obj, ["fuel", "HC", "CO", "NO", "CO2", "PM"],  buf, off);
+		off = ReadFromBufFloats(obj, ["expectedCrashes", "expectedTopInjurt", "fatelCrashes", "crashLowDamage", "crashMedDamage", "crashHighDamage"],  buf, off);
+		out.conditions[index] = obj;
+	}
+
+	const countB = buf.readInt16LE(off);
+	off += 2;
+
+	for(let i = 0; i < countB; i++){
+		const index = buf.readInt16LE(off) - 1;
+		off+=2;
+		out.flow[index] = new Array(5).fill({});
+		for(let ii = 0; ii < 5; ii++){
+			out.flow[index][ii] = {};
+			off = ReadFromBufShorts(out.flow[index][ii], ["leftTurn", "through", "rightTurn", "total"], buf, off);
+		}
+	}
+
+	return out;
+}
+
+/*
+ * Reads an input as output file 13 (min path file)
+ * @param buf (nodejs buffer) The nodejs buffer to read from
+ * @return (table) The summary file as a table/object
+ */
+function ReadFile_paths(buf){
+	let out = {};
+
+	// define and read initial values
+	out.periodCount = buf.readInt16LE(0);
+	out.time = buf.readInt32LE(2);
+	let off = ReadFromBufShorts(out, ["maxOriginID", "originCount", "maxDestID", "edgeCount", "maxEdgeID"], buf, 6);
+
+	out.periods = new Array(out.periodCount);
+	for(let i = 0; i < out.periodCount; i++){
+		let periodObj = {};
+		periodObj.index = buf.readInt16LE(off + 0)
+		const periodVal2 = 1; // off + 2
+		periodObj.treeCount = buf.readInt8(off + 3);
+		off += 4;
+
+		periodObj.paths = new Array(periodObj.treeCount);
+		for(let ii = 0; ii < periodObj.treeCount; ii++){
+			let treeObj = {};
+			treeObj.treeVal1 = buf.readInt8(off + 0);
+			treeObj.proportion = buf.readFloatLE(off + 1);
+			treeObj.index = buf.readInt8(off + 5);
+			off += 6;
+
+			treeObj.origins = new Array(out.maxOriginID).fill([]);
+			treeObj.edges = new Array(out.maxEdgeID).fill([]);
+
+			for(let Q = 0; Q < out.originCount; Q++){
+				const indx = buf.readInt16LE(off);
+				[off, treeObj.origins[Q]] = ReadFromBufShortArray(buf, out.maxDestID, off + 2);
+			}
+
+			for(let Q = 0; Q < out.edgeCount; Q++){
+				const indx = buf.readInt16LE(off);
+				[off, treeObj.edges[Q]] = ReadFromBufShortArray(buf, out.maxDestID, off + 2);
+			}
+			periodObj.paths[ii] = treeObj;
+		}
+		out.periods[i] = periodObj;
+	}
+
+	return out;
+}
+
+/*
+ * Reads a file from a nodejs buffer based on type.
+ * This returns whatever the corresponding function
+ *   would return, which is (probably) an object/table
+ * @param buf (nodejs buffer) The buffer to read from
+ * @param fileType (int) The file type to read as. Use the FILE_ constants for this
+ * @return (table) The interpretation of the file from the buffer
+ * @throws Probably something if you use this wrong
+ */
+function ReadFile_Any(buf, fileType){
+	switch(fileType){
+		case FILE_NODES: return ReadFile_nodes(buf);
+		case FILE_EDGES: return ReadFile_edges(buf);
+		case FILE_SIGNALS: return ReadFile_signals(buf);
+		case FILE_SUMMARY: return ReadFile_summary(buf);
+		case FILE_AVGCONDS: return ReadFile_AvgConditions(buf);
+		case FILE_PATHS: return ReadFile_paths(buf);
+	}
+}
+
 
 /*
  * Splits a string by any number of white space.
@@ -586,6 +813,129 @@ function ReadFile_signals(buf){
 function ReadLineArgs(line){
 	return line.split(/\s+/);
 }
+
+/*
+ * Reads some number of elements from an array and writes
+ *   them to a buffer.
+ * This uses nodejsBuffer.writeFloatLE() and parseFloat()
+ * @param args (String[]) The array to read from
+ * @param indx (int) The starting index in the array to read from
+ * @param count (int) The number of elements to read, write
+ * @param buf (nodejs buffer) The buffer to write to
+ * @param off (int) The starting offset in the buff to write to
+ * @return (int) The resulting offset in the buffer after all writes
+ */
+function CopyToBufFloats(args, indx, count, buf, off){
+	for(let i = indx; i < indx + count; i++)
+		off = buf.writeFloatLE(parseFloat(args[i]), off);
+	return off;
+}
+
+/*
+ * Reads some number of elements from an array and writes
+ *   them to a buffer.
+ * This uses nodejsBuffer.writeInt32LE() and parseInt()
+ * @param args (String[]) The array to read from
+ * @param indx (int) The starting index in the array to read from
+ * @param count (int) The number of elements to read, write
+ * @param buf (nodejs buffer) The buffer to write to
+ * @param off (int) The starting offset in the buff to write to
+ * @return (int) The resulting offset in the buffer after all writes
+ */
+function CopyToBufInts(args, indx, count, buf, off){
+	for(let i = indx; i < indx + count; i++)
+		off = buf.writeInt32LE(parseInt(args[i]), off);
+	return off;
+}
+
+/*
+ * Reads some number of elements from an array and writes
+ *   them to a buffer.
+ * This uses nodejsBuffer.writeInt16LE() and parseInt()
+ * @param args (String[]) The array to read from
+ * @param indx (int) The starting index in the array to read from
+ * @param count (int) The number of elements to read, write
+ * @param buf (nodejs buffer) The buffer to write to
+ * @param off (int) The starting offset in the buff to write to
+ * @return (int) The resulting offset in the buffer after all writes
+ */
+function CopyToBufShorts(args, indx, count, buf, off){
+	for(let i = indx; i < indx + count; i++)
+		off = buf.writeInt16LE(parseInt(args[i]), off);
+	return off;
+}
+
+/*
+ * Writes a string to a file by writing the length as 1 byte
+ *   and then the actual string as format "ascii"
+ * @param buf (nodejs buffer) The buffer to write to
+ * @param str (string) The string to write
+ * @param off (int) The offset in the buffer to write to
+ * @return (int) The resulting offset in the buffer
+ */
+function WriteString(buf, str, off){
+  buf.writeInt8(str.length, off);
+  buf.write(str, off + 1, str.length + 1, "ascii");
+  return off + str.length + 1;
+}
+
+/*
+ * bruh
+ * a bunch of nonsense
+ */
+function CopyToBufLine(line, buf, off, format){
+	let curOff = 0;
+	let curLen = 1;
+	for(let i = 0; i < format.length; i++){
+		let c = format.charCodeAt(i);
+		if(c <= "9".charCodeAt(0)){ // set length from [0, 9]
+			curLen = c - "0".charCodeAt(0);
+		}else if(c <= "Z".charCodeAt(0)){ // set length from [10, ...]
+			curLen = 10 + c - "A".charCodeAt(0);
+		}else{ // read value
+			let val = line.substring(curOff, curOff + curLen);
+			let ch = format.charAt(i);
+			if(ch != "_"){ // "_" means ignore a value
+				let num;
+				if(val.charAt(0) == "*") // invalid value
+					num = -1;
+				else if(ch == "s" || ch == "i") // short
+					num = parseInt(val);
+				else if(ch == "f") // float
+					num = parseFloat(val);
+				switch(ch){
+					case "s": // short
+						off = buf.writeInt16LE(num, off);
+					break;
+					case "i": // int
+						off = buf.writeInt32LE(num, off);
+					break;
+					case "f": // float
+						off = buf.writeFloatLE(num, off);
+					break;
+				}
+			}
+			curOff += curLen;
+		}
+	}
+	return off;
+}
+
+function GetLineFormatSize(format){
+	let size = 0;
+	for(let i = 0; i < format.length; i++){
+		switch(format.charAt(i)){
+			case "s":
+				size += 2;
+			break;
+			case "i": case "f":
+				size += 4;
+			break;
+		}
+	}
+	return size;
+}
+
 
 /*
  * Reads the summary file from an array of lines and
@@ -643,7 +993,7 @@ async function WriteFile_Input1(user_id, sim_id, lines){
 
 	// make sure doesn't already exist
 	try{
-	  const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [FILE_NODE, sim_id]);
+	  const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [FILE_NODES, sim_id]);
 	  if(ret.length != 0)
 		return;
 	}catch(e){
@@ -663,7 +1013,7 @@ async function WriteFile_Input1(user_id, sim_id, lines){
 	  lines[2 + i] = lines[2 + i].trim();
 	  const args = ReadLineArgs(lines[2 + i]);
 	  if(args.length > 5){
-	    bonusSize += args.reduce((hoard, next) => (hoard + next.length + 1), 0);
+	    bonusSize += args.slice(5).reduce((hoard, next) => (hoard + next.length + 1), 0);
 	  }
 	}
 
@@ -683,19 +1033,69 @@ async function WriteFile_Input1(user_id, sim_id, lines){
 		off = buf.writeInt8(parseInt(args[3]), off);
 		off = buf.writeInt16LE(parseInt(args[4]), off);
 		off = buf.writeFloatLE(parseFloat(args[5]), off);
-		if(args.length > 5){
-		  const tag = args.slice(6).join(" ");
-		  buf.writeInt8(tag.length, off);
-		  buf.write(tag, off+1, tag.length + 1, "ascii");
-		  off += tag.length + 1;
-		}else{
-		  off = buf.writeInt8(0, off);
-		}
+		const tag = args.slice(6).join(" ");
+		off = WriteString(buf, tag, off);
 	}
 
 
 	const query = "INSERT INTO text_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
-	pool.query(query, [FILE_NODE, buf, user_id, sim_id]);
+	pool.query(query, [FILE_NODES, buf, user_id, sim_id]);
+}
+
+/*
+ * Reads the edge file from an array of lines and
+ *  writes it into the database with the corresponding
+ *  simulation and user owners
+ * @param user_id (int) The user id of whom that uploaded the file
+ * @param sim_id (int) The id of the simulation this file is a part of
+ * @param lines (string[]) The file as an array of lines
+ */
+async function WriteFile_Input2(user_id, sim_id, lines){
+
+	// make sure doesn't already exist
+	try{
+	  const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [FILE_EDGES, sim_id]);
+	  if(ret.length != 0)
+		return;
+	}catch(e){
+	  return;
+	}
+
+	const initArgs = ReadLineArgs(lines[1]);
+	const edgeC = parseInt(initArgs[0]);
+
+	// count the extra size
+	let bonusSize = 0;
+	for(let i = 0; i < edgeC; i++){
+	  lines[2 + i] = lines[2 + i].trim();
+	  const args = ReadLineArgs(lines[2 + i]);
+	  if(args.length > 20){
+	    bonusSize += args.slice(20).reduce((hoard, next) => (hoard + next.length + 1), 0);
+	  }
+	}
+
+	// create the buffer
+	// (2 + 4*5) + (2*3 + 4*7 + 2 + int*2 + 2*7 + 1 + x)
+	let buf = Buffer.allocUnsafe(22 + 59 * edgeC + bonusSize);
+	buf.writeInt16LE(edgeC, 0);
+	CopyToBufFloats(initArgs, 1, 5, buf, 2);
+
+	// read the lines
+	let off = 22;
+	for(let i = 0; i < edgeC; i++){
+		let args = ReadLineArgs(lines[2 + i]);
+
+		off = CopyToBufShorts(args, 0, 3, buf, off);
+		off = CopyToBufFloats(args, 3, 7, buf, off);
+		off = CopyToBufShorts(args, 10, 1, buf, off);
+		off = CopyToBufInts(args, 11, 2, buf, off);
+		off = CopyToBufShorts(args, 13, 7, buf, off);
+		const tag = args.slice(20).join(" ");
+		off = WriteString(buf, tag, off);
+	}
+
+	const query = "INSERT INTO text_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
+	pool.query(query, [FILE_EDGES, buf, user_id, sim_id]);
 }
 
 /*
@@ -762,6 +1162,169 @@ async function WriteFile_Input3(user_id, sim_id, lines){
 	pool.query(query, [FILE_SIGNALS, buf, user_id, sim_id]);
 }
 
+
+async function WriteFile_AvgConditions(user_id, sim_id, lines){
+
+	try{
+		const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [FILE_AVGCONDS, sim_id]);
+		if(ret.length != 0)
+			return;
+	}catch(e){
+		return;
+	}
+
+
+	let formatType; // distributed of provided formated file
+	let lineA0 = -1, lineA1 = -1; // start and of the first section
+	let lineB0, lineB1; // start and end of the second secction
+	for(let i = 0; i < lines.length; i++){
+		if(lineA0 == -1){
+			if(lines[i].length == 269 || lines[i].length == 312){
+				lineA0 = i;
+				formatType = (lines[i].length == 270) ? 1 : 0;
+			}
+		}else{
+			if(lines[i].trim() === "Turning movements by dir and veh class"){
+				lineA1 = i;
+				break;
+			}
+		}
+	}
+	lineB0 = lineA1 + 2;
+	lineB1 = lines.length;
+
+	const formatA = formatType ?
+		"5s6fsssssss7ffffffffffff6fffAffffff9ffffff" : // distributed
+		"5s6fsssssss7ffffffffffff5_6fffEffffff_9ffffff"; // provided
+	const formatB = "5s7s5sss7s5sss7s5sss7s5sss7s5sss";
+
+	const entryASize = GetLineFormatSize(formatA);
+	const entryBSize = GetLineFormatSize(formatB);
+	const lineCA = lineA1 - lineA0;
+	const lineCB = lineB1 - lineB0;
+	const totalSize = entryASize * lineCA + entryBSize * lineCB + 4 + 2 + 2 + 2;
+
+	let off = 0;
+	let buf = Buffer.allocUnsafe(totalSize);
+
+	let initArgs = ReadLineArgs(lines[lineB0 - 1].trim());
+	console.log(initArgs);
+	off = buf.writeInt32LE(parseInt(initArgs[0]), off); // sim time
+	off = buf.writeInt16LE(parseInt(initArgs[1]), off); // max edge ID
+
+	off = buf.writeInt16LE(lineCA, off);
+	for(let i = 0; i < lineCA; i++)
+		off = CopyToBufLine(lines[lineA0 + i], buf, off, formatA);
+
+	off = buf.writeInt16LE(lineCB, off);
+	for(let i = 0; i < lineCB; i++)
+		off = CopyToBufLine(lines[lineB0 + i], buf, off, formatB);
+
+	const query = "INSERT INTO text_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
+	pool.query(query, [FILE_AVGCONDS, buf, user_id, sim_id]);
+}
+
+
+/*
+ * Reads the min path file from an array of lines and
+ *  writes it into the database with the corresponding
+ *  simulation and user owners
+ * @param user_id (int) The user id of whom that uploaded the file
+ * @param sim_id (int) The id of the simulation this file is a part of
+ * @param lines (string[]) The file as an array of lines
+ */
+async function WriteFile_MinTree(user_id, sim_id, lines){
+	// make sure doesn't already exist
+	try{
+	  const [ret] = await promisePool.query("SELECT file_index FROM big_files WHERE file_type = ? AND file_sim = ?", [FILE_PATHS, sim_id]);
+	  if(ret.length != 0)
+		return;
+	}catch(e){
+	  return;
+	}
+
+	// 0 numberOfPeriods
+	// 1 time
+	// 2 maxStartID
+	// 3 startCount
+	// 4 endCount/maxEndID
+	// 5 edgeCount
+	// 6 maxEdgeID
+
+	// period index
+	// number of trees per proportion thing?
+	// number of "trees" in this section
+
+	// number of trees in proportion? (always 1? matches with)
+	// proportion
+	// index of section
+
+	const initArgs = ReadLineArgs(lines[1].trim());
+	const periodC = parseInt(initArgs[0]);
+	const startC = parseInt(initArgs[3]);
+	const endC = parseInt(initArgs[4]);
+	const edgeC = parseInt(initArgs[5]);
+
+	const entriesPerTree = startC + edgeC;
+	const linesPerEntry = Math.floor((endC + 14) / 15);
+	const linesPerTree = entriesPerTree * linesPerEntry + 1;
+	const bytesPerTree = 1 + 4 + 1 + ((endC + 1) * entriesPerTree) * 2;
+
+	// size of base line
+	let varSize = (2 + 4 + 2 + 2 + 2 + 2 + 2);
+	let curLine = 2;
+	for(let i = 0; i < periodC; i++){
+		const args = ReadLineArgs(lines[curLine].trim());
+		const treeC = parseInt(args[2]);
+		// size of period info + size of trees
+		varSize += (2 + 1 + 1) + bytesPerTree * treeC;
+		curLine += linesPerTree * treeC + 1;
+	}
+
+	let off = 0;
+	let buf = Buffer.allocUnsafe(varSize);
+	off = CopyToBufShorts(initArgs, 0, 1, buf, off);
+	off = CopyToBufInts(initArgs, 1, 1, buf, off);
+	off = CopyToBufShorts(initArgs, 2, 5, buf, off);
+
+	curLine = 2;
+	for(let i = 0; i < periodC; i++){
+		const periodArgs = ReadLineArgs(lines[curLine].trim());
+		const periodIndx = parseInt(periodArgs[0]);
+		const treeC = parseInt(periodArgs[2]);
+
+		if(periodIndx != i + 1){
+			console.log("Bad file13: period " + periodIndx + " != " + (i + 1));
+			throw "bad file13: period indx";
+		}
+
+		off = buf.writeInt16LE(periodIndx, off);
+		off = buf.writeInt8(parseInt(periodArgs[1]), off);
+		off = buf.writeInt8(treeC, off);
+		curLine++;
+
+		for(let ii = 0; ii < treeC; ii++){
+			const treeArgs = ReadLineArgs(lines[curLine].trim());
+			off = buf.writeInt8(parseInt(treeArgs[0]), off);
+			off = buf.writeFloatLE(parseFloat(treeArgs[1]), off);
+			off = buf.writeInt8(parseInt(treeArgs[2]), off);
+			curLine++;
+
+			for(let Q = 0; Q < entriesPerTree; Q++){
+				for(let QQ = 0; QQ < linesPerEntry; QQ++){
+					const entryArgs = ReadLineArgs(lines[curLine].trim());
+					off = CopyToBufShorts(entryArgs, 0, entryArgs.length, buf, off);
+					curLine++;
+				}
+			}
+		}
+	}
+
+	const query = "INSERT INTO big_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
+	await promisePool.query(query, [FILE_PATHS, buf, user_id, sim_id]);
+}
+
+
 /*
  * Takes a file as a string, determines which file it
  *   is, then reads it according to this conclusion and
@@ -777,7 +1340,7 @@ async function ReadFile(user_id, sim_id, str){
 		const lines = str.split(/\r?\n/); // end of line, but can work with only \n
 
 		if(lines[1] === " Total Statistics: ")
-			await WriteFile_summary(user_id, sim_id, lines);
+			return await WriteFile_summary(user_id, sim_id, lines);
 
 		const argC = lines[1].trim().split(/\s+/).length;
 		if(argC == 3){
@@ -786,7 +1349,13 @@ async function ReadFile(user_id, sim_id, str){
 			  await WriteFile_Input3(user_id, sim_id, lines);
 			else
 			  await WriteFile_Input1(user_id, sim_id, lines);
-		}
+			return
+		}else if(argC == 6)
+		  return await WriteFile_Input2(user_id, sim_id, lines);
+		else if(argC == 7)
+		  return await WriteFile_MinTree(user_id, sim_id, lines);
+		else if(lines[1].length == 312 || lines[1].length == 269)
+		  return await WriteFile_AvgConditions(user_id, sim_id, lines);
 
 		/*const args = lines[1].split(/\s+/);
 		const argC = args.length - 1; // any number of spaces; -1 because lines start with a space

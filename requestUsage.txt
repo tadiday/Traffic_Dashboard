@@ -64,6 +64,226 @@
 
 
 
+[/api/file-edges?sim=0]
+
+  query "sim" = simulation ID to access
+
+  Returns file2's info for the specified simulation. If the 
+    request is made without login, the file will still be
+    accessible (for testing)
+
+  This is the format of what is returned:
+    {
+        "count": 68,
+        "lengthScale": 1,
+        "freeSpeedScale": 1,
+        "flowRateScale": 1,
+        "capSpeedScale": 1,
+        "jamScale": 1,
+        "edges": [
+            {
+                "id": 1,
+                "start": 11,
+                "end": 1,
+                "length": 0.25,
+                "freeSpeed": 80,
+                "satFlowRate": 2000,
+                "numOfLanes": 1,
+                "speedVar": 0,
+                "capSpeed": 64,
+                "jamDensity": 150,
+                "prohIndc": 0,
+                "enableTime": 0,
+                "disableTime": 0,
+                "oppose1": 0,
+                "oppose2": 0,
+                "signal": 0,
+                "phase1": 0,
+                "phase2": 0,
+                "vehProhIndc": 0,
+                "survLevel": 11111,
+                "tag": ""
+            },
+	    ...,
+	    ...
+        ]
+    }
+
+
+
+
+[/api/file-signals?sim=0]
+
+  query "sim" = simulation ID to access
+
+  Returns file3's info for the specified simulation. If the 
+    request is made without login, the file will still be
+    accessible (for testing)
+
+  The documentation for this file is scuffed and it probably
+    wont work
+
+  This is the format of what is returned:
+    {
+        "planCount": 1,
+        "planTime": 3600,
+        "planNumber": 1,
+        "signals": [
+            {
+                "signalNum": 1,
+                "baseTime": 60,
+                "minTime": 30,
+                "maxTime": 70,
+                "signalOff": 0,
+                "splitFreq": 0,
+                "phases": [
+                    [
+                        26,
+                        4
+                    ],
+                    [
+                        26,
+                        4
+                    ]
+                ]
+            },
+	    ...,
+            ...
+        }
+    }
+
+
+
+
+[/api/file-avgconds?sim=0]
+
+  query "sim" = simulation ID to access
+
+  Returns file11's info for the specified simulation. If the 
+    request is made without login, the file will still be
+    accessible (for testing)
+
+  This is the format of what is returned:
+    {
+        "time": 4600,
+        "flow": [
+            [
+                {
+                    "leftTurn": 0,
+                    "through": 117,
+                    "rightTurn": 0,
+                    "total": 117
+                },
+		... (x4)
+           ]
+       ],
+        "conditions": [
+            {
+                "length": 0.25,
+                "baseCapacity": 2000,
+                "totalFlow": 117,
+                "flow": [
+                    117,
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "freeSpeedTime": 11.25,
+                "totalAverageTime": 12.616999626159668,
+                "averageTime": [
+                    12.616999626159668,
+                    11.25,
+                    11.25,
+                    11.25,
+                    11.25
+                ],
+                "averageToll": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "averageVehicles": 0.41200000047683716,
+                "averageQueue": 0.05299999937415123,
+                "averageStops": 0.0020000000949949026,
+                "fuel": 2.9140000343322754,
+                "HC": 0,
+                "CO": 0,
+                "NO": 0,
+                "CO2": 6788.93994140625,
+                "PM": 0,
+                "expectedCrashes": 61.29800033569336,
+                "expectedTopInjurt": 29.29199981689453,
+                "fatelCrashes": 0.2619999945163727,
+                "crashLowDamage": 3.2950000762939453,
+                "crashMedDamage": 27.183000564575195,
+                "crashHighDamage": 18.386999130249023
+            },
+            ...
+        ]
+    }
+
+
+    The 2 main arrays represent edges where each index
+    in the array represents an edge where edgeID = index - 1
+		
+
+
+
+[/api/file-paths?sim=0]
+
+  query "sim" = simulation ID to access
+
+  Returns file13's info for the specified simulation. If the 
+    request is made without login, the file will still be
+    accessible (for testing)
+
+
+  This is the format of what is returned:
+    {
+        "periodCount": 8,
+        "time": 600,
+        "maxOriginID": 10,
+        "originCount": 10,
+        "maxDestID": 10,
+        "edgeCount": 68,
+        "maxEdgeID": 80,
+        "periods": [
+            {
+                "index": 1,
+                "treeCount": 5,
+                "paths": [
+                    {
+                        "treeVal1": 1,
+                        "proportion": 0.20000000298023224,
+                        "index": 1,
+                        "origins": [
+                            [
+				...(*maxDestID)
+                            ],
+                            ...(*originCount?),
+                        ],
+			"edges": [
+                            [
+				...,
+				...(*maxDestID)
+			    ],
+                            ...(*maxEdgeID)
+			]
+                    },
+                    ... (*treeCount)
+                ]
+            },
+            ... (*periodCount)
+        ]
+    }
+
+			 
+
+
+
 [api/get-collections]
   
   Returns an array of the names of all the simulations of the 
