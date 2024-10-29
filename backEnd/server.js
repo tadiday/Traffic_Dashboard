@@ -328,7 +328,7 @@ app.get('/api/file-edges', async (req, res) => await tryGetFile(req, res, FILE_E
 app.get('/api/file-signals', async (req, res) => await tryGetFile(req, res, FILE_SIGNALS));
 
 /*
- * Gets the shortest paths file (output file 13)
+ * Gets the shortest paths file (output file 11)
  */
 app.get('/api/file-avgconds', async (req, res) => await tryGetFile(req, res, FILE_AVGCONDS));
 
@@ -437,6 +437,7 @@ process.on('SIGINT', shutdown);
 // file read and write functions //
 
 const FILE_AVGCONDS = 1;
+const FILE_CONDS = 2;
 const FILE_PATHS = 3;
 const FILE_SUMMARY = 4;
 const FILE_NODES = 7;
@@ -722,6 +723,72 @@ function ReadFile_AvgConditions(buf){
 
 	for(let i = 0; i < countB; i++){
 		const index = buf.readInt16LE(off) - 1;
+		off+=2;
+		out.flow[index] = new Array(5).fill({});
+		for(let ii = 0; ii < 5; ii++){
+			out.flow[index][ii] = {};
+			off = ReadFromBufShorts(out.flow[index][ii], ["leftTurn", "through", "rightTurn", "total"], buf, off);
+		}
+	}
+
+	return out;
+}
+
+
+function ReadFile_Conditions(buf){
+	let out = {};
+
+	let off = 0;
+	out.periodCount = buf.readInt16LE(off + 0);
+	out.time = buf.readInt32LE(off + 2);
+	out.edgeCount = buf.readInt16LE(off + 6);
+	out.edgeMaxID = buf.readInt16LE(off + 8);
+	off += 10;
+
+	out.periods = new Array(out.periodCount);
+	for(let i = 0; i < out.periodCount; i++){
+		let periodObj = {};
+		periodObj.time = buf.readInt32LE(off + 0);
+		periodObj.index = buf.readInt16LE(off + 4);
+		off += 6;
+
+		periodObj.edges = Array(out.edgeMaxID + 1).fill({});
+		for(let ii = 0; ii < out.edgeCount; ii++){
+
+		}
+
+	}
+
+	const edgeCount = buf.readInt16LE(off + 4);
+	out.flow = Array(edgeCount + 1).fill([]);
+	out.conditions = Array(edgeCount + 1).fill({});
+
+	// 5s6fsssssss7ffffffffffff6fffAffffff9ffffff
+	// 5s7s5sss7s5sss7s5sss7s5sss7s5sss
+
+	const countA = buf.readInt16LE(off + 6);
+	off += 8;
+
+	for(let i = 0; i < countA; i++){
+		let obj = {};
+		const index = buf.readInt16LE(off);
+		obj.length = buf.readFloatLE(off + 2);
+		off = ReadFromBufShorts(obj, ["baseCapacity", "totalFlow"], buf, off + 6);
+		[off, obj["flow"]] = ReadFromBufShortArray(buf, 5, off);
+		off = ReadFromBufFloats(obj, ["freeSpeedTime", "totalAverageTime"],  buf, off);
+		[off, obj["averageTime"]] = ReadFromBufFloatArray(buf, 5, off);
+		[off, obj["averageToll"]] = ReadFromBufFloatArray(buf, 5, off);
+		off = ReadFromBufFloats(obj, ["averageVehicles", "averageQueue", "averageStops"],  buf, off);
+		off = ReadFromBufFloats(obj, ["fuel", "HC", "CO", "NO", "CO2", "PM"],  buf, off);
+		off = ReadFromBufFloats(obj, ["expectedCrashes", "expectedTopInjurt", "fatelCrashes", "crashLowDamage", "crashMedDamage", "crashHighDamage"],  buf, off);
+		out.conditions[index] = obj;
+	}
+
+	const countB = buf.readInt16LE(off);
+	off += 2;
+
+	for(let i = 0; i < countB; i++){
+		const index = buf.readInt16LE(off);
 		off+=2;
 		out.flow[index] = new Array(5).fill({});
 		for(let ii = 0; ii < 5; ii++){
@@ -1224,6 +1291,48 @@ async function WriteFile_AvgConditions(user_id, sim_id, lines){
 	pool.query(query, [FILE_AVGCONDS, buf, user_id, sim_id]);
 }
 
+async function WriteFile_Conditions(user_id, sim_id, lines){
+
+	try{
+		const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [FILE_CONDS, sim_id]);
+		if(ret.length != 0)
+			return;
+	}catch(e){
+		return;
+	}
+
+	let initArgs = ReadLineArgs(lines[1].trim());
+	const periodC = parseInt(initArgs[0]);
+	const edgeC = parseInt(initArgs[2]);
+
+	const format = "8s9f8sssssss9fffffffCffffffffKffGffffffCfffffffCffffff"; //9
+
+	const formatSize = GetLineFormatSize(format);
+	const periodSize = formatSize * edgeC + 4 + 2;
+	const totalSize = 2 + 4 + 2 + 2 + periodSize * periodC;
+
+	let off = 0;
+	let buf = Buffer.allocUnsafe(totalSize);
+
+	off = buf.writeInt16LE(parseInt(initArgs[0])); // period count
+	off = buf.writeInt32LE(parseInt(initArgs[1]), off); // sim time
+	off = buf.writeInt16LE(parseInt(initArgs[2]), off); // edge count
+	off = buf.writeInt16LE(parseInt(initArgs[3]), off); // max edge ID
+
+	let curLine = 2;
+	for(let i = 0; i < periodC; i++){
+		const lineArgs = ReadLineArgs(lines[curLine].trim());
+		off = buf.writeInt32LE(parseInt(lineArgs[0]));
+		off = buf.writeInt16LE(parseInt(lineArgs[1]));
+		for(let ii = 0; ii < edgeC; ii++)
+			off = CopyToBufLine(lines[curLine + 1 + ii], buf, off, format);
+		curLine += edgeC + 1;
+	}
+
+	const query = "INSERT INTO text_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
+	pool.query(query, [FILE_CONDS, buf, user_id, sim_id]);
+}
+
 
 /*
  * Reads the min path file from an array of lines and
@@ -1412,6 +1521,7 @@ function FileNumToFileType(fileNum){
 
   }
 }
+
 
 
 
