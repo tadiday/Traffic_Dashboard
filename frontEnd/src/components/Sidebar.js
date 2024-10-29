@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 import './Sidebar.css';
 
 function Sidebar(props) {
@@ -28,6 +28,13 @@ function Sidebar(props) {
       }
     }
   };
+
+  useEffect(() => {
+    if (props.items.length > 0) {
+      toggleCollection(props.items[0]); // Toggle the first item on initial render
+    }
+    // eslint-disable-next-line
+  }, [props.items]);
 
   return (
     <div className="sidebar">
