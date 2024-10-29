@@ -2,7 +2,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Chart } from '@antv/g2';
 //import G6 from '@antv/g6';
-import { Graph, Legend } from '@antv/g6';
+import { Graph } from '@antv/g6';
 //import * as G6 from '@antv/g6';
 
 
@@ -170,7 +170,6 @@ function Charts() {
                     },
                    
                 },
-                behaviors: ['drag-canvas',],
                 
             });
 
@@ -200,8 +199,10 @@ function Charts() {
             if (chart2) chart2.destroy();
             if (chart3) chart3.destroy();
             if (chart4) chart4.destroy();
-            if (chart5) chart5.destroy();
-            
+            // if (chart5) {
+            //     chart5.destroy();
+            //     chart5 = null;
+            // } 
         };
     }, [chartRef1,chartRef2,chartRef3,chartRef4,nodeGraphRef]);
 
