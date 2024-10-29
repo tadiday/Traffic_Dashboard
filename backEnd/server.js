@@ -350,7 +350,7 @@ function IsValidUserInfo(str){
 	const A1 = "Z".charCodeAt(0);
 	for(let i = 0; i < len; i++){
 		const c = str.charCodeAt(i);
-		if(!(c == " " || (c >= n0 && c <= n1) || (c >= a0 && c <= a1) || (c >= A0 && c <= A1)))
+		if(!(c == " ".charCodeAt(0) || (c >= n0 && c <= n1) || (c >= a0 && c <= a1) || (c >= A0 && c <= A1)))
 			return 0;
 	}
 	return 1;
@@ -1068,6 +1068,7 @@ async function WriteFile_Input1(user_id, sim_id, lines){
 	}
 
 	const initArgs = ReadLineArgs(lines[1]);
+	// console.log(" Node Coordinate file params: "lines[0] +"\n"+lines[1] + " " + initArgs[0]);
 	const nodeC = parseInt(initArgs[0]);
 	const xScale = parseFloat(initArgs[1]);
 	const yScale = parseFloat(initArgs[2]);
@@ -1447,7 +1448,7 @@ async function ReadFile(user_id, sim_id, str){
 	try{
 
 		const lines = str.split(/\r?\n/); // end of line, but can work with only \n
-
+		//console.log(lines[0]);
 		if(lines[1] === " Total Statistics: ")
 			return await WriteFile_summary(user_id, sim_id, lines);
 
@@ -1456,7 +1457,7 @@ async function ReadFile(user_id, sim_id, str){
 			// can either be input file 1 or 3
 			if(lines[2].trim().split(/\s+/).length == 1)
 			  await WriteFile_Input3(user_id, sim_id, lines);
-			else
+			else if(lines[0].includes("Node Coordinate File"))
 			  await WriteFile_Input1(user_id, sim_id, lines);
 			return
 		}else if(argC == 6)
