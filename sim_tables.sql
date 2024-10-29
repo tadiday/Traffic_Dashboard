@@ -24,7 +24,18 @@ CREATE TABLE IF NOT EXISTS simulations (
 CREATE TABLE IF NOT EXISTS text_files (
 	file_index INT AUTO_INCREMENT UNIQUE,
 	file_type INT,
-	file_content BLOB(1152),
+	file_content BLOB,
+    file_owner INT,
+    file_sim INT,
+    FOREIGN KEY (file_sim) REFERENCES simulations(sim_id),
+	FOREIGN KEY (file_owner) REFERENCES users(user_id),
+    UNIQUE (file_sim, file_type)
+);
+
+CREATE TABLE IF NOT EXISTS big_files (
+	file_index INT AUTO_INCREMENT UNIQUE,
+	file_type INT,
+	file_content MEDIUMBLOB,
     file_owner INT,
     file_sim INT,
     FOREIGN KEY (file_sim) REFERENCES simulations(sim_id),
