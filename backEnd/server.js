@@ -285,7 +285,16 @@ async function tryGetFile(req, res, fileType, isBig){
 
 
 	try {
-		const sim_id = parseInt(req.query.sim); // to throw exception
+		const sim_name = req.query.sim; // to throw exception
+		// the sim_id based on the sim_name
+		let id_query = "SELECT sim_id FROM simulations WHERE sim_name = ?";
+		const [[sim_id_json]] = await promisePool.query(id_query, [sim_name]);
+
+		if(!sim_id_json)
+			return res.status(500).send("Collection not found");
+
+		const sim_id = sim_id_json.sim_id;
+
 		let query;
 		if(isBig)
 			query = "SELECT file_owner, file_content FROM big_files WHERE file_type = ? AND file_sim = ?";
