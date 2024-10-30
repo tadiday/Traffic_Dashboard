@@ -270,23 +270,18 @@ async function tryGetFile(req, res, fileType, isBig){
 	// get the username
 	try{
 		var username = verifyToken(req);
-
 		// get the user_id
-		try{
-			// get user_id
-			var [[{user_id}]] = await promisePool.query("SELECT user_id FROM users WHERE username = ?", [username]);
-		}catch(err){
-			return res.status(500).send("No such user");
-		}
+		var user_id = username.user_id;
 	} catch(exception) {
 		var user_id = 1;
-		//return res.status(exception.status).json({ message: exception.message });
+		// Commented for testing TBD
+		return res.status(500).send("Invalid token");
 	}
 
 
 	try {
 		const sim_name = req.query.sim; // to throw exception
-		// the sim_id based on the sim_name
+		// Get the sim_id based on the sim_name
 		let id_query = "SELECT sim_id FROM simulations WHERE sim_name = ?";
 		const [[sim_id_json]] = await promisePool.query(id_query, [sim_name]);
 

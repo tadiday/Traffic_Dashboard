@@ -9,6 +9,7 @@ import { jwtDecode } from 'jwt-decode';  // Make sure this is the correct import
 import Charts from '../components/Charts';
 
 function Main(props) {
+    const [expandedCollection, setExpandedCollection] = useState(null); // Track which collection is expanded
     const [username, setUsername] = useState('');
     const [file, setFile] = useState(null);
     const [collectionName, setCollectionName] = useState('');
@@ -134,10 +135,14 @@ function Main(props) {
                     removeCollection={removeCollection}  // Pass removeCollection instead of removeItem
                     handleFileChange={handleFileChange}
                     handleNameChange={handleNameChange}
+                    expandedCollection={expandedCollection}
+                    setExpandedCollection={setExpandedCollection}
                 />
                 <div className="main-content">
                     <h2>Welcome, {username}!</h2>
-                    <Charts />
+                    <Charts 
+                        expandedCollection={expandedCollection}
+                    />
                 </div>
             </div>
         </div>

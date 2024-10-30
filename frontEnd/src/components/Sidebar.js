@@ -2,18 +2,17 @@ import React, { useState, useEffect} from 'react';
 import './Sidebar.css';
 
 function Sidebar(props) {
-  const [expandedCollection, setExpandedCollection] = useState(null); // Track which collection is expanded
   const [files, setFiles] = useState([]); // Store files for the expanded collection
 
   // Handle expanding/collapsing the collection and fetching files
   const toggleCollection = async (collectionName) => {
-    if (expandedCollection === collectionName) {
+    if (props.expandedCollection === collectionName) {
       // If the collection is already expanded, collapse it
-      setExpandedCollection(null);
+      props.setExpandedCollection(null);
       setFiles([]);
     } else {
       // Otherwise, expand the collection and fetch the files
-      setExpandedCollection(collectionName);
+      props.setExpandedCollection(collectionName);
       const token = sessionStorage.getItem('token');
       try {
         const response = await fetch(`${process.env.REACT_APP_API_URL}:3000/api/select-uploads?collection_name=${collectionName}`, {
@@ -55,7 +54,7 @@ function Sidebar(props) {
             </div>
             <button className="remove-btn" onClick={() => props.removeCollection(item)}>X</button>
             {/* Display files if the collection is expanded */}
-            {expandedCollection === item && (
+            {props.expandedCollection === item && (
               <ul className="file-list">
                 {files.length === 0 ? (
                   <li>No files found in this collection</li>

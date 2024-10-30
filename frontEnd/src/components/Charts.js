@@ -4,9 +4,10 @@ import { Chart } from '@antv/g2';
 //import G6 from '@antv/g6';
 import { Graph } from '@antv/g6';
 //import * as G6 from '@antv/g6';
+import axios from 'axios';
 
 
-function Charts() {
+function Charts(props) {
     const chartRef1 = useRef(null);
     const chartRef2 = useRef(null);
     const chartRef3 = useRef(null);
@@ -170,27 +171,42 @@ function Charts() {
                     },
                    
                 },
-                
+                behaviors: ['dragcanvas']
             });
+            
+            const fetchData = async () => {
+                const [nodes, edges] = await getNodeGraphData();
+                console.log(nodes);
+                console.log(edges);
+                if (nodes && edges) {
+                    chart5.addNodeData(nodes);
+                    chart5.addEdgeData(edges);
+                    chart5.render();
+                } else {
+                    console.error('Nodes or edges are not available');
+                }
+            }
+            fetchData();
+            
+            // Default test data
+            // chart5.addNodeData([
+            //     { id: 'node-1', x: 0,y: 0}, 
+            //     { id: 'node-2', x: 100, y: 100}, 
+            //     { id: 'node-3', x: 0, y: 0},
+            //     { id: 'node-4', x: 90, y: -10},
+            //     { id: 'node-5', x: 120, y: 30},
+            //     { id: 'node-6', x: 50, y: -30},
+            //     ])
+            // chart5.addEdgeData([
+            //     { source: 'node-1', target: 'node-2'},
+            //     { source: 'node-1', target: 'node-3'},
+            //     { source: 'node-4', target: 'node-5'},
+            //     { source: 'node-3', target: 'node-6'},
+            //     { source: 'node-2', target: 'node-6'},
+            // ]);
 
-            chart5.addNodeData([
-                { id: 'node-1', x: 0,y: 0}, 
-                { id: 'node-2', x: 100, y: 100}, 
-                { id: 'node-3', x: 0, y: 0},
-                { id: 'node-4', x: 90, y: -10},
-                { id: 'node-5', x: 120, y: 30},
-                { id: 'node-6', x: 50, y: -30},
-                ])
-            chart5.addEdgeData([
-                { source: 'node-1', target: 'node-2'},
-                { source: 'node-1', target: 'node-3'},
-                { source: 'node-4', target: 'node-5'},
-                { source: 'node-3', target: 'node-6'},
-                { source: 'node-2', target: 'node-6'},
-            ]);
 
-
-            chart5.render();
+            // chart5.render();
         }
 
   
@@ -204,7 +220,53 @@ function Charts() {
             //     chart5 = null;
             // } 
         };
-    }, [chartRef1,chartRef2,chartRef3,chartRef4,nodeGraphRef]);
+    }, [chartRef1,chartRef2,chartRef3,chartRef4,nodeGraphRef, props.expandedCollection]);
+
+    const getNodeGraphData = async () => {
+        if(!props.expandedCollection){
+            return [[],[]];
+        }
+
+        var nodes = [];
+        var edges = [];
+
+        const token = sessionStorage.getItem('token');
+        
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-nodes?sim=${props.expandedCollection}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+            //console.log("Fetched Nodes:", response.data); 
+            nodes = response.data.nodes.map(obj => ({
+                id: String(obj.id),
+                x: obj.x,
+                y: obj.y
+              }));;  // Update the nodes
+        } catch (error) {
+            console.error('Error fetching nodes:', error);
+            return [[],[]];
+        }
+
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-edges?sim=${props.expandedCollection}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+            //console.log("Fetched Nodes:", response.data); 
+            edges = response.data.edges.map(obj => ({
+                source: String(obj.start),
+                target: String(obj.end)
+              }));;  // Update the edges
+        } catch (error) {
+            console.error('Error fetching nodes:', error);
+            return [[],[]];
+        }
+
+        return [nodes, edges];
+    };
 
     return (
         <div id="charts">
