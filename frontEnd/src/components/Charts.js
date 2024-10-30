@@ -166,7 +166,7 @@ function Charts(props) {
                         labelText: (d) => d.id,
                         labelBackground: false,
                         icon: true,
-                        iconText: (d) => (d.data?.type === 'Investor' ? '💰' : '🦄️'),
+                        iconText: ('🚦'),
                         fill: (d) => (d.data?.type === 'Investor' ? '#6495ED' : '#FFA07A'),
                     },
                    
