@@ -550,7 +550,7 @@ function ReadFromBufFloatArray(buf, len, off){
 function ReadFile_summary(buf){
 	const SUMMARY_TAGS = [
 		"vehicle trips", "person trips", "vehicle-km", "person-km", "vehicle-stops", "vehicle-secs",
-		"person-secs", "total delay", "stopped delay", "accel/decel delay", "accel-noise", "fuel (l)",
+		"person-secs", "total delay", "stopped delay", "accel/decel delay", "accel-noise", "fuel (l)", "Energy (KWh)",
 		"HC (g)", "CO (g)", "NOx (g)", "CO2 (g)", "PM (g)", "crashes*10e-6",
 		"injury crashes", "fatal crashes", "no damage", "minor damage", "moderate damage", "dollars of toll"
 	];
