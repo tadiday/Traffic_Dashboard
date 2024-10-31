@@ -171,8 +171,9 @@ function Charts(props) {
                 //console.log("Fetched Nodes:", response.data); 
                 nodes = response.data.nodes.map(obj => ({
                     id: String(obj.id),
-                    x: obj.x,
-                    y: obj.y
+                    x: obj.x * 300,
+                    y: obj.y * 300,
+                    label: String(obj.id)
                 }));;  // Update the nodes
             } catch (error) {
                 console.error('Error fetching nodes:', error);
@@ -205,43 +206,67 @@ function Charts(props) {
                     container: nodeGraphRef.current,
                     width: 1000,
                     height: 1000,
+                    
+                    // layout: {
+                    //     type: 'dagre',
+                    //     rankdir: 'LR', // Direction of the layout: TB (top-bottom), LR (left-right)
+                    // },
+                    // edge: {
+                    //     style: {
+                    //         endArrow: true
+                    //     },
+                    // },
+                    // node: {
+                    //     style: {
+                    //         icon: true,
+                    //         iconText: (d) => d.id,
+                    //         fill: '#FFA07A',
+                    //     },
+                    
+                    // },
+                    // behaviors: ['drag-canvas',],
 
-                    layout: {
-                        type: 'dagre',
-                        rankdir: 'LR', // Direction of the layout: TB (top-bottom), LR (left-right)
+                    modes: {
+                        default: ['drag-canvas', 'drag-node'],
                     },
-                    edge: {
-                        style: {
-                            endArrow: true
-                        },
-                    },
-                    node: {
+                    defaultNode: {
+                        type: 'circle',
+                        size: [50],
+                        color: '#5B8FF9',
                         style: {
                             icon: true,
                             iconText: (d) => d.id,
                             fill: '#FFA07A',
                         },
-                    
+                        labelCfg: {
+                            style: {
+                                fill: '#FFFFFF', // Label color
+                                fontSize: 16,    // Label font size
+                            },
+                        },
                     },
-                    behaviors: ['drag-canvas',],
+                    defaultEdge: {
+                        style: {
+                            endArrow: true,
+                        },
+                    },
                 });
 
                 // Get node and edge data from an API endpoint
                 const data = await getNodeGraphData();
 
-                // // Add the edges and render the graph
+                // Add the edges and render the graph
                 try {  
                     if(chart && data){
                         console.log(data.nodes);
                         console.log(data.edges);
-                        chart.addData(data);
+                        chart.data(data);
+                        // Create the graph data structure
+                        chart.render();
                     };
                 } catch {
                     console.log("Error adding data");
                 }
-                
-                // Create the graph data structure
-                chart.render();
             }
 
         }

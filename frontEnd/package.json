@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@antv/g2": "^5.2.6",
-    "@antv/g6": "^5.0.27",
+    "@antv/g6": "^4.3.11",
     "@babel/core": "^7.16.0",
     "@berryv/g2-react": "^0.1.0",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.3",
