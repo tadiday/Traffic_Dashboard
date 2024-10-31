@@ -76,11 +76,11 @@ function Charts(props) {
                 defaultNode: {
                     type: 'circle',
                     size: [50],
-                    color: '#5B8FF9',
+                    color: '#660000',
                     style: {
                         icon: true,
                         iconText: (d) => d.id,
-                        fill: '#FFA07A',
+                        fill: '#660000',
                     },
                     labelCfg: {
                         style: {
@@ -90,6 +90,7 @@ function Charts(props) {
                     },
                 },
                 defaultEdge: {
+                    color: '#FFA07A',
                     style: {
                         endArrow: true,
                     },
@@ -296,7 +297,7 @@ function Charts(props) {
 
     useEffect(() => {
         // For now render the node graph
-        bar();
+        node();
   
         return () => {
             if (chart) {
