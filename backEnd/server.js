@@ -275,7 +275,7 @@ async function tryGetFile(req, res, fileType, isBig){
 	} catch(exception) {
 		var user_id = 1;
 		// Commented for testing TBD
-		return res.status(500).send("Invalid token");
+		//return res.status(500).send("Invalid token");
 	}
 
 

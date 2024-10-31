@@ -12,7 +12,7 @@ function Charts(props) {
     
     var chart;
     const graphWidth = 1000;
-    const graphHeight = 1000;
+    const graphHeight = 600;
 
     // Node graph Creation functions
     const getNodeGraphData = async () => {
@@ -134,12 +134,34 @@ function Charts(props) {
                 console.log("Error adding data");
             }
         }
-
     }
 
     // Render the bar chart
     // eslint-disable-next-line
-    const bar = () => {
+    const bar = async () => {
+        if(!props.expandedCollection){
+            return null;
+        }
+        let dataTypes = ["injury crashes", "fatal crashes", "moderate damage", "minor damage", "no damage"];
+        var data = [];
+        // Get data from the API endpoint
+        const token = sessionStorage.getItem('token');
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-summary?sim=${props.expandedCollection}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+
+            dataTypes.forEach((type) => {
+                data.push({ Damage: type, Vehicles: response.data.total[type][5] });
+            });
+            console.log(data);
+        } catch (error) {
+            console.error('Error fetching bar info:', error);
+            return null;
+        }
+
         if (nodeGraphRef.current) {
             chart = new Chart({
                 container: nodeGraphRef.current,
@@ -150,16 +172,10 @@ function Charts(props) {
 
             chart
                 .interval()
-                .data([
-                    { genre: 'Sports', sold: 275 },
-                    { genre: 'Strategy', sold: 115 },
-                    { genre: 'Action', sold: 120 },
-                    { genre: 'Shooter', sold: 350 },
-                    { genre: 'Other', sold: 150 },
-                ])
-                .encode('x', 'genre')
-                .encode('y', 'sold')
-                .encode('color', 'genre');
+                .data(data)
+                .encode('x', 'Damage')
+                .encode('y', 'Vehicles')
+                .encode('color', 'Damage');
 
             chart.render();
         }    
@@ -280,7 +296,7 @@ function Charts(props) {
 
     useEffect(() => {
         // For now render the node graph
-        node();
+        bar();
   
         return () => {
             if (chart) {
@@ -292,8 +308,7 @@ function Charts(props) {
     
 
     return (
-        <div id="charts" ref={nodeGraphRef}>
-        </div>
+        <div id="charts" ref={nodeGraphRef} style={{ width: 1000, height: 1000 }}></div>
     );
 }
 
