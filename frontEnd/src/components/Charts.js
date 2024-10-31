@@ -296,17 +296,18 @@ function Charts(props) {
     }
 
     useEffect(() => {
-        // For now render the node graph
-        node();
-  
+        if (props.selectedGraph === 'node') {
+            node();
+        } else if (props.selectedGraph === 'bar') {
+            bar();
+        }
+
         return () => {
             if (chart) {
                 chart.destroy();
             } 
         };
-    }, [nodeGraphRef, props.expandedCollection]);
-
-    
+    }, [nodeGraphRef, props.expandedCollection, props.selectedGraph]);
 
     return (
         <div id="charts" ref={nodeGraphRef} style={{ width: 1000, height: 1000 }}></div>

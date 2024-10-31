@@ -7,13 +7,15 @@ import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { jwtDecode } from 'jwt-decode';  // Make sure this is the correct import
 import Charts from '../components/Charts';
+import RightSidebar from '../components/RightSidebar'; // Import RightSidebar
 
 function Main(props) {
-    const [expandedCollection, setExpandedCollection] = useState(null); // Track which collection is expanded
+    const [expandedCollection, setExpandedCollection] = useState(null);
     const [username, setUsername] = useState('');
     const [file, setFile] = useState(null);
     const [collectionName, setCollectionName] = useState('');
     const [items, setItems] = useState([]);
+    const [selectedGraph, setSelectedGraph] = useState('node'); // Add selectedGraph state
     const navigate = useNavigate();
     
     // Get items and username
@@ -132,7 +134,7 @@ function Main(props) {
                     collectionName={collectionName} 
                     handleUpload={upload} 
                     items={items} 
-                    removeCollection={removeCollection}  // Pass removeCollection instead of removeItem
+                    removeCollection={removeCollection}
                     handleFileChange={handleFileChange}
                     handleNameChange={handleNameChange}
                     expandedCollection={expandedCollection}
@@ -142,8 +144,10 @@ function Main(props) {
                     <h2>Welcome, {username}!</h2>
                     <Charts 
                         expandedCollection={expandedCollection}
+                        selectedGraph={selectedGraph} // Pass selectedGraph to Charts
                     />
                 </div>
+                <RightSidebar setSelectedGraph={setSelectedGraph} /> {/* Add RightSidebar */}
             </div>
         </div>
     );

@@ -1,0 +1,31 @@
+/* frontEnd/src/components/RightSidebar.css */
+.right-sidebar {
+  width: 250px;
+  background-color: #fff;
+  border-left: 1px solid #ddd;
+  padding: 20px;
+  box-sizing: border-box;
+  height: calc(100vh - 50px); /* Adjust based on navbar height */
+  overflow-y: auto;
+}
+
+.right-sidebar h3 {
+  color: #660000;
+  margin-bottom: 10px;
+}
+
+.right-sidebar button {
+  width: 100%;
+  background-color: #660000;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.right-sidebar button:hover {
+  background-color: #8b0000;
+}
