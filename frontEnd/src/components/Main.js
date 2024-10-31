@@ -147,7 +147,10 @@ function Main(props) {
                         selectedGraph={selectedGraph} // Pass selectedGraph to Charts
                     />
                 </div>
-                <RightSidebar setSelectedGraph={setSelectedGraph} /> {/* Add RightSidebar */}
+                <RightSidebar 
+                    setSelectedGraph={setSelectedGraph}
+                    expandedCollection={expandedCollection} 
+                /> {/* Add RightSidebar */}
             </div>
         </div>
     );

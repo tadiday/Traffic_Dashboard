@@ -169,6 +169,7 @@ function Charts(props) {
                 autoFit: true,
                 height: graphHeight,
                 width: graphWidth,
+                title: "Total Vehicle Damage",
             });
 
             chart
