@@ -13,7 +13,9 @@ function Charts(props) {
 
     useEffect(() => {
         let chart;
-        
+        const graphWidth = 1000;
+        const graphHeight = 1000;
+
         // Render the bar chart
         // eslint-disable-next-line
         const bar = () => {
@@ -21,8 +23,8 @@ function Charts(props) {
                 chart = new Chart({
                     container: nodeGraphRef.current,
                     autoFit: true,
-                    height: 450,
-                    width: 450,
+                    height: graphHeight,
+                    width: graphWidth,
                 });
     
                 chart
@@ -48,8 +50,8 @@ function Charts(props) {
             if (nodeGraphRef.current) {
                 chart = new Chart({
                     container: nodeGraphRef.current,
-                    width: 500,
-                    height: 500,
+                    width: graphWidth,
+                    height: graphHeight,
                 });
 
                 chart.coordinate({ type: 'polar', outerRadius: 0.85 });
@@ -89,6 +91,8 @@ function Charts(props) {
                     container: nodeGraphRef.current,
                     autoFit: true,
                     insetRight: 10,
+                    width: graphWidth,
+                    height: graphHeight,
                 });
 
                 chart
@@ -121,6 +125,8 @@ function Charts(props) {
                 chart = new Chart({
                     container: nodeGraphRef.current,
                     autoFit: true,
+                    width: graphWidth,
+                    height: graphHeight,
                 });
     
                 chart
@@ -171,8 +177,8 @@ function Charts(props) {
                 //console.log("Fetched Nodes:", response.data); 
                 nodes = response.data.nodes.map(obj => ({
                     id: String(obj.id),
-                    x: obj.x * 300,
-                    y: obj.y * 300,
+                    x: obj.x,
+                    y: obj.y,
                     label: String(obj.id)
                 }));;  // Update the nodes
             } catch (error) {
@@ -204,30 +210,11 @@ function Charts(props) {
             if(nodeGraphRef.current){
                 chart = new Graph({
                     container: nodeGraphRef.current,
-                    width: 1000,
-                    height: 1000,
-                    
-                    // layout: {
-                    //     type: 'dagre',
-                    //     rankdir: 'LR', // Direction of the layout: TB (top-bottom), LR (left-right)
-                    // },
-                    // edge: {
-                    //     style: {
-                    //         endArrow: true
-                    //     },
-                    // },
-                    // node: {
-                    //     style: {
-                    //         icon: true,
-                    //         iconText: (d) => d.id,
-                    //         fill: '#FFA07A',
-                    //     },
-                    
-                    // },
-                    // behaviors: ['drag-canvas',],
+                    width: graphWidth,
+                    height: graphHeight,
 
                     modes: {
-                        default: ['drag-canvas', 'drag-node'],
+                        default: ['drag-canvas', 'drag-node', 'zoom-canvas'],
                     },
                     defaultNode: {
                         type: 'circle',
@@ -255,11 +242,33 @@ function Charts(props) {
                 // Get node and edge data from an API endpoint
                 const data = await getNodeGraphData();
 
-                // Add the edges and render the graph
+                // Add and scale the nodes and render the graph
                 try {  
                     if(chart && data){
                         console.log(data.nodes);
                         console.log(data.edges);
+                        // Calculate the bounding box of the nodes
+                        const minX = Math.min(...data.nodes.map(node => node.x));
+                        const maxX = Math.max(...data.nodes.map(node => node.x));
+                        const minY = Math.min(...data.nodes.map(node => node.y));
+                        const maxY = Math.max(...data.nodes.map(node => node.y));
+                        const paddingPercent = 10;
+                        // Calculate scaling factors with padding of %
+                        const scaleX = (graphWidth - graphWidth/paddingPercent) / (maxX - minX);
+                        const scaleY = (graphHeight - graphHeight/paddingPercent) / (maxY - minY);
+
+                        // Choose the smaller scale to maintain aspect ratio
+                        const scale = Math.min(scaleX, scaleY);
+
+                        // Apply scaling and translation to center the graph
+                        const scaledNodes = data.nodes.map(node => ({
+                            ...node,
+                            // Add the % padding
+                            x: (node.x - minX) * scale + (graphWidth/paddingPercent)/2,
+                            y: (node.y - minY) * scale + (graphHeight/paddingPercent)/2,
+                        }));
+                        data.nodes = scaledNodes;
+                        
                         chart.data(data);
                         // Create the graph data structure
                         chart.render();
