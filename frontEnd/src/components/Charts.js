@@ -1,301 +1,270 @@
 // @ts-check
 import React, { useRef, useEffect } from 'react';
 import { Chart } from '@antv/g2';
-//import G6 from '@antv/g6';
+// import G6 from '@antv/g6';
 import { Graph } from '@antv/g6';
 //import * as G6 from '@antv/g6';
 import axios from 'axios';
 
 
 function Charts(props) {
-    const chartRef1 = useRef(null);
-    const chartRef2 = useRef(null);
-    const chartRef3 = useRef(null);
-    const chartRef4 = useRef(null);
     const nodeGraphRef = useRef(null);
+    
 
     useEffect(() => {
-        let chart1, chart2, chart3, chart4, chart5;
-
-        //-------------------------------------------------------------------bar------------------------------------------------------------------------
-        if (chartRef1.current) {
-            chart1 = new Chart({
-                container: chartRef1.current,
-                autoFit: true,
-                height: 450,
-                width: 450,
-            });
-
-            chart1
-                .interval()
-                .data([
-                    { genre: 'Sports', sold: 275 },
-                    { genre: 'Strategy', sold: 115 },
-                    { genre: 'Action', sold: 120 },
-                    { genre: 'Shooter', sold: 350 },
-                    { genre: 'Other', sold: 150 },
-                ])
-                .encode('x', 'genre')
-                .encode('y', 'sold')
-                .encode('color', 'genre');
-
-            chart1.render();
+        let chart;
+        
+        // Render the bar chart
+        // eslint-disable-next-line
+        const bar = () => {
+            if (nodeGraphRef.current) {
+                chart = new Chart({
+                    container: nodeGraphRef.current,
+                    autoFit: true,
+                    height: 450,
+                    width: 450,
+                });
+    
+                chart
+                    .interval()
+                    .data([
+                        { genre: 'Sports', sold: 275 },
+                        { genre: 'Strategy', sold: 115 },
+                        { genre: 'Action', sold: 120 },
+                        { genre: 'Shooter', sold: 350 },
+                        { genre: 'Other', sold: 150 },
+                    ])
+                    .encode('x', 'genre')
+                    .encode('y', 'sold')
+                    .encode('color', 'genre');
+    
+                chart.render();
+            }    
         }
+        
+        // Renders the rose chart
+        // eslint-disable-next-line
+        const rose = () => {    
+            if (nodeGraphRef.current) {
+                chart = new Chart({
+                    container: nodeGraphRef.current,
+                    width: 500,
+                    height: 500,
+                });
 
-        //------------------------------------------------------------------rose----------------------------------------------------------------------
-        if (chartRef2.current) {
-            chart2 = new Chart({
-                container: chartRef2.current,
-                width: 500,
-                height: 500,
-            });
+                chart.coordinate({ type: 'polar', outerRadius: 0.85 });
 
-            chart2.coordinate({ type: 'polar', outerRadius: 0.85 });
+                chart
+                    .interval()
+                    .transform({ type: 'groupX', y: 'sum' })
+                    .data({
+                        type: 'fetch',
+                        value: 'https://gw.alipayobjects.com/os/bmw-prod/87b2ff47-2a33-4509-869c-dae4cdd81163.csv',
+                    })
+                    .encode('x', 'year')
+                    .encode('color', 'year')
+                    .encode('y', 'people')
+                    .scale('y', { type: 'sqrt' })
+                    .scale('x', { padding: 0 })
+                    .axis(false)
+                    .label({
+                        text: 'people',
+                        position: 'outside',
+                        formatter: '~s',
+                        transform: [{ type: 'overlapDodgeY' }],
+                    })
+                    .legend({ color: { length: 400, layout: { justifyContent: 'center' } } })
+                    .animate('enter', { type: 'waveIn' })
+                    .tooltip({ channel: 'y', valueFormatter: '~s' });
 
-            chart2
-                .interval()
-                .transform({ type: 'groupX', y: 'sum' })
-                .data({
-                    type: 'fetch',
-                    value: 'https://gw.alipayobjects.com/os/bmw-prod/87b2ff47-2a33-4509-869c-dae4cdd81163.csv',
-                })
-                .encode('x', 'year')
-                .encode('color', 'year')
-                .encode('y', 'people')
-                .scale('y', { type: 'sqrt' })
-                .scale('x', { padding: 0 })
-                .axis(false)
-                .label({
-                    text: 'people',
-                    position: 'outside',
-                    formatter: '~s',
-                    transform: [{ type: 'overlapDodgeY' }],
-                })
-                .legend({ color: { length: 400, layout: { justifyContent: 'center' } } })
-                .animate('enter', { type: 'waveIn' })
-                .tooltip({ channel: 'y', valueFormatter: '~s' });
-
-            chart2.render();
-        }
-
-        //-------------------------------------------------------------------line---------------------------------------------------------------------
-        if (chartRef3.current) {
-            chart3 = new Chart({
-                container: chartRef3.current,
-                autoFit: true,
-                insetRight: 10,
-            });
-
-            chart3
-                .line()
-                .data({
-                    type: 'fetch',
-                    value: 'https://assets.antv.antgroup.com/g2/indices.json',
-                })
-                .transform({ type: 'normalizeY', basis: 'first', groupBy: 'color' })
-                .encode('x', (d) => new Date(d.Date))
-                .encode('y', 'Close')
-                .encode('color', 'Symbol')
-                .scale('y', { type: 'log' })
-                .axis('y', { title: '↑ Change in price (%)' })
-                .label({
-                    text: 'Symbol',
-                    selector: 'last',
-                    fontSize: 10,
-                })
-                .tooltip({ channel: 'y', valueFormatter: '.1f' });
-
-            chart3.render();
-        }
-
-        //-------------------------------------------------------------------scatter------------------------------------------------------------------
-        if (chartRef4.current) {
-            chart4 = new Chart({
-                container: chartRef4.current,
-                autoFit: true,
-            });
-
-            chart4
-                .point()
-                .data({
-                    type: 'fetch',
-                    value:
-                        'https://gw.alipayobjects.com/os/bmw-prod/56b6b137-e04e-4757-8af5-d75bafaef886.csv',
-                })
-                .encode('x', 'date')
-                .encode('y', 'value')
-                .encode('color', 'value')
-                .encode('shape', 'point')
-                .scale('color', {
-                    palette: 'rdBu',
-                    offset: (t) => 1 - t,
-                })
-                .style('stroke', '#000')
-                .style('strokeOpacity', 0.2)
-                .tooltip([
-                    { channel: 'x', name: 'year', valueFormatter: (d) => d.getFullYear() },
-                    { channel: 'y' },
-                ]);
-
-            chart4.lineY().data([0]).style('stroke', '#000').style('strokeOpacity', 0.2);
-
-            chart4.render();
-        }
-
-//--------------------------------------------------------------------------
-        //-------------------------------------------------------------------------- Node Graph
-        if(nodeGraphRef.current){
-            chart5 = new Graph({
-                container: nodeGraphRef.current,
-                width: 1000,
-                height: 500,
-                //fitCenter: true,
-
-                layout: {
-                    type: 'force',
-                },
-                edge: {
-                    style: {
-                        endArrow: true
-                    },
-                },
-                node: {
-                    type: 'donut',
-                    style: {
-                        label: true,
-                        labelText: (d) => d.id,
-                        labelBackground: false,
-                        icon: true,
-                        iconText: ('🚦'),
-                        fill: (d) => (d.data?.type === 'Investor' ? '#6495ED' : '#FFA07A'),
-                    },
-                   
-                },
-                behaviors: ['dragcanvas']
-            });
-            
-            const fetchData = async () => {
-                const [nodes, edges] = await getNodeGraphData();
-                console.log(nodes);
-                console.log(edges);
-                if (nodes && edges) {
-                    chart5.addNodeData(nodes);
-                    chart5.addEdgeData(edges);
-                    chart5.render();
-                } else {
-                    console.error('Nodes or edges are not available');
-                }
+                chart.render();
             }
-            fetchData();
-            
-            // Default test data
-            // chart5.addNodeData([
-            //     { id: 'node-1', x: 0,y: 0}, 
-            //     { id: 'node-2', x: 100, y: 100}, 
-            //     { id: 'node-3', x: 0, y: 0},
-            //     { id: 'node-4', x: 90, y: -10},
-            //     { id: 'node-5', x: 120, y: 30},
-            //     { id: 'node-6', x: 50, y: -30},
-            //     ])
-            // chart5.addEdgeData([
-            //     { source: 'node-1', target: 'node-2'},
-            //     { source: 'node-1', target: 'node-3'},
-            //     { source: 'node-4', target: 'node-5'},
-            //     { source: 'node-3', target: 'node-6'},
-            //     { source: 'node-2', target: 'node-6'},
-            // ]);
-
-
-            // chart5.render();
         }
 
+        // Renders the line chart
+        // eslint-disable-next-line
+        const line = () => {    
+            if (nodeGraphRef.current) {
+                chart = new Chart({
+                    container: nodeGraphRef.current,
+                    autoFit: true,
+                    insetRight: 10,
+                });
+
+                chart
+                    .line()
+                    .data({
+                        type: 'fetch',
+                        value: 'https://assets.antv.antgroup.com/g2/indices.json',
+                    })
+                    .transform({ type: 'normalizeY', basis: 'first', groupBy: 'color' })
+                    .encode('x', (d) => new Date(d.Date))
+                    .encode('y', 'Close')
+                    .encode('color', 'Symbol')
+                    .scale('y', { type: 'log' })
+                    .axis('y', { title: '↑ Change in price (%)' })
+                    .label({
+                        text: 'Symbol',
+                        selector: 'last',
+                        fontSize: 10,
+                    })
+                    .tooltip({ channel: 'y', valueFormatter: '.1f' });
+
+                chart.render();
+            }
+        }
+
+        // Renders the scatter chart
+        // eslint-disable-next-line
+        const scatter = () => {
+            if (nodeGraphRef.current) {
+                chart = new Chart({
+                    container: nodeGraphRef.current,
+                    autoFit: true,
+                });
+    
+                chart
+                    .point()
+                    .data({
+                        type: 'fetch',
+                        value:
+                            'https://gw.alipayobjects.com/os/bmw-prod/56b6b137-e04e-4757-8af5-d75bafaef886.csv',
+                    })
+                    .encode('x', 'date')
+                    .encode('y', 'value')
+                    .encode('color', 'value')
+                    .encode('shape', 'point')
+                    .scale('color', {
+                        palette: 'rdBu',
+                        offset: (t) => 1 - t,
+                    })
+                    .style('stroke', '#000')
+                    .style('strokeOpacity', 0.2)
+                    .tooltip([
+                        { channel: 'x', name: 'year', valueFormatter: (d) => d.getFullYear() },
+                        { channel: 'y' },
+                    ]);
+    
+                chart.lineY().data([0]).style('stroke', '#000').style('strokeOpacity', 0.2);
+    
+                chart.render();
+            }
+        }
+        
+        // Node graph Creation functions
+        const getNodeGraphData = async () => {
+            if(!props.expandedCollection){
+                return null;
+            }
+
+            var nodes = [];
+            var edges = [];
+
+            const token = sessionStorage.getItem('token');
+            
+            try {
+                const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-nodes?sim=${props.expandedCollection}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    }
+                });
+                //console.log("Fetched Nodes:", response.data); 
+                nodes = response.data.nodes.map(obj => ({
+                    id: String(obj.id),
+                    x: obj.x,
+                    y: obj.y
+                }));;  // Update the nodes
+            } catch (error) {
+                console.error('Error fetching nodes:', error);
+                return null;
+            }
+
+            try {
+                const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-edges?sim=${props.expandedCollection}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    }
+                });
+                //console.log("Fetched Nodes:", response.data); 
+                edges = response.data.edges.map(obj => ({
+                    source: String(obj.start),
+                    target: String(obj.end)
+                }));;  // Update the edges
+            } catch (error) {
+                console.error('Error fetching nodes:', error);
+                return null;
+            }
+
+            return { nodes: nodes, edges: edges,};
+        };
+        
+        // Renders the node graph
+        const node = async () => {
+            if(nodeGraphRef.current){
+                chart = new Graph({
+                    container: nodeGraphRef.current,
+                    width: 1000,
+                    height: 1000,
+
+                    layout: {
+                        type: 'dagre',
+                        rankdir: 'LR', // Direction of the layout: TB (top-bottom), LR (left-right)
+                    },
+                    edge: {
+                        style: {
+                            endArrow: true
+                        },
+                    },
+                    node: {
+                        style: {
+                            icon: true,
+                            iconText: (d) => d.id,
+                            fill: '#FFA07A',
+                        },
+                    
+                    },
+                    behaviors: ['drag-canvas',],
+                });
+
+                // Get node and edge data from an API endpoint
+                const data = await getNodeGraphData();
+
+                // // Add the edges and render the graph
+                try {  
+                    if(chart && data){
+                        console.log(data.nodes);
+                        console.log(data.edges);
+                        chart.addData(data);
+                    };
+                } catch {
+                    console.log("Error adding data");
+                }
+                
+                // Create the graph data structure
+                chart.render();
+            }
+
+        }
+
+        // For now render the node graph
+        node();
   
         return () => {
-            if (chart1) chart1.destroy();
-            if (chart2) chart2.destroy();
-            if (chart3) chart3.destroy();
-            if (chart4) chart4.destroy();
-            // if (chart5) {
-            //     chart5.destroy();
-            //     chart5 = null;
-            // } 
+            if (chart) {
+                chart.destroy();
+            } 
         };
-    }, [chartRef1,chartRef2,chartRef3,chartRef4,nodeGraphRef, props.expandedCollection]);
+    }, [nodeGraphRef, props.expandedCollection]);
 
-    const getNodeGraphData = async () => {
-        if(!props.expandedCollection){
-            return [[],[]];
-        }
-
-        var nodes = [];
-        var edges = [];
-
-        const token = sessionStorage.getItem('token');
-        
-        try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-nodes?sim=${props.expandedCollection}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                }
-            });
-            //console.log("Fetched Nodes:", response.data); 
-            nodes = response.data.nodes.map(obj => ({
-                id: String(obj.id),
-                x: obj.x,
-                y: obj.y
-              }));;  // Update the nodes
-        } catch (error) {
-            console.error('Error fetching nodes:', error);
-            return [[],[]];
-        }
-
-        try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-edges?sim=${props.expandedCollection}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                }
-            });
-            //console.log("Fetched Nodes:", response.data); 
-            edges = response.data.edges.map(obj => ({
-                source: String(obj.start),
-                target: String(obj.end)
-              }));;  // Update the edges
-        } catch (error) {
-            console.error('Error fetching nodes:', error);
-            return [[],[]];
-        }
-
-        return [nodes, edges];
-    };
+    
 
     return (
         <div id="charts">
             <table>
                 <tbody>
-                <tr height="500" width="100%">
+                <tr height="100%" width="100%">
                     <td id="node">
-                        <div ref={nodeGraphRef} style={{ width: '100%', height: '300px' }}></div> 
-                    </td>
-                </tr>
-                <tr height="500" width="1000">
-                    <td>
-                        <div ref={chartRef3} style={{ width: '100%', height: '300px' }}></div>
-                        <button>Line</button>
-                    </td>
-                    <td>
-                        <div ref={chartRef4} style={{ width: '100%', height: '300px' }}></div>
-                        <button>Scatter</button>
-                    </td>
-                </tr>
-                <tr>
-                   
-                    <td>
-                        <div ref={chartRef1} style={{ width: '100%', height: '300px' }}></div>
-                        <button>Bar Chart</button>
-                    </td>
-                    <td>
-                        <div ref={chartRef2} style={{ width: '100%', height: '300px' }}></div>
-                        <button>Rose</button>
+                        <div ref={nodeGraphRef} style={{ width: '100%', height: '100%' }}></div> 
                     </td>
                 </tr>
                 </tbody>
