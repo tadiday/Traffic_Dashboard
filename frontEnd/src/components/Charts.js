@@ -259,16 +259,7 @@ function Charts(props) {
     
 
     return (
-        <div id="charts">
-            <table>
-                <tbody>
-                <tr height="100%" width="100%">
-                    <td id="node">
-                        <div ref={nodeGraphRef} style={{ width: '100%', height: '100%' }}></div> 
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+        <div id="charts" ref={nodeGraphRef}>
         </div>
     );
 }
