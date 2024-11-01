@@ -698,7 +698,7 @@ function ReadFile_AvgConditions(buf){
 	out.time = buf.readInt32LE(off + 0);
 
 	const edgeCount = buf.readInt16LE(off + 4);
-	out.flow = Array(edgeCount).fill([]);
+	out.flow = Array(edgeCount).fill({});
 	out.conditions = Array(edgeCount).fill({});
 
 	// 5s6fsssssss7ffffffffffff6fffAffffff9ffffff
@@ -709,7 +709,8 @@ function ReadFile_AvgConditions(buf){
 
 	for(let i = 0; i < countA; i++){
 		let obj = {};
-		const index = buf.readInt16LE(off) - 1;
+		const index = buf.readInt16LE(off) - 1;		
+		obj.edgeID = index+1;
 		obj.length = buf.readFloatLE(off + 2);
 		off = ReadFromBufShorts(obj, ["baseCapacity", "totalFlow"], buf, off + 6);
 		[off, obj["flow"]] = ReadFromBufShortArray(buf, 5, off);
@@ -726,13 +727,18 @@ function ReadFile_AvgConditions(buf){
 	off += 2;
 
 	for(let i = 0; i < countB; i++){
+		let obj = {};
 		const index = buf.readInt16LE(off) - 1;
+		obj.edgeId = index + 1;
 		off+=2;
-		out.flow[index] = new Array(5).fill({});
+		obj.direction = new Array(5).fill({});
+
 		for(let ii = 0; ii < 5; ii++){
-			out.flow[index][ii] = {};
-			off = ReadFromBufShorts(out.flow[index][ii], ["leftTurn", "through", "rightTurn", "total"], buf, off);
+			obj.direction[ii] = {};
+			off = ReadFromBufShorts(obj.direction[ii], ["leftTurn", "through", "rightTurn", "total"], buf, off);
+			
 		}
+		out.flow[index] = obj;
 	}
 
 	return out;
