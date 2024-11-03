@@ -1,18 +1,63 @@
 // @ts-check
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Chart } from '@antv/g2';
 // import G6 from '@antv/g6';
-import { Graph } from '@antv/g6';
+import { Graph, registerEdge} from '@antv/g6';
 //import * as G6 from '@antv/g6';
 import axios from 'axios';
+import Popup from './Popup';
 
+interface EdgeInfo {
+    source: string;
+    target: string;
+    totalFlow: String;
+    co2Emission: String;
+}
+
+registerEdge(
+    'circle-running',
+    {
+      afterDraw(cfg, group) {
+        const shape = group.get('children')[0];
+        const startPoint = shape.getPoint(0);
+        const circle = group.addShape('circle', {
+          attrs: {
+            x: startPoint.x,
+            y: startPoint.y,
+            fill: '#1890ff',
+            r: 3,
+          },
+          name: 'circle-shape',
+        });
+        circle.animate(
+          (ratio) => {
+            const tmpPoint = shape.getPoint(ratio);
+            return {
+              x: tmpPoint.x,
+              y: tmpPoint.y,
+            };
+          },
+          {
+            repeat: true,
+            duration: 3000, 
+          },
+        );
+      },
+    },
+    'cubic', 
+  );
 
 function Charts(props) {
     const nodeGraphRef = useRef(null);
-    
+    const popUpAnimationRef = useRef(null)
+    const [edgePopup, setEdgePopup] = useState(false);
+    const [selectedEdgeInfo, setSelectedEdgeInfo] = useState(null);
+
     var chart;
-    const graphWidth = 1000;
-    const graphHeight = 600;
+    var popChart;
+    const graphWidth = 800;
+    const graphHeight = 500;
+    let selectedEdge = null;
 
     // Node graph Creation functions
     const getNodeGraphData = async () => {
@@ -49,11 +94,27 @@ function Charts(props) {
                     'Authorization': `Bearer ${token}`,
                 }
             });
+            const response2 = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-avgconds?sim=${props.expandedCollection}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
             //console.log("Fetched Nodes:", response.data); 
-            edges = response.data.edges.map(obj => ({
-                source: String(obj.start),
-                target: String(obj.end)
-            }));;  // Update the edges
+            //console.log('Edges:', response.data.edges);
+            //console.log('Conditions:', response2.data.conditions);
+            edges = response.data.edges.map(obj => {
+                const condition = response2.data.conditions.find(cond => cond.edgeID === obj.id);
+                // console.log('Test:',response2.data.conditions.map(cond => ({ edgeId: cond.edgeID, totalFlow: cond.totalFlow, CO2: cond.CO })));
+                
+                return {
+                    edgeId: String(obj.id),
+                    source: String(obj.start),
+                    target: String(obj.end),
+                    totalFlow: condition ? condition.totalFlow : null,
+                    co2Emission: condition ? condition.CO2 : null
+                };
+            });
+          
         } catch (error) {
             console.error('Error fetching nodes:', error);
             return null;
@@ -69,17 +130,18 @@ function Charts(props) {
                 container: nodeGraphRef.current,
                 width: graphWidth,
                 height: graphHeight,
-
+        
                 modes: {
                     default: ['drag-canvas', 'drag-node', 'zoom-canvas'],
+               
                 },
                 defaultNode: {
                     type: 'circle',
-                    size: [50],
+                    size: [45],
                     color: '#660000',
                     style: {
                         icon: true,
-                        iconText: (d) => d.id,
+                        //iconText: '🦄️',
                         fill: '#660000',
                     },
                     labelCfg: {
@@ -93,9 +155,15 @@ function Charts(props) {
                     color: '#FFA07A',
                     style: {
                         endArrow: true,
+                        icon: true,
+                        lineWidth: 4,
+                        label: true,
+
                     },
+                    
                 },
             });
+        
 
             // Get node and edge data from an API endpoint
             const data = await getNodeGraphData();
@@ -130,6 +198,70 @@ function Charts(props) {
                     chart.data(data);
                     // Create the graph data structure
                     chart.render();
+
+                    chart.on('edge:mouseenter', (evt) => {
+                        const edge = evt.item;
+                        if (!edge) {
+                            console.warn("hover item is null");
+                            return;
+                        }
+                        if (edge !== selectedEdge) {
+                            edge.setState('hover', true);
+                            chart.updateItem(edge, {
+                                style: {
+                                    stroke: '#FF6347',
+                                    lineWidth: 6,
+                                },
+                            });
+                        }         
+                    });
+
+                    chart.on('edge:mouseleave', (evt) => {
+                        const edge = evt.item;
+                        if (!edge) {
+                            console.warn("hover item is null");
+                            return;
+                        }
+                        if (edge !== selectedEdge) {
+                            chart.clearItemStates(edge);
+                            chart.updateItem(edge, {
+                                style: {
+                                    stroke: '#FFA07A',
+                                    lineWidth: 4,
+                                },
+                            });
+                        }
+                    });
+
+                    chart.on('edge:click', (evt) => {
+                        const edge = evt.item;
+                        if (!edge) {
+                            console.warn("clicked item is null");
+                            return;
+                        }
+                        if (selectedEdge && selectedEdge !== edge) {
+                            chart.clearItemStates(selectedEdge);
+                            //clear previously highlighted color
+                            chart.updateItem(selectedEdge, {
+                                style: {
+                                    stroke: '#FFA07A',
+                                    lineWidth: 4,
+                                },
+                            });
+                        }
+                        selectedEdge = edge;
+                        edge.setState('selected', true);
+                        const edgeData = edge.getModel();
+                        const edgeInfo = {
+                            source: edgeData.source,
+                            target: edgeData.target,
+                            totalFlow: edgeData.totalFlow,
+                            co2Emission: edgeData.co2Emission,
+                        };
+                        setSelectedEdgeInfo(edgeInfo); 
+                        setEdgePopup(true);
+                    });
+
                 };
             } catch {
                 console.log("Error adding data");
@@ -296,6 +428,54 @@ function Charts(props) {
         }
     }
 
+    // popUpAnimation
+    const animation = async() => {
+        const edgeInfo = selectedEdgeInfo;
+        if (!edgeInfo) return;
+        var data;
+        try{
+            data = {
+                nodes: [{id: edgeInfo.source, x: 100, y: 100, label: edgeInfo.source},{id: edgeInfo.target, x: 300, y: 200, label: edgeInfo.target}],
+                edges: [{source: edgeInfo.source, target: edgeInfo.target}],
+            };
+              
+        }catch(error){
+            console.error('Error popAnimation:', error);
+            return null;
+        }
+        if(popUpAnimationRef.current){
+            popChart = new Graph({
+                container: popUpAnimationRef.current,
+                height: 300,
+                width: 500,
+                defaultEdge: {
+                    type: 'circle-running',
+                    style: {
+                        lineWidth: 3,
+                        stroke: '#bae7ff',
+                    },
+                },
+                defaultNode: {
+                    type: 'circle',
+                    size: [35],
+                    color: '#660000',
+                    style: {
+                        icon: true,
+                        fill: '#660000',
+                    },
+                    labelCfg: {
+                        style: {
+                            fill: '#FFFFFF', // Label color
+                            fontSize: 16,    // Label font size
+                        },
+                    },
+                },
+            });
+            popChart.data(data);
+            popChart.render();
+        }
+    }
+
     useEffect(() => {
         if (props.selectedGraph === 'node') {
             node();
@@ -306,12 +486,37 @@ function Charts(props) {
         return () => {
             if (chart) {
                 chart.destroy();
-            } 
+            }
         };
     }, [nodeGraphRef, props.expandedCollection, props.selectedGraph]);
+    useEffect(() => {
+        if (selectedEdgeInfo) {
+            animation();
+        }
+        return () => {
+            if(popChart){
+                popChart.destroy();
+            }
+        };
+    }, [selectedEdgeInfo]);
 
     return (
-        <div id="charts" ref={nodeGraphRef} style={{ width: 1000, height: 1000 }}></div>
+        <div>
+            <div id="charts" ref={nodeGraphRef} style={{ width: 800, height: 500 }}></div>
+            
+            <Popup trigger={edgePopup} setTrigger={setEdgePopup}>
+                <h3>Selected Edge Information</h3>
+                <div id="animation" ref={popUpAnimationRef} style={{ width: 200, height: 200 }}></div>
+                    {selectedEdgeInfo && (
+                        <div>
+
+                            <p><strong>Total Flow:</strong> {selectedEdgeInfo.totalFlow}</p>
+                            <p><strong>CO2 Emission:</strong> {selectedEdgeInfo.co2Emission}</p>
+                        </div>
+
+                    )}
+            </Popup>
+        </div>
     );
 }
 
