@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Chart } from '@antv/g2';
 // import G6 from '@antv/g6';
-import { Graph, registerEdge} from '@antv/g6';
+import { Graph, registerEdge, registerNode} from '@antv/g6';
 //import * as G6 from '@antv/g6';
 import axios from 'axios';
 import Popup from './Popup';
@@ -12,6 +12,94 @@ interface EdgeInfo {
     target: string;
     totalFlow: String;
     co2Emission: String;
+}
+//add icon on the edge, not finished
+registerEdge('icon-edge', {
+    draw(cfg, group) {
+        // Draw the line for the edge
+        const { startPoint, endPoint } = cfg;
+        const lineShape = group.addShape('line', {
+            attrs: {
+                x1: startPoint.x,
+                y1: startPoint.y,
+                x2: endPoint.x,
+                y2: endPoint.y,
+                stroke: '#A0A0A0',
+                lineWidth: 2,     
+            },
+            name: 'edge-line',
+        });
+
+        const imageSrc = cfg.icon || './icons/road.png';
+        const iconX = (startPoint.x + endPoint.x) / 2; 
+        const iconY = (startPoint.y + endPoint.y) / 2; 
+        
+        group.addShape('image', {
+            attrs: {
+                x: iconX - 15, 
+                y: iconY - 15, 
+                width: 30,  
+                height: 30, 
+                img: imageSrc,
+            },
+            name: 'edge-icon',
+        });
+
+        return lineShape;
+    },
+}, 'line');
+
+registerNode('icon-node', {
+    draw(cfg, group) {
+        const keyShape = group.addShape('circle', {
+            attrs: {
+                x: 0,
+                y: 0,
+                r: 22, 
+                fill: '#f6e397', 
+                stroke: '#4b4941',
+                lineWidth: 2,
+            },
+            name: 'main-circle',
+        });
+
+        group.addShape('text', {
+            attrs: {
+                x: 0,
+                y: 1, 
+                textAlign: 'center',
+                textBaseline: 'middle',
+                text: cfg.icon || '🚦', 
+                fontSize: 26,           
+                fill: '#FFFFFF',   
+            },
+            name: 'icon-text',
+        });
+
+        if (cfg.label) {
+            group.addShape('text', {
+                attrs: {
+                    x: 0,
+                    y: 35, 
+                    textAlign: 'center',
+                    textBaseline: 'middle',
+                    text: cfg.label,
+                    fontSize: 14,
+                    fill: '#000000',
+                },
+                name: 'node-label',
+            });
+        }
+
+        return keyShape;
+    },
+}, 'single-node');
+
+function assignIcons(nodes) {
+    const icons = ['🚦', '🛑', '⛔', '⛖','➡️'];
+    nodes.forEach((node, index) => {
+        node.icon = icons[Math.floor(index / 6)];
+    });
 }
 
 registerEdge(
@@ -46,6 +134,17 @@ registerEdge(
     },
     'cubic', 
   );
+
+
+  function getEdgeColor(totalFlow) {
+    if (totalFlow < 300) {
+        return '#15931f';
+    } else if (totalFlow >= 300 && totalFlow < 600) {
+        return '#ff9f01';
+    } else {
+        return '#ff0901';
+    }
+}
 
 function Charts(props) {
     const nodeGraphRef = useRef(null);
@@ -120,6 +219,8 @@ function Charts(props) {
             return null;
         }
 
+        assignIcons(nodes);
+
         return { nodes: nodes, edges: edges,};
     };
     
@@ -136,13 +237,11 @@ function Charts(props) {
                
                 },
                 defaultNode: {
-                    type: 'circle',
-                    size: [45],
+                    size: [50],
                     color: '#660000',
+                    type: 'icon-node',
                     style: {
-                        icon: true,
-                        //iconText: '🦄️',
-                        fill: '#660000',
+                        fill: '#4b4941',
                     },
                     labelCfg: {
                         style: {
@@ -151,12 +250,18 @@ function Charts(props) {
                         },
                     },
                 },
+                layout: {
+                    type: 'force',
+                    preventOverlap: true,
+                    linkDistance: 180,
+                },
                 defaultEdge: {
                     color: '#FFA07A',
+                   // type: 'icon-edge',
                     style: {
                         endArrow: true,
                         icon: true,
-                        lineWidth: 4,
+                        lineWidth: 10,
                         label: true,
 
                     },
@@ -197,6 +302,11 @@ function Charts(props) {
                     
                     chart.data(data);
                     // Create the graph data structure
+                    data.edges.forEach(edge => {
+                        edge.style = {
+                            stroke: getEdgeColor(edge.totalFlow), // Set edge color based on totalFlow
+                        };
+                    });
                     chart.render();
 
                     chart.on('edge:mouseenter', (evt) => {
@@ -210,7 +320,7 @@ function Charts(props) {
                             chart.updateItem(edge, {
                                 style: {
                                     stroke: '#FF6347',
-                                    lineWidth: 6,
+                                    lineWidth: 14,
                                 },
                             });
                         }         
@@ -222,12 +332,13 @@ function Charts(props) {
                             console.warn("hover item is null");
                             return;
                         }
+                        const edgeData = edge.getModel();
                         if (edge !== selectedEdge) {
                             chart.clearItemStates(edge);
                             chart.updateItem(edge, {
                                 style: {
-                                    stroke: '#FFA07A',
-                                    lineWidth: 4,
+                                    stroke: getEdgeColor(edgeData.totalFlow),
+                                    lineWidth: 10,
                                 },
                             });
                         }
@@ -239,19 +350,19 @@ function Charts(props) {
                             console.warn("clicked item is null");
                             return;
                         }
+                        const edgeData = edge.getModel();
                         if (selectedEdge && selectedEdge !== edge) {
                             chart.clearItemStates(selectedEdge);
                             //clear previously highlighted color
                             chart.updateItem(selectedEdge, {
                                 style: {
-                                    stroke: '#FFA07A',
-                                    lineWidth: 4,
+                                    stroke: getEdgeColor(edgeData.totalFlow),
+                                    lineWidth: 10,
                                 },
                             });
                         }
                         selectedEdge = edge;
                         edge.setState('selected', true);
-                        const edgeData = edge.getModel();
                         const edgeInfo = {
                             source: edgeData.source,
                             target: edgeData.target,
