@@ -250,11 +250,6 @@ function Charts(props) {
                         },
                     },
                 },
-                layout: {
-                    type: 'force',
-                    preventOverlap: true,
-                    linkDistance: 180,
-                },
                 defaultEdge: {
                     color: '#FFA07A',
                    // type: 'icon-edge',
