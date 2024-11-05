@@ -134,12 +134,11 @@ app.get('/api/select-uploads', async (req, res) => {
 
      // bad, but this entire thing is bad
      const [[{sim_id}]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_owner = ? AND sim_name = ?", [user_id, sim_name]);
-     const [[files, big_files],_] = await promisePool.query("SELECT file_type FROM text_files WHERE file_sim = ?; SELECT file_type FROM big_Files WHERE file_sim = ?;", [sim_id, sim_id]);
+     const [files] = await promisePool.query("SELECT file_type FROM text_files WHERE file_sim = ?", [sim_id, sim_id]);
 
      // convert returned object to strings
      const fileNames = files.map((file) => (FileTypeToName(file.file_type)));
-     const bigFileNames = big_files.map((file) => (FileTypeToName(file.file_type)));
-     res.json(fileNames.concat(bigFileNames));
+     res.json(fileNames);
 
     }catch(err){
 	  console.error(err);
@@ -165,7 +164,7 @@ app.post('/api/delete-collection', async (req, res) => {
     // bad, but this entire thing is bad
     const [[{sim_id}]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_owner = ? AND sim_name = ?", [user_id, collection_name]);
 
-    const deleteFileQuery = "DELETE FROM text_files WHERE file_sim = ?; DELETE FROM big_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
+    const deleteFileQuery = "DELETE FROM text_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
 	await promisePool.query(deleteFileQuery, [sim_id, sim_id, sim_id]);
 	res.send("File deletion successful");
   } catch (err) {
@@ -225,6 +224,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 	const date = (new Date()).toLocaleString();
 	const simInsert = "INSERT INTO simulations (sim_name, sim_date, sim_owner) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();";
 	var [[_,[sim_id]]] = await promisePool.query(simInsert, [name, date, user_id]);
+	console.log(user_id);
 	sim_id = sim_id["LAST_INSERT_ID()"];
 
 	console.log("Simulation: " + sim_id);
@@ -245,7 +245,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       if (!entry.isDirectory) {
 		try{
           const fileContent = entry.getData().toString('ascii');
-		  await ReadFile(user_id, sim_id, fileContent);
+		  await ReadFile(user_id, sim_id, fileContent, entry.name);
 		}catch(e){console.error("ERRORRR", e);/* not a text file? (ignore it)*/}
       }
     }
@@ -264,46 +264,48 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
  * The query value "sim" is specified to be the simulation
  *   id of the simulation being accessed
  */
-async function tryGetFile(req, res, fileType, isBig){
-	if(!isBig) isBig = 0;
+async function tryGetFile(req, res, fileType){
 
 	// get the username
 	try{
-		var username = verifyToken(req);
-		// get the user_id
-		var user_id = username.user_id;
+		var user_id = verifyToken(req).user_id;
 	} catch(exception) {
 		var user_id = 1;
-		// Commented for testing TBD
-		//return res.status(500).send("Invalid token");
+		//return res.status(exception.status).json({ message: exception.message });
 	}
 
 
 	try {
-		const sim_name = req.query.sim; // to throw exception
-		// Get the sim_id based on the sim_name
-		let id_query = "SELECT sim_id FROM simulations WHERE sim_name = ?";
-		const [[sim_id_json]] = await promisePool.query(id_query, [sim_name]);
 
-		if(!sim_id_json)
-			return res.status(500).send("Collection not found");
+		// get the simulation id from query or by name
+		let sim_id;
+		try{
+			sim_id = parseInt(req.query.sim); // to throw exception
+			if(isNan(sim_id))
+				throw "";
+		}catch(e){
+			[[{sim_id}]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?", [req.query.sim, user_id]);
+			console.log(sim_id);
+		}
 
-		const sim_id = sim_id_json.sim_id;
+		if(!sim_id)
+		  return res.status(500).send("Simulation not found");
 
-		let query;
-		if(isBig)
-			query = "SELECT file_owner, file_content FROM big_files WHERE file_type = ? AND file_sim = ?";
-		else
-			query = "SELECT file_owner, file_content FROM text_files WHERE file_type = ? AND file_sim = ?";
+		// get the actul
+		const query = "SELECT file_owner, file_content FROM text_files WHERE file_type = ? AND file_sim = ?";
 		const [[entry]] = await promisePool.query(query, [fileType, sim_id]);
 
+		// make sure the simulation exists
 		if(!entry)
 		  return res.status(500).send("File not found");
 
-		if(entry.file_owner != user_id)
+		// check whether or not they are allowed
+		if(entry.file_owner != user_id) // make this throw/return an error when done
 			console.log("tryGetFile: Wrong owner! (" + user_id + " != " + entry.file_owner + ")");
+
+		// ???
 		let buf = Buffer.from(entry.file_content);
-		let obj = ReadFile_Any(buf, fileType);
+		let obj = ReadFile_Any(buf, fileType, req.query);
 		return res.json(obj);
 	} catch (err) {
 		console.error(err);
@@ -332,14 +334,32 @@ app.get('/api/file-edges', async (req, res) => await tryGetFile(req, res, FILE_E
 app.get('/api/file-signals', async (req, res) => await tryGetFile(req, res, FILE_SIGNALS));
 
 /*
- * Gets the shortest paths file (output file 11)
+ * Gets the average conditions file (output file 11)
  */
 app.get('/api/file-avgconds', async (req, res) => await tryGetFile(req, res, FILE_AVGCONDS));
 
 /*
+ * Gets the time based conditions file (output file 11)
+ */
+app.get('/api/file-conds', async (req, res) => await tryGetFile(req, res, FILE_CONDS));
+
+
+/*
  * Gets the shortest paths file (output file 13)
  */
-app.get('/api/file-paths', async (req, res) => await tryGetFile(req, res, FILE_PATHS, 1));
+app.get('/api/file-paths', async (req, res) => await tryGetFile(req, res, FILE_PATHS));
+
+/*
+ * Gets the trip probes file (output file 15)
+ */
+app.get('/api/file-tripprobes', async (req, res) => await tryGetFile(req, res, FILE_TRIPPROBES));
+
+/*
+ * Gets the edge probes file (output file 16)
+ */
+app.get('/api/file-edgeprobes', async (req, res) => await tryGetFile(req, res, FILE_EDGEPROBES));
+
+
 
 
 function IsValidUserInfo(str){
@@ -352,9 +372,10 @@ function IsValidUserInfo(str){
 	const a1 = "z".charCodeAt(0);
 	const A0 = "A".charCodeAt(0);
 	const A1 = "Z".charCodeAt(0);
+	const sp = " ".charCodeAt(0);
 	for(let i = 0; i < len; i++){
 		const c = str.charCodeAt(i);
-		if(!(c == " ".charCodeAt(0) || (c >= n0 && c <= n1) || (c >= a0 && c <= a1) || (c >= A0 && c <= A1)))
+		if(!(c == sp || (c >= n0 && c <= n1) || (c >= a0 && c <= a1) || (c >= A0 && c <= A1)))
 			return 0;
 	}
 	return 1;
@@ -401,7 +422,6 @@ app.post('/register', async (req, res) => {
   try {
       // Check if the username already exists
       const [[{existingUser}]] = await promisePool.query("SELECT EXISTS( SELECT * FROM users WHERE username = ?)", [username]);
-      console.log(existingUser);
 
       if (existingUser) {
           return res.status(409).json({ message: 'Username already exists' });
@@ -440,13 +460,15 @@ process.on('SIGINT', shutdown);
 
 // file read and write functions //
 
-const FILE_AVGCONDS = 1;
-const FILE_CONDS = 2;
-const FILE_PATHS = 3;
-const FILE_SUMMARY = 4;
-const FILE_NODES = 7;
-const FILE_EDGES = 8;
-const FILE_SIGNALS = 9;
+const FILE_AVGCONDS = 1;	// file 11
+const FILE_CONDS = 2;		// file 12
+const FILE_PATHS = 3;		// file 13
+const FILE_SUMMARY = 4;		// summary
+const FILE_TRIPPROBES = 5;	// file 15
+const FILE_EDGEPROBES = 6;	// file 16
+const FILE_NODES = 7;		// file 1
+const FILE_EDGES = 8;		// file 2
+const FILE_SIGNALS = 9;		// file 3
 
 
 /*
@@ -501,6 +523,34 @@ function ReadFromBufShorts(obj, names, buf, off){
 }
 
 /*
+ * Same as the others with the same name, but this one allows you
+ *   to choose the type with a letter at the start of the name of
+ *   the table entry. b: byte, s: short, i: int, f: float
+ */
+function ReadFromBufAny(obj, names, buf, off){
+  for(let i = 0; i < names.length; i++){
+	let size;
+	let v;
+	let argLen = 1;
+	switch(names[i].charAt(0)){
+		case "b": v = buf.readInt8(off);    off += 1; break;
+		case "s": v = buf.readInt16LE(off); off += 2; break;
+		case "i": v = buf.readInt32LE(off); off += 4; break;
+		case "f": v = buf.readFloatLE(off); off += 4; break;
+		case "c": case "n":{
+			let vsize = (names[i].charAt(0) == "c") ? 2 : 3;
+			v = buf.readUIntLE(off, vsize);
+			off += vsize;
+			v /= Math.pow(10, names[i].charCodeAt(1) - 48);
+			argLen++;
+		}break;
+	}
+  	obj[names[i].substring(argLen)]= v;
+  }
+  return off;
+}
+
+/*
  * Reads a string from a nodejs buffer that was written
  *   with WriteString().
  * The string should be stored by a single byte specifying
@@ -550,28 +600,36 @@ function ReadFromBufFloatArray(buf, len, off){
 function ReadFile_summary(buf){
 	const SUMMARY_TAGS = [
 		"vehicle trips", "person trips", "vehicle-km", "person-km", "vehicle-stops", "vehicle-secs",
-		"person-secs", "total delay", "stopped delay", "accel/decel delay", "accel-noise", "fuel (l)", "Energy (KWh)",
+		"person-secs", "total delay", "stopped delay", "accel/decel delay", "accel-noise", "fuel (l)",
 		"HC (g)", "CO (g)", "NOx (g)", "CO2 (g)", "PM (g)", "crashes*10e-6",
 		"injury crashes", "fatal crashes", "no damage", "minor damage", "moderate damage", "dollars of toll"
 	];
 
 	let out = {total:{}, average:{}};
-	let off = -4;
+	let off = 0;
+
+	const lenA = buf.readInt16LE(off + 0);
+	const lenB = buf.readInt16LE(off + 2);
+	off += 4;
 
 	// read the total
-	for(let i = 0; i < 24; i++){
+	for(let i = 0; i < lenA; i++){
 		let line = [1,2,3,4,5,6];
 		for(let ii = 0; ii < 6; ii++)
-			line[ii] = buf.readFloatLE(off += 4);
-		out.total[SUMMARY_TAGS[i]] = line;
+			line[ii] = buf.readFloatLE((off += 4) - 4);
+		let tag = "";
+		[off,tag] = ReadString(buf, off);
+		out.total[tag] = line;
 	}
 
 	// read the average
-	for(let i = 0; i < 24; i++){
+	for(let i = 0; i < lenB; i++){
 		let line = [1,2,3,4,5,6];
 		for(let ii = 0; ii < 6; ii++)
-			line[ii] = buf.readFloatLE(off += 4);
-		out.average[SUMMARY_TAGS[i]] = line;
+			line[ii] = buf.readFloatLE((off += 4) - 4);
+		let tag = "";
+		[off,tag] = ReadString(buf, off);
+		out.average[tag] = line;
 	}
 
 	return out;
@@ -698,8 +756,8 @@ function ReadFile_AvgConditions(buf){
 	out.time = buf.readInt32LE(off + 0);
 
 	const edgeCount = buf.readInt16LE(off + 4);
-	out.flow = Array(edgeCount).fill({});
-	out.conditions = Array(edgeCount).fill({});
+	out.conditions = Array(edgeCount + 1).fill({});
+	out.flow = Array(edgeCount + 1).fill({});
 
 	// 5s6fsssssss7ffffffffffff6fffAffffff9ffffff
 	// 5s7s5sss7s5sss7s5sss7s5sss7s5sss
@@ -707,10 +765,11 @@ function ReadFile_AvgConditions(buf){
 	const countA = buf.readInt16LE(off + 6);
 	off += 8;
 
+	out.edgeCount = countA;
 	for(let i = 0; i < countA; i++){
 		let obj = {};
-		const index = buf.readInt16LE(off) - 1;		
-		obj.edgeID = index+1;
+		const index = buf.readInt16LE(off);
+		obj.edgeID = index;
 		obj.length = buf.readFloatLE(off + 2);
 		off = ReadFromBufShorts(obj, ["baseCapacity", "totalFlow"], buf, off + 6);
 		[off, obj["flow"]] = ReadFromBufShortArray(buf, 5, off);
@@ -728,15 +787,13 @@ function ReadFile_AvgConditions(buf){
 
 	for(let i = 0; i < countB; i++){
 		let obj = {};
-		const index = buf.readInt16LE(off) - 1;
-		obj.edgeId = index + 1;
+		const index = buf.readInt16LE(off);
+		obj.edgeId = index;
 		off+=2;
 		obj.direction = new Array(5).fill({});
-
 		for(let ii = 0; ii < 5; ii++){
 			obj.direction[ii] = {};
 			off = ReadFromBufShorts(obj.direction[ii], ["leftTurn", "through", "rightTurn", "total"], buf, off);
-			
 		}
 		out.flow[index] = obj;
 	}
@@ -762,49 +819,26 @@ function ReadFile_Conditions(buf){
 		periodObj.index = buf.readInt16LE(off + 4);
 		off += 6;
 
+		// 8s9f8sssssss9fffffffCffffffffKffGffffffCfffffffCffffff
+
 		periodObj.edges = Array(out.edgeMaxID + 1).fill({});
 		for(let ii = 0; ii < out.edgeCount; ii++){
-
+			let obj = {};
+			const index = buf.readInt16LE(off);
+			obj.length = buf.readFloatLE(off + 2);
+			off = ReadFromBufShorts(obj, ["baseCapacity", "totalFlow"], buf, off + 6);
+			[off, obj["flow"]] = ReadFromBufShortArray(buf, 5, off);
+			off = ReadFromBufFloats(obj, ["freeSpeedTime", "totalAverageTime"],  buf, off);
+			[off, obj["averageTime"]] = ReadFromBufFloatArray(buf, 5, off);
+			[off, obj["averageToll"]] = ReadFromBufFloatArray(buf, 5, off);
+			off = ReadFromBufFloats(obj, ["averageVehicles", "averageQueue", "averageStops"],  buf, off);
+			[off, obj["modelParameters"]] = ReadFromBufFloatArray(buf, 8, off);
+			off = ReadFromBufFloats(obj, ["fuel", "HC", "CO", "NO", "CO2", "PM", "totalEnergy"],  buf, off);
+			off = ReadFromBufFloats(obj, ["expectedCrashes", "expectedTopInjurt", "fatelCrashes", "crashLowDamage", "crashMedDamage", "crashHighDamage"],  buf, off);
+			periodObj.edges[index] = obj;
 		}
 
-	}
-
-	const edgeCount = buf.readInt16LE(off + 4);
-	out.flow = Array(edgeCount + 1).fill([]);
-	out.conditions = Array(edgeCount + 1).fill({});
-
-	// 5s6fsssssss7ffffffffffff6fffAffffff9ffffff
-	// 5s7s5sss7s5sss7s5sss7s5sss7s5sss
-
-	const countA = buf.readInt16LE(off + 6);
-	off += 8;
-
-	for(let i = 0; i < countA; i++){
-		let obj = {};
-		const index = buf.readInt16LE(off);
-		obj.length = buf.readFloatLE(off + 2);
-		off = ReadFromBufShorts(obj, ["baseCapacity", "totalFlow"], buf, off + 6);
-		[off, obj["flow"]] = ReadFromBufShortArray(buf, 5, off);
-		off = ReadFromBufFloats(obj, ["freeSpeedTime", "totalAverageTime"],  buf, off);
-		[off, obj["averageTime"]] = ReadFromBufFloatArray(buf, 5, off);
-		[off, obj["averageToll"]] = ReadFromBufFloatArray(buf, 5, off);
-		off = ReadFromBufFloats(obj, ["averageVehicles", "averageQueue", "averageStops"],  buf, off);
-		off = ReadFromBufFloats(obj, ["fuel", "HC", "CO", "NO", "CO2", "PM"],  buf, off);
-		off = ReadFromBufFloats(obj, ["expectedCrashes", "expectedTopInjurt", "fatelCrashes", "crashLowDamage", "crashMedDamage", "crashHighDamage"],  buf, off);
-		out.conditions[index] = obj;
-	}
-
-	const countB = buf.readInt16LE(off);
-	off += 2;
-
-	for(let i = 0; i < countB; i++){
-		const index = buf.readInt16LE(off);
-		off+=2;
-		out.flow[index] = new Array(5).fill({});
-		for(let ii = 0; ii < 5; ii++){
-			out.flow[index][ii] = {};
-			off = ReadFromBufShorts(out.flow[index][ii], ["leftTurn", "through", "rightTurn", "total"], buf, off);
-		}
+		out.periods[i] = periodObj;
 	}
 
 	return out;
@@ -859,6 +893,151 @@ function ReadFile_paths(buf){
 	return out;
 }
 
+function ReadFile_TripProbes(buf){
+
+	const len = buf.readInt32LE();
+
+	let out = Array(len);
+
+	let off = 4;
+	for(let i = 0; i < len; i++){
+		let entry = {};
+		off = ReadFromBufFloats(entry, ["time"], buf, off);
+		off = ReadFromBufInts(entry, ["vehicleID"], buf, off);
+		entry.type = buf.readInt8(off);
+		off = ReadFromBufShorts(entry, ["lastLink", "origin", "destination"], buf, off + 1);
+		off = ReadFromBufFloats(entry,
+			["scheduleTime", "departTime", "duration", "totalDelay", "stoppedDelay",
+			 "stops", "distance", "averageSpeed",
+			 "fuel", "HC", "CO", "NO", "CO2", "PM",
+			 "expectedCrashes", "expectedTopInjury", "fatelCrashes",
+			 "crashLowDamage", "crashMedDamage", "crashHighDamage",
+			 "totalToll", "accelerationNoise"], buf, off
+		);
+		out[i] = entry;
+	}
+
+	return out;
+}
+
+function ReadFile_EdgeProbes(buf, args){
+	let off = 0;
+
+	const lineC = buf.readInt32LE(off + 0);
+	const edgeC = buf.readInt16LE(off + 4);
+	const edgeMin = buf.readInt16LE(off + 6);
+	const edgeMax = buf.readInt16LE(off + 8);
+	off += 10;
+
+	// find the parameters or defaults
+	let restEdge = -1;
+	let skip = 0;
+	let max = 500;
+	let stride = 1;
+	let time0 = 0;
+	let time1 = 999999999;
+	if(args){
+		if(args.edge) // which edge to look for
+			restEdge = args.edge;
+		if(args.skip) // how many logs to skip
+			skip = args.skip;
+		if(args.max) // the max number of logs to collect
+			max = args.max;
+		if(args.stride) // what percentage to collect (1/stride)
+			stride = args.stride;
+		if(args.time0) // the min time to collect
+			time0 = args.time0;
+		if(args.time1) // the max time to collect, exclusive
+			time1 = args.time1;
+	}
+
+	// get the total number of edges for the targeted edge
+	let totalEdges = lineC;
+	if(restEdge != -1){
+		for(let i = 0; i < edgeC; i++){
+			const edgeID = buf.readInt16LE(off + 0);
+			const quant = buf.readInt32LE(off + 2);
+
+			if(edgeID == restEdge){
+				totalEdges = quant;
+				off += (edgeC - i) * 6;
+				break;
+			}
+
+			off += 6;
+		}
+	}else
+		off += edgeC * (2 + 4);
+
+	//const format11 = "bfibsbsbssffffffffffffffffffffffff";
+	//const format21 = "bfibbsbssfffffffffffffffffffffffff";
+
+	//console.log("" + lineC + " " + edgeC + " " + edgeMin + " " + edgeMax);
+
+	let totalCount = 0;
+	let out = Array(Math.min(Math.min(totalEdges, max), Math.floor((totalEdges-skip)/stride)));
+	for(let i = 0; i < lineC; i++){
+		let obj = {};
+		const type = buf.readInt8(off);
+		obj.type = type;
+		if(type == 11){
+			off = ReadFromBufAny(obj,
+			[
+				"ftime", "ivehicleID", "bvehicleClass", "sedge", "blane",
+				"snextEdge", "bnextLane", "sorigin", "sdest",
+				"fschedDepart", "fdepartTime", "fedgeTime", "fdelay",
+				"fstopDelay", "fstops", "fdist", "avgSpeed", "ffinalSpeed",
+				"ffuel", "fHC", "fCO", "fNO", "fCO2", "fPM", "fenergy",
+				"fexpectCrash", "fexpectHighInjury", "fexpectFatal",
+				"fcrashLow", "fcrashMed", "fcrashHigh", "ftoll", "fnoise"
+			],
+			buf, off + 1);
+		}else if(type == 21){
+			off = ReadFromBufAny(obj,
+			[
+				"ftime", "ivehicleID", "bvehicleClass", "bvehicleType",
+				"sedge", "blane", "sorigin", "sdest", "n1departSched",
+				"n1departTime", "n1edgeTime", "n3delay", "n3stopDelay",
+				"n3stops", "n3dist", "n1space", "n1speed", "faccel",
+				"n5fuel", "n5energyRate", "n5HC", "n5CO", "n5NO", "n5CO2", "n5PM",
+				"c1expectCrash", "c1expectHighInjury", "c1expectFatal",
+				"c1crashLow", "c1crashMed", "c1crashHigh", "n2toll", "n2noise"
+			],
+			buf, off + 1);
+		}else{
+			console.log("" + type + " at " + off + ", " + i);
+			return out;
+		}
+
+		// make sure its what we are looking for
+		if((restEdge == -1 || obj.edge == restEdge) && obj.time >= time0){
+
+			// limit the time
+			if(obj.time >= time1){
+				out = out.slice(0, Math.floor((totalCount-skip)/stride) + 1);
+				break;
+			}
+
+			// skip some number of elements
+			if(totalCount >= skip){
+				const indx = totalCount - skip;
+				// only get a percentage
+				if(indx % stride == 0){
+					out[indx/stride] = obj;
+					// get only a limited amount
+					if(indx/stride + 1 >= max){
+						break;
+					}
+				}
+			}
+
+			totalCount++;
+		}
+	}
+
+	return out;
+}
+
 /*
  * Reads a file from a nodejs buffer based on type.
  * This returns whatever the corresponding function
@@ -868,14 +1047,17 @@ function ReadFile_paths(buf){
  * @return (table) The interpretation of the file from the buffer
  * @throws Probably something if you use this wrong
  */
-function ReadFile_Any(buf, fileType){
+function ReadFile_Any(buf, fileType, args){
 	switch(fileType){
 		case FILE_NODES: return ReadFile_nodes(buf);
 		case FILE_EDGES: return ReadFile_edges(buf);
 		case FILE_SIGNALS: return ReadFile_signals(buf);
 		case FILE_SUMMARY: return ReadFile_summary(buf);
 		case FILE_AVGCONDS: return ReadFile_AvgConditions(buf);
+		case FILE_CONDS: return ReadFile_Conditions(buf);
 		case FILE_PATHS: return ReadFile_paths(buf);
+		case FILE_TRIPPROBES: return ReadFile_TripProbes(buf);
+		case FILE_EDGEPROBES: return ReadFile_EdgeProbes(buf, args);
 	}
 }
 
@@ -976,7 +1158,13 @@ function CopyToBufLine(line, buf, off, format){
 				let num;
 				if(val.charAt(0) == "*") // invalid value
 					num = -1;
-				else if(ch == "s" || ch == "i") // short
+				else if(ch == "c" || ch == "n"){
+					const parts = val.split(".");
+					const deci = format.charCodeAt(i+1) - 48;
+					const pow = Math.pow(10, deci);
+					num = parseInt(parts[0]) * pow + parseInt(parts[1].split(0, deci));
+					i++;
+				}else if(ch == "s" || ch == "i" || ch == "b") // short
 					num = parseInt(val);
 				else if(ch == "f") // float
 					num = parseFloat(val);
@@ -987,8 +1175,17 @@ function CopyToBufLine(line, buf, off, format){
 					case "i": // int
 						off = buf.writeInt32LE(num, off);
 					break;
+					case "b": // byte
+						off = buf.writeInt8(num, off);
+					break;
 					case "f": // float
 						off = buf.writeFloatLE(num, off);
+					break;
+					case "c":
+						off = buf.writeUIntLE(num, off, 2);
+					break;
+					case "n":
+						off = buf.writeUIntLE(num, off, 3);
 					break;
 				}
 			}
@@ -998,12 +1195,75 @@ function CopyToBufLine(line, buf, off, format){
 	return off;
 }
 
+/*
+ * Reads strings from an array and writes them to a nodejs buffer based on a format
+ * @param args (string[]) The string array to read from
+ * @param buf (nodejs) The buffer to write to
+ * @param off (int) The current/starting offset of the buffer to write to
+ * @param format (string) The format to use
+ */
+function CopyToBufArgs(args, buf, off, format){
+	let curArg = 0;
+	for(let i = 0; i < format.length; i++){
+		let c = format.charCodeAt(i);
+		if(c >= "a".charCodeAt(0) || c == "_".charCodeAt(0)){ // read value
+			if(curArg >= args.length)
+				return off;
+			let val = args[curArg];
+			let ch = format.charAt(i);
+			if(ch != "_"){ // "_" means ignore a value
+				let num;
+				if(val.charAt(0) == "*") // invalid value
+					num = -1;
+				else if(ch == "c" || ch == "n"){
+					const parts = val.split(".");
+					const deci = format.charCodeAt(i+1) - 48;
+					const pow = Math.pow(10, deci);
+					num = parseInt(parts[0]) * pow + parseInt(parts[1].split(0, deci));
+					i++;
+				}else if(ch == "s" || ch == "i" || ch == "b") // short
+					num = parseInt(val);
+				else if(ch == "f") // float
+					num = parseFloat(val);
+				switch(ch){
+					case "s": // short
+						off = buf.writeInt16LE(num, off);
+					break;
+					case "i": // int
+						off = buf.writeInt32LE(num, off);
+					break;
+					case "b": // byte
+						off = buf.writeInt8(num, off);
+					break;
+					case "f": // float
+						off = buf.writeFloatLE(num, off);
+					break;
+					case "c":
+						off = buf.writeUIntLE(num, off, 2);
+					break;
+					case "n":
+						off = buf.writeUIntLE(num, off, 3);
+					break;
+				}
+			}
+			curArg++;
+		}
+	}
+	return off;
+}
+
 function GetLineFormatSize(format){
 	let size = 0;
 	for(let i = 0; i < format.length; i++){
 		switch(format.charAt(i)){
-			case "s":
+			case "b":
+				size += 1;
+			break;
+			case "s": case "c":
 				size += 2;
+			break;
+			case "n":
+				size += 3;
 			break;
 			case "i": case "f":
 				size += 4;
@@ -1013,6 +1273,34 @@ function GetLineFormatSize(format){
 	return size;
 }
 
+
+/*
+ * Checks whether or not a specific file type instance already exists in
+ *   a simulation
+ * @param fileType (int) The file type to look for. Use FILE_...
+ * @param sim_id (int) The simulation ID to look in
+ * @return (int) Whether or not there exist a file
+ */
+async function FileExists(fileType, sim_id){
+	try{
+		const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [fileType, sim_id]);
+		if(ret.length != 0)
+			return 1;
+	}catch(e){
+		console.error(e);
+		return 1;
+	}
+	return 0;
+}
+
+async function FileAdd(fileType, buf, user_id, sim_id){
+	try{
+		const query = "INSERT INTO text_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
+		await promisePool.query(query, [fileType, buf, user_id, sim_id]);
+	}catch(e){
+		console.error("Couldnt add file: ", e);
+	}
+}
 
 /*
  * Reads the summary file from an array of lines and
@@ -1025,37 +1313,69 @@ function GetLineFormatSize(format){
  async function WriteFile_summary(user_id, sim_id, lines){
 
 	// make sure doesn't already exist
-	try{
-	  const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [FILE_SUMMARY, sim_id]);
-	  if(ret.length != 0)
+	if(await FileExists(FILE_SUMMARY, sim_id))
 		return;
-	}catch(e){
-	  console.error(e);
-	  return;
+
+
+	let bonusLen = 0;
+	let lineA0 = -1, lineA1 = -1, lineB0 = -1, lineB1 = -1;
+	for(let i = 0; i < lines.length; i++){
+		if(lineA0 == -1){
+			if(lines[i].includes("Total Statistics:"))
+				lineA0 = i + 1;
+		}else if(lineA1 == -1){
+			if(lines[i].trim().length == 0){
+				lineA1 = i;
+			}else{
+				bonusLen += lines[i].split("-")[1].trim().length + 1;
+			}
+		}else if(lineB0 == -1){
+			if(lines[i].includes("Average Statistics:"))
+				lineB0 = i + 1;
+		}else if(lineB1 == -1){
+			if(lines[i].trim().length == 0){
+				lineB1 = i;
+				break;
+			}else{
+				bonusLen += lines[i].split("-")[1].trim().length + 1;
+			}
+		}
 	}
 
-	let buf = Buffer.allocUnsafe(1152);
-	// 6*4 numbers + 17 string for 48 lines -> (24 + 17) * 48 = 1968
-
-	// write total stats
+	const lenA = lineA1 - lineA0;
+	const lenB = lineB1 - lineB0;
+	const totalSize = (lenA + lenB) * 4 * 6 + bonusLen + 2 + 2;
+	let buf = Buffer.allocUnsafe(totalSize);
 	let off = 0;
-	for(let i = 0; i < 24; i++){
-		const nums = lines[i + 2].substring(3, 87).trim();
+
+	off = buf.writeInt16LE(lenA, off);
+	off = buf.writeInt16LE(lenB, off);
+
+	for(let i = lineA0; i < lineA1; i++){
+		const line = lines[i];
+		const nums = line.substring(3, 87).trim();
 		const args = ReadLineArgs(nums);
 		for(let ii = 0; ii < 6; ii++)
 			off = buf.writeFloatLE(parseFloat(args[ii]), off);
+
+		const tag = line.split("-")[1].trim();
+		off = WriteString(buf, tag, off);
 	}
 
 	// write average stats
-	for(let i = 0; i < 24; i++){
-		const nums = lines[i + 28].substring(3, 87).trim();
+	for(let i = lineB0; i < lineB1; i++){
+		const line = lines[i];
+		const nums = line.substring(3, 87).trim();
 		const args = ReadLineArgs(nums);
 		for(let ii = 0; ii < 6; ii++)
 			off = buf.writeFloatLE(parseFloat(args[ii]), off);
+
+		const tag = line.split("-")[1].trim();
+		off = WriteString(buf, tag, off);
 	}
 
-	const query = "INSERT INTO text_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
-	pool.query(query, [FILE_SUMMARY, buf, user_id, sim_id]);
+
+	await FileAdd(FILE_SUMMARY, buf, user_id, sim_id, totalSize);
 }
 
 /*
@@ -1069,19 +1389,18 @@ function GetLineFormatSize(format){
 async function WriteFile_Input1(user_id, sim_id, lines){
 
 	// make sure doesn't already exist
-	try{
-	  const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [FILE_NODES, sim_id]);
-	  if(ret.length != 0)
+	if(await FileExists(FILE_NODES, sim_id))
 		return;
-	}catch(e){
-	  return;
-	}
+
 
 	const initArgs = ReadLineArgs(lines[1]);
-	// console.log(" Node Coordinate file params: "lines[0] +"\n"+lines[1] + " " + initArgs[0]);
 	const nodeC = parseInt(initArgs[0]);
 	const xScale = parseFloat(initArgs[1]);
 	const yScale = parseFloat(initArgs[2]);
+
+	// make sure this is the correct file type
+	if(lines.length != nodeC + 3)
+		return;
 
 	// a line has a base size of 17 + 1
 
@@ -1116,8 +1435,7 @@ async function WriteFile_Input1(user_id, sim_id, lines){
 	}
 
 
-	const query = "INSERT INTO text_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
-	pool.query(query, [FILE_NODES, buf, user_id, sim_id]);
+	await FileAdd(FILE_NODES, buf, user_id, sim_id);
 }
 
 /*
@@ -1131,13 +1449,8 @@ async function WriteFile_Input1(user_id, sim_id, lines){
 async function WriteFile_Input2(user_id, sim_id, lines){
 
 	// make sure doesn't already exist
-	try{
-	  const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [FILE_EDGES, sim_id]);
-	  if(ret.length != 0)
+	if(await FileExists(FILE_EDGES, sim_id))
 		return;
-	}catch(e){
-	  return;
-	}
 
 	const initArgs = ReadLineArgs(lines[1]);
 	const edgeC = parseInt(initArgs[0]);
@@ -1172,8 +1485,8 @@ async function WriteFile_Input2(user_id, sim_id, lines){
 		off = WriteString(buf, tag, off);
 	}
 
-	const query = "INSERT INTO text_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
-	pool.query(query, [FILE_EDGES, buf, user_id, sim_id]);
+
+	await FileAdd(FILE_EDGES, buf, user_id, sim_id);
 }
 
 /*
@@ -1187,19 +1500,19 @@ async function WriteFile_Input2(user_id, sim_id, lines){
 async function WriteFile_Input3(user_id, sim_id, lines){
 
 	// make sure doesn't already exist
-	try{
-	  const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [FILE_SIGNALS, sim_id]);
-	  if(ret.length != 0)
+	if(await FileExists(FILE_SIGNALS, sim_id))
 		return;
-	}catch(e){
-	  return;
-	}
 
 	const initArgs = ReadLineArgs(lines[1]);
 	const signalC = parseInt(initArgs[0]);
 	const planC = parseInt(initArgs[1]);
 	const planTime = parseInt(initArgs[2]);
 	const planNumber = parseInt(lines[2].trim());
+
+	// make sure this is the correct file. This is bad due to lack
+	//   of documentation
+	if(lines.length != signalC + 4)
+		return;
 
 	// calculate entry variable size
 	let varSize = 0;
@@ -1236,36 +1549,35 @@ async function WriteFile_Input3(user_id, sim_id, lines){
 	}
 
 
-	const query = "INSERT INTO text_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
-	pool.query(query, [FILE_SIGNALS, buf, user_id, sim_id]);
+	await FileAdd(FILE_SIGNALS, buf, user_id, sim_id);
 }
 
-
+/*
+ * File 11
+ */
 async function WriteFile_AvgConditions(user_id, sim_id, lines){
 
-	try{
-		const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [FILE_AVGCONDS, sim_id]);
-		if(ret.length != 0)
-			return;
-	}catch(e){
+	if(await FileExists(FILE_AVGCONDS, sim_id))
 		return;
-	}
 
 
 	let formatType; // distributed of provided formated file
 	let lineA0 = -1, lineA1 = -1; // start and of the first section
 	let lineB0, lineB1; // start and end of the second secction
+	let targLen;
 	for(let i = 0; i < lines.length; i++){
 		if(lineA0 == -1){
 			if(lines[i].length == 269 || lines[i].length == 312){
 				lineA0 = i;
 				formatType = (lines[i].length == 270) ? 1 : 0;
+				targLen = lines[i].length;
 			}
 		}else{
 			if(lines[i].trim() === "Turning movements by dir and veh class"){
 				lineA1 = i;
 				break;
-			}
+			}else if(lines[i].length != targLen)
+				return;
 		}
 	}
 	lineB0 = lineA1 + 2;
@@ -1286,7 +1598,6 @@ async function WriteFile_AvgConditions(user_id, sim_id, lines){
 	let buf = Buffer.allocUnsafe(totalSize);
 
 	let initArgs = ReadLineArgs(lines[lineB0 - 1].trim());
-	console.log(initArgs);
 	off = buf.writeInt32LE(parseInt(initArgs[0]), off); // sim time
 	off = buf.writeInt16LE(parseInt(initArgs[1]), off); // max edge ID
 
@@ -1298,19 +1609,17 @@ async function WriteFile_AvgConditions(user_id, sim_id, lines){
 	for(let i = 0; i < lineCB; i++)
 		off = CopyToBufLine(lines[lineB0 + i], buf, off, formatB);
 
-	const query = "INSERT INTO text_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
-	pool.query(query, [FILE_AVGCONDS, buf, user_id, sim_id]);
+
+	await FileAdd(FILE_AVGCONDS, buf, user_id, sim_id);
 }
 
+/*
+ * File 12
+ */
 async function WriteFile_Conditions(user_id, sim_id, lines){
 
-	try{
-		const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [FILE_CONDS, sim_id]);
-		if(ret.length != 0)
-			return;
-	}catch(e){
+	if(await FileExists(FILE_CONDS, sim_id))
 		return;
-	}
 
 	let initArgs = ReadLineArgs(lines[1].trim());
 	const periodC = parseInt(initArgs[0]);
@@ -1325,7 +1634,7 @@ async function WriteFile_Conditions(user_id, sim_id, lines){
 	let off = 0;
 	let buf = Buffer.allocUnsafe(totalSize);
 
-	off = buf.writeInt16LE(parseInt(initArgs[0])); // period count
+	off = buf.writeInt16LE(parseInt(initArgs[0]), off); // period count
 	off = buf.writeInt32LE(parseInt(initArgs[1]), off); // sim time
 	off = buf.writeInt16LE(parseInt(initArgs[2]), off); // edge count
 	off = buf.writeInt16LE(parseInt(initArgs[3]), off); // max edge ID
@@ -1333,15 +1642,123 @@ async function WriteFile_Conditions(user_id, sim_id, lines){
 	let curLine = 2;
 	for(let i = 0; i < periodC; i++){
 		const lineArgs = ReadLineArgs(lines[curLine].trim());
-		off = buf.writeInt32LE(parseInt(lineArgs[0]));
-		off = buf.writeInt16LE(parseInt(lineArgs[1]));
+		off = buf.writeInt32LE(parseInt(lineArgs[0]), off);
+		off = buf.writeInt16LE(parseInt(lineArgs[1]), off);
 		for(let ii = 0; ii < edgeC; ii++)
 			off = CopyToBufLine(lines[curLine + 1 + ii], buf, off, format);
 		curLine += edgeC + 1;
 	}
 
-	const query = "INSERT INTO text_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
-	pool.query(query, [FILE_CONDS, buf, user_id, sim_id]);
+	await FileAdd(FILE_CONDS, buf, user_id, sim_id);
+}
+
+
+async function WriteFile_TripProbes(user_id, sim_id, lines){
+
+	if(await FileExists(FILE_TRIPPROBES, sim_id))
+		return;
+
+
+	//const format = "3_8fi2b"; //9
+	const format = "_fibsssffffffffffffffffffffff";
+
+	const formatSize = GetLineFormatSize(format);
+	const totalSize = formatSize * lines.length;
+
+	let off = 0;
+	let buf = Buffer.allocUnsafe(totalSize);
+
+	off = buf.writeInt32LE(lines.length - 1, off); // number of lines
+
+	for(let i = 0; i < lines.length - 1; i++){
+		const lineArgs = ReadLineArgs(lines[i].trim());
+		if(lineArgs.length != 29)
+			return;
+		off = CopyToBufArgs(lineArgs, buf, off, format);
+	}
+
+
+	await FileAdd(FILE_TRIPPROBES, buf, user_id, sim_id);
+}
+
+async function WriteFile_EdgeProbes(user_id, sim_id, lines){
+
+	if(await FileExists(FILE_EDGEPROBES, sim_id))
+		return;
+
+	const lineC = lines.length - 1;
+	const format11 = "bfibsbsbssffffffffffffffffffffffff";
+	const format21 = "bfibbsbs"+
+					 "sn1n1n1n3n3n3n3"+
+					 "n1n1fn5n5n5n5n5"+
+					 "n5n5c1c1c1c1c1c1"+
+					 "n2n2";
+
+	let format11C = 0, format21C = 0;
+	let links = [];
+	let minLink = 9999;
+	let maxLink = 0;
+	for(let i = 0; i < lineC; i++){
+		const kind = lines[i].substring(1,3);
+		let edge;
+		if(kind === "11"){
+			edge = parseInt(lines[i].substring(22, 28));
+			format11C++;
+		}else if(kind === "21"){
+			edge = parseInt(lines[i].substring(21, 27));
+			format21C++;
+		}else
+			return;
+
+		if(!links.includes(edge)){
+			links.push(edge);
+			if(edge < minLink)
+				minLink = edge;
+			if(edge > maxLink)
+				maxLink = edge;
+		}
+	}
+
+	const format11Size = GetLineFormatSize(format11);
+	const format21Size = GetLineFormatSize(format21);
+	const headSize = 4 + 2 + 2 + 2 + links.length * (2 + 4);
+	const totalSize = format11Size * format11C + format21Size * format21C + headSize;
+
+	let off = 0;
+	let buf = Buffer.allocUnsafe(totalSize);
+
+	off = buf.writeInt32LE(lineC, 0);
+	off = buf.writeInt16LE(links.length, off);
+	off = buf.writeInt16LE(minLink, off);
+	off = buf.writeInt16LE(maxLink, off);
+	//off = buf.writeInt16LE(lineC, off);
+	//off = buf.writeInt16LE(lineC, off);
+	off += links.length * (2 + 4);
+
+
+	let linkMap = Array(maxLink - minLink + 1).fill(0);
+	for(let i = 0; i < lineC; i++){
+		const lineArgs = ReadLineArgs(lines[i].trim());
+		let edge;
+		if(lineArgs[0] == "11"){
+			off = CopyToBufArgs(lineArgs, buf, off, format11);
+			edge = parseInt(lineArgs[4]);
+		}else{
+			off = CopyToBufArgs(lineArgs, buf, off, format21);
+			edge = parseInt(lineArgs[5]);
+		}
+		linkMap[edge-minLink]++;
+	}
+
+	console.log("" + off + "/" + totalSize);
+
+	off = 10;
+	for(let i = 0; i < links.length; i++){
+		off = buf.writeInt16LE(links[i], off);
+		off = buf.writeInt32LE(linkMap[links[i] - minLink], off);
+	}
+
+	await FileAdd(FILE_EDGEPROBES, buf, user_id, sim_id);
 }
 
 
@@ -1354,14 +1771,10 @@ async function WriteFile_Conditions(user_id, sim_id, lines){
  * @param lines (string[]) The file as an array of lines
  */
 async function WriteFile_MinTree(user_id, sim_id, lines){
+
 	// make sure doesn't already exist
-	try{
-	  const [ret] = await promisePool.query("SELECT file_index FROM big_files WHERE file_type = ? AND file_sim = ?", [FILE_PATHS, sim_id]);
-	  if(ret.length != 0)
+	if(await FileExists(FILE_PATHS, sim_id))
 		return;
-	}catch(e){
-	  return;
-	}
 
 	// 0 numberOfPeriods
 	// 1 time
@@ -1440,8 +1853,7 @@ async function WriteFile_MinTree(user_id, sim_id, lines){
 		}
 	}
 
-	const query = "INSERT INTO big_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
-	await promisePool.query(query, [FILE_PATHS, buf, user_id, sim_id]);
+	await FileAdd(FILE_PATHS, buf, user_id, sim_id);
 }
 
 
@@ -1454,20 +1866,27 @@ async function WriteFile_MinTree(user_id, sim_id, lines){
  * @param sim_id (int) The id of the simulation this file is a part of
  * @param str (string) The file as a string
  */
-async function ReadFile(user_id, sim_id, str){
+async function ReadFile(user_id, sim_id, str, fileName){
 	try{
+		if(!fileName) fileName = "";
 
 		const lines = str.split(/\r?\n/); // end of line, but can work with only \n
-		//console.log(lines[0]);
+
+		// this is bad, but good enough
+		if(lines.length < 4)
+			return;
+
 		if(lines[1] === " Total Statistics: ")
 			return await WriteFile_summary(user_id, sim_id, lines);
 
 		const argC = lines[1].trim().split(/\s+/).length;
-		if(argC == 3){
+		const argC2 = lines[3].trim().split(/\s+/).length;
+		if(argC == 3 && (argC2 >= 6 || argC2 == 11)){
+
 			// can either be input file 1 or 3
-			if(lines[2].trim().split(/\s+/).length == 1)
+			if(argC2 == 11 && lines[2].trim().split(/\s+/).length == 1)
 			  await WriteFile_Input3(user_id, sim_id, lines);
-			else if(lines[0].includes("Node Coordinate File"))
+			else if(argC2 >= 6)
 			  await WriteFile_Input1(user_id, sim_id, lines);
 			return
 		}else if(argC == 6)
@@ -1476,23 +1895,15 @@ async function ReadFile(user_id, sim_id, str){
 		  return await WriteFile_MinTree(user_id, sim_id, lines);
 		else if(lines[1].length == 312 || lines[1].length == 269)
 		  return await WriteFile_AvgConditions(user_id, sim_id, lines);
+		else if(lines[3].length == 524)
+		  return await WriteFile_Conditions(user_id, sim_id, lines);
+		else if(argC == 29 && argC2 == 29)
+		  return await WriteFile_TripProbes(user_id, sim_id, lines);
+		else if(argC == 34 && argC2 == 34)
+		  return await WriteFile_EdgeProbes(user_id, sim_id, lines);
 
-		/*const args = lines[1].split(/\s+/);
-		const argC = args.length - 1; // any number of spaces; -1 because lines start with a space
-		if(argC == 4){
-			console.log("" + sim_id + ": 11, 12");
-		}else if(argC == 7){
-			console.log("" + sim_id + ": 13");
-		}else if(argC == 29){
-			console.log("" + sim_id + ": 15");
-		}else if(argC == 33){ // should be 34?
-			console.log("" + sim_id + ": 16");
-		}else{
-			console.log("" + sim_id + ": No: " + argC);
-			//console.log(args);
-		}*/
 	}catch(error){
-		console.error("Couldnt read file: ", error);
+		console.error("Couldnt read file: (" + fileName + ") ", error);
 	}
 	// 4 -> file 11, 12
 	// 7 -> file 13
@@ -1503,6 +1914,7 @@ async function ReadFile(user_id, sim_id, str){
 	// 6 -> file 2
 
 }
+
 
 function FileTypeToName(fileType){
   const FILE_NAMES = [
