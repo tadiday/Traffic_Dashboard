@@ -332,9 +332,15 @@ app.get('/api/file-edges', async (req, res) => await tryGetFile(req, res, FILE_E
 app.get('/api/file-signals', async (req, res) => await tryGetFile(req, res, FILE_SIGNALS));
 
 /*
- * Gets the shortest paths file (output file 11)
+ * Gets the average conditions file (output file 11)
  */
 app.get('/api/file-avgconds', async (req, res) => await tryGetFile(req, res, FILE_AVGCONDS));
+
+/*
+ * Gets the time based conditions file (output file 11)
+ */
+app.get('/api/file-conds', async (req, res) => await tryGetFile(req, res, FILE_CONDS));
+
 
 /*
  * Gets the shortest paths file (output file 13)
@@ -762,49 +768,26 @@ function ReadFile_Conditions(buf){
 		periodObj.index = buf.readInt16LE(off + 4);
 		off += 6;
 
+		// 8s9f8sssssss9fffffffCffffffffKffGffffffCfffffffCffffff
+
 		periodObj.edges = Array(out.edgeMaxID + 1).fill({});
 		for(let ii = 0; ii < out.edgeCount; ii++){
-
+			let obj = {};
+			const index = buf.readInt16LE(off);
+			obj.length = buf.readFloatLE(off + 2);
+			off = ReadFromBufShorts(obj, ["baseCapacity", "totalFlow"], buf, off + 6);
+			[off, obj["flow"]] = ReadFromBufShortArray(buf, 5, off);
+			off = ReadFromBufFloats(obj, ["freeSpeedTime", "totalAverageTime"],  buf, off);
+			[off, obj["averageTime"]] = ReadFromBufFloatArray(buf, 5, off);
+			[off, obj["averageToll"]] = ReadFromBufFloatArray(buf, 5, off);
+			off = ReadFromBufFloats(obj, ["averageVehicles", "averageQueue", "averageStops"],  buf, off);
+			[off, obj["modelParameters"]] = ReadFromBufFloatArray(buf, 8, off);
+			off = ReadFromBufFloats(obj, ["fuel", "HC", "CO", "NO", "CO2", "PM", "totalEnergy"],  buf, off);
+			off = ReadFromBufFloats(obj, ["expectedCrashes", "expectedTopInjurt", "fatelCrashes", "crashLowDamage", "crashMedDamage", "crashHighDamage"],  buf, off);
+			periodObj.edges[index] = obj;
 		}
 
-	}
-
-	const edgeCount = buf.readInt16LE(off + 4);
-	out.flow = Array(edgeCount + 1).fill([]);
-	out.conditions = Array(edgeCount + 1).fill({});
-
-	// 5s6fsssssss7ffffffffffff6fffAffffff9ffffff
-	// 5s7s5sss7s5sss7s5sss7s5sss7s5sss
-
-	const countA = buf.readInt16LE(off + 6);
-	off += 8;
-
-	for(let i = 0; i < countA; i++){
-		let obj = {};
-		const index = buf.readInt16LE(off);
-		obj.length = buf.readFloatLE(off + 2);
-		off = ReadFromBufShorts(obj, ["baseCapacity", "totalFlow"], buf, off + 6);
-		[off, obj["flow"]] = ReadFromBufShortArray(buf, 5, off);
-		off = ReadFromBufFloats(obj, ["freeSpeedTime", "totalAverageTime"],  buf, off);
-		[off, obj["averageTime"]] = ReadFromBufFloatArray(buf, 5, off);
-		[off, obj["averageToll"]] = ReadFromBufFloatArray(buf, 5, off);
-		off = ReadFromBufFloats(obj, ["averageVehicles", "averageQueue", "averageStops"],  buf, off);
-		off = ReadFromBufFloats(obj, ["fuel", "HC", "CO", "NO", "CO2", "PM"],  buf, off);
-		off = ReadFromBufFloats(obj, ["expectedCrashes", "expectedTopInjurt", "fatelCrashes", "crashLowDamage", "crashMedDamage", "crashHighDamage"],  buf, off);
-		out.conditions[index] = obj;
-	}
-
-	const countB = buf.readInt16LE(off);
-	off += 2;
-
-	for(let i = 0; i < countB; i++){
-		const index = buf.readInt16LE(off);
-		off+=2;
-		out.flow[index] = new Array(5).fill({});
-		for(let ii = 0; ii < 5; ii++){
-			out.flow[index][ii] = {};
-			off = ReadFromBufShorts(out.flow[index][ii], ["leftTurn", "through", "rightTurn", "total"], buf, off);
-		}
+		out.periods[i] = periodObj;
 	}
 
 	return out;
@@ -875,6 +858,7 @@ function ReadFile_Any(buf, fileType){
 		case FILE_SIGNALS: return ReadFile_signals(buf);
 		case FILE_SUMMARY: return ReadFile_summary(buf);
 		case FILE_AVGCONDS: return ReadFile_AvgConditions(buf);
+		case FILE_CONDS: return ReadFile_Conditions(buf);
 		case FILE_PATHS: return ReadFile_paths(buf);
 	}
 }
@@ -1322,6 +1306,12 @@ async function WriteFile_Conditions(user_id, sim_id, lines){
 	const periodSize = formatSize * edgeC + 4 + 2;
 	const totalSize = 2 + 4 + 2 + 2 + periodSize * periodC;
 
+	console.log("-----");
+	console.log(periodC);
+	console.log(formatSize);
+	console.log(periodSize);
+	console.log(totalSize);
+
 	let off = 0;
 	let buf = Buffer.allocUnsafe(totalSize);
 
@@ -1476,6 +1466,9 @@ async function ReadFile(user_id, sim_id, str){
 		  return await WriteFile_MinTree(user_id, sim_id, lines);
 		else if(lines[1].length == 312 || lines[1].length == 269)
 		  return await WriteFile_AvgConditions(user_id, sim_id, lines);
+		else if(lines[3].length == 524)
+		  return await WriteFile_Conditions(user_id, sim_id, lines);
+
 
 		/*const args = lines[1].split(/\s+/);
 		const argC = args.length - 1; // any number of spaces; -1 because lines start with a space
