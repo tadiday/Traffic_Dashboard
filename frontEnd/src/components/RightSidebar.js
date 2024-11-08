@@ -9,11 +9,12 @@ function RightSidebar(props) {
     const visualizations = ({ 
         'Summary': ['Traffic Map', 'Total Vehicle Damage'],
         'Average Traffic Conditions': ['node'],
+        'Traffic Conditions': [],
         'Paths' : [],
         'Trip Completion Probes' : [],
         'Road Probes' : []
     });
-    const outputFileTypes = ['Summary', 'Average Traffic Conditions', 'Paths', 'Trip Completion Probes','Road Probes'];
+    const outputFileTypes = ['Summary', 'Average Traffic Conditions', 'Traffic Conditions', 'Paths', 'Trip Completion Probes','Road Probes'];
 
     // Handle expanding/collapsing the file types and showing visualizations
     const toggleFile = async (fileName) => {
