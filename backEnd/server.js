@@ -297,7 +297,7 @@ async function tryGetFile(req, res, fileType){
 
 		// make sure the simulation exists
 		if(!entry)
-		  return res.status(500).send("File not found");
+		  return res.status(500).send("File not found:", sim_id);
 
 		// check whether or not they are allowed
 		if(entry.file_owner != user_id) // make this throw/return an error when done
@@ -607,34 +607,27 @@ function ReadFile_summary(buf){
 	];
 
 	let out = {total:{}, average:{}};
-	let off = 0;
-
-	const lenA = buf.readInt16LE(off + 0);
-	const lenB = buf.readInt16LE(off + 2);
-	off += 4;
+	let off = -4;
 
 	// read the total
-	for(let i = 0; i < lenA; i++){
+	for(let i = 0; i < 24; i++){
 		let line = [1,2,3,4,5,6];
 		for(let ii = 0; ii < 6; ii++)
-			line[ii] = buf.readFloatLE((off += 4) - 4);
-		let tag = "";
-		[off,tag] = ReadString(buf, off);
-		out.total[tag] = line;
+			line[ii] = buf.readFloatLE(off += 4);
+		out.total[SUMMARY_TAGS[i]] = line;
 	}
 
 	// read the average
-	for(let i = 0; i < lenB; i++){
+	for(let i = 0; i < 24; i++){
 		let line = [1,2,3,4,5,6];
 		for(let ii = 0; ii < 6; ii++)
-			line[ii] = buf.readFloatLE((off += 4) - 4);
-		let tag = "";
-		[off,tag] = ReadString(buf, off);
-		out.average[tag] = line;
+			line[ii] = buf.readFloatLE(off += 4);
+		out.average[SUMMARY_TAGS[i]] = line;
 	}
 
 	return out;
 }
+
 
 
 /*
