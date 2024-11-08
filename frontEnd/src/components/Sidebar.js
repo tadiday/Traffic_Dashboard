@@ -1,15 +1,14 @@
-import React, { useState, useEffect} from 'react';
+//ts-check
+import React, { useEffect } from 'react';
 import './Sidebar.css';
 
 function Sidebar(props) {
-  const [files, setFiles] = useState([]); // Store files for the expanded collection
-
   // Handle expanding/collapsing the collection and fetching files
   const toggleCollection = async (collectionName) => {
     if (props.expandedCollection === collectionName) {
       // If the collection is already expanded, collapse it
       props.setExpandedCollection(null);
-      setFiles([]);
+      props.setFiles([]);
     } else {
       // Otherwise, expand the collection and fetch the files
       props.setExpandedCollection(collectionName);
@@ -21,7 +20,7 @@ function Sidebar(props) {
           }
         });
         const data = await response.json();
-        setFiles(data); // Set the fetched files for this collection
+        props.setFiles(data); // Set the fetched files for this collection
       } catch (error) {
         console.error('Error fetching files:', error);
       }
@@ -56,10 +55,10 @@ function Sidebar(props) {
             {/* Display files if the collection is expanded */}
             {props.expandedCollection === item && (
               <ul className="file-list">
-                {files.length === 0 ? (
+                {props.files.length === 0 ? (
                   <li>No files found in this collection</li>
                 ) : (
-                  files.map((file, fileIndex) => <li key={fileIndex}>{file}</li>)
+                  props.files.map((file, fileIndex) => <li key={fileIndex}>{file}</li>)
                 )}
               </ul>
             )}

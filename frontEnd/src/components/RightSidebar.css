@@ -14,18 +14,78 @@
   margin-bottom: 10px;
 }
 
-.right-sidebar button {
+
+.right-sidebar input[type="file"],
+.right-sidebar input[type="text"] {
   width: 100%;
-  background-color: #660000;
-  color: #fff;
-  border: none;
-  padding: 10px;
-  margin-bottom: 10px;
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
   border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
 }
 
-.right-sidebar button:hover {
+.right-sidebar ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.right-sidebar li {
+  background-color: #eee;
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 4px;
+  display: block; 
+  position: relative; 
+  word-wrap: break-word;
+  overflow-wrap: break-word; 
+}
+
+/* Style for the collection name */
+.file-type {
+  cursor: pointer;
+  font-weight: bold;
+  display: inline-block; /* Keep it inline with the X button */
+  max-width: 80%; /* Ensure collection name does not take up full width */
+  word-wrap: break-word; /* Enable wrapping for long names */
+  white-space: normal; /* Prevent overflow by allowing line breaks */
+}
+
+/* Style for the file list under the collection */
+.visualization-list {
+  margin-left: 0;
+  list-style-type: none;
+  padding: 5px 0;
+}
+
+.visualization-list li {
+  background-color: #660000;
+  color: #fff;
+  padding: 5px;
+  margin-bottom: 5px;
+  border-radius: 3px;
+  width: calc(100% - 10px); 
+  box-sizing: border-box; 
+  word-wrap: break-word; 
+  white-space: normal;
+  overflow-wrap: break-word; 
+}
+
+.visualization-list li:hover {
   background-color: #8b0000;
 }
+/* .visualization-list li {
+  background-color: #f9f9f9;
+  padding: 5px;
+  margin-bottom: 5px;
+  border-radius: 3px;
+  width: calc(100% - 10px); 
+  box-sizing: border-box; 
+  word-wrap: break-word; 
+  white-space: normal;
+  overflow-wrap: break-word; 
+} 
+
+/* Adjust hover effect */
+/* .visualization-list li:hover {
+  background-color: #ececec;
+} */

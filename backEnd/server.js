@@ -335,15 +335,13 @@ app.get('/api/file-signals', async (req, res) => await tryGetFile(req, res, FILE
 
 /*
  * Gets the average conditions file (output file 11)
- * Gets the average conditions file (output file 11)
  */
 app.get('/api/file-avgconds', async (req, res) => await tryGetFile(req, res, FILE_AVGCONDS));
 
 /*
- * Gets the time based conditions file (output file 11)
+ * Gets the time based conditions file (output file 12)
  */
 app.get('/api/file-conds', async (req, res) => await tryGetFile(req, res, FILE_CONDS));
-
 
 /*
  * Gets the shortest paths file (output file 13)

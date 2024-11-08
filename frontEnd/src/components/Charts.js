@@ -5,11 +5,11 @@ import Summary from './Summary';
 
 function Charts(props) {
     const dimensions = { graphWidth: window.innerWidth * 0.6, graphHeight: window.innerHeight * 0.7};
-    var file = "Summary"; // get from elsewhere later in useState
+    //props.setFile_Type("Summary"); // get from elsewhere later in useState
 
     var ret;
 
-    switch(file){
+    switch(props.file_type){
         case "Summary":
             ret = (<Summary
                 dimensions={dimensions}
@@ -17,7 +17,7 @@ function Charts(props) {
                 expandedCollection={props.expandedCollection}
             />);
             break;
-        case "AveTrafficConds":
+        case "Average Traffic Conditions":
             ret = (<AveTrafficConds
                 dimensions={dimensions}
                 selectedGraph={props.selectedGraph}

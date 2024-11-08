@@ -12,11 +12,13 @@ import RightSidebar from '../components/RightSidebar'; // Import RightSidebar
 function Main(props) {
     const [expandedCollection, setExpandedCollection] = useState(null);
     const [username, setUsername] = useState('');
-    const [file, setFile] = useState(null);
+    const [file, setFile] = useState(null); // File to be uploaded
     const [collectionName, setCollectionName] = useState('');
     const [items, setItems] = useState([]);
     const [selectedGraph, setSelectedGraph] = useState('node'); // Add selectedGraph state
     const navigate = useNavigate();
+    const [files, setFiles] = useState([]); // Store files for the expanded collection
+    const [file_type, setFile_Type] = useState(null);
     
     // Get items and username
     useEffect(() => {
@@ -130,7 +132,9 @@ function Main(props) {
             <Navbar username={username} onLogout={handleLogout} />
             <div className="content">
                 <Sidebar 
-                    file={file} 
+                    file={file} // File to be uploaded
+                    files={files} // Files within the selected collection
+                    setFiles={setFiles}
                     collectionName={collectionName} 
                     handleUpload={upload} 
                     items={items} 
@@ -145,11 +149,16 @@ function Main(props) {
                     <Charts 
                         expandedCollection={expandedCollection}
                         selectedGraph={selectedGraph} // Pass selectedGraph to Charts
+                        file_type={file_type}
+                        setFile_Type={setFile_Type}
                     />
                 </div>
                 <RightSidebar 
                     setSelectedGraph={setSelectedGraph}
                     expandedCollection={expandedCollection} 
+                    files={files} // Files within the selected collection
+                    file_type={file_type}
+                    setFile_Type={setFile_Type}
                 /> {/* Add RightSidebar */}
             </div>
         </div>

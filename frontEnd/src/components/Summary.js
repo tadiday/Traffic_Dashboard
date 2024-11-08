@@ -180,9 +180,9 @@ function Summary(props) {
     }
 
     useEffect(() => {
-        if (props.selectedGraph === 'node') {
+        if (props.selectedGraph === 'Traffic Map') {
             TrafficMap();
-        } else if (props.selectedGraph === 'bar') {
+        } else if (props.selectedGraph === 'Total Vehicle Damage') {
             TotalVehicleDamage();
         }
 
