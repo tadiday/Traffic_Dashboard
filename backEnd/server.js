@@ -297,7 +297,7 @@ async function tryGetFile(req, res, fileType){
 
 		// make sure the simulation exists
 		if(!entry)
-		  return res.status(500).send("File not found:", sim_id);
+		  return res.status(500).send("File not found");
 
 		// check whether or not they are allowed
 		if(entry.file_owner != user_id) // make this throw/return an error when done
@@ -339,9 +339,10 @@ app.get('/api/file-signals', async (req, res) => await tryGetFile(req, res, FILE
 app.get('/api/file-avgconds', async (req, res) => await tryGetFile(req, res, FILE_AVGCONDS));
 
 /*
- * Gets the time based conditions file (output file 12)
+ * Gets the time based conditions file (output file 11)
  */
 app.get('/api/file-conds', async (req, res) => await tryGetFile(req, res, FILE_CONDS));
+
 
 /*
  * Gets the shortest paths file (output file 13)
@@ -605,27 +606,34 @@ function ReadFile_summary(buf){
 	];
 
 	let out = {total:{}, average:{}};
-	let off = -4;
+	let off = 0;
+
+	const lenA = buf.readInt16LE(off + 0);
+	const lenB = buf.readInt16LE(off + 2);
+	off += 4;
 
 	// read the total
-	for(let i = 0; i < 24; i++){
+	for(let i = 0; i < lenA; i++){
 		let line = [1,2,3,4,5,6];
 		for(let ii = 0; ii < 6; ii++)
-			line[ii] = buf.readFloatLE(off += 4);
-		out.total[SUMMARY_TAGS[i]] = line;
+			line[ii] = buf.readFloatLE((off += 4) - 4);
+		let tag = "";
+		[off,tag] = ReadString(buf, off);
+		out.total[tag] = line;
 	}
 
 	// read the average
-	for(let i = 0; i < 24; i++){
+	for(let i = 0; i < lenB; i++){
 		let line = [1,2,3,4,5,6];
 		for(let ii = 0; ii < 6; ii++)
-			line[ii] = buf.readFloatLE(off += 4);
-		out.average[SUMMARY_TAGS[i]] = line;
+			line[ii] = buf.readFloatLE((off += 4) - 4);
+		let tag = "";
+		[off,tag] = ReadString(buf, off);
+		out.average[tag] = line;
 	}
 
 	return out;
 }
-
 
 
 /*
@@ -1623,12 +1631,6 @@ async function WriteFile_Conditions(user_id, sim_id, lines){
 	const periodSize = formatSize * edgeC + 4 + 2;
 	const totalSize = 2 + 4 + 2 + 2 + periodSize * periodC;
 
-	console.log("-----");
-	console.log(periodC);
-	console.log(formatSize);
-	console.log(periodSize);
-	console.log(totalSize);
-
 	let off = 0;
 	let buf = Buffer.allocUnsafe(totalSize);
 
@@ -1942,7 +1944,6 @@ function FileNumToFileType(fileNum){
 
   }
 }
-
 
 
 

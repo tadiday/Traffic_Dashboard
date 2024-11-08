@@ -37,10 +37,8 @@ function RightSidebar(props) {
                         </div> {/* Display visualizations if the file type is expanded */} 
                         {props.file_type === file && ( 
                             <ul className="visualization-list"> 
-                                {visualizations[props.file_type] ? ( // Verify there are visualizations for the file type 
-                                visualizations[props.file_type].map((visFile, fileIndex) => <li key={fileIndex} onClick={() => props.setSelectedGraph(visFile)}>{visFile}</li>) 
-                                ) : ( 
-                                <li>No visualization found for this file type</li> )} 
+                                {visualizations[props.file_type].map((visFile, fileIndex) => <li key={fileIndex} onClick={() => props.setSelectedGraph(visFile)}>{visFile}</li>
+                                ) } 
                             </ul> 
                         )} 
                     </li> 

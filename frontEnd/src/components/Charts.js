@@ -25,7 +25,7 @@ function Charts(props) {
             break;
         default:
             ret = (<div/>);
-            console.log("Should not happen");
+            //console.log("No file type selected");
     }
     return ret;
 }
