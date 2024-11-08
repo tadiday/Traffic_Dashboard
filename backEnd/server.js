@@ -223,11 +223,13 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 	const name = req.body.collectionName;
 	const date = (new Date()).toLocaleString();
 	// Check if its been uploaded
-	[[{sim_id}]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ?", [name]);
-	if(sim_id){
-		console.log('Collection '+name+' already exists');
-		return res.status(400).send('Collection '+name+' already exists');
+	const result = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ?", [name]);
+
+	if (result[0] && result[0].length > 0 && result[0][0].sim_id) {
+		console.log('Collection ' + name + ' already exists');
+		return res.status(400).send('Collection ' + name + ' already exists');
 	}
+
 	const simInsert = "INSERT INTO simulations (sim_name, sim_date, sim_owner) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();";
 	var [[_,[sim_id]]] = await promisePool.query(simInsert, [name, date, user_id]);
 	//console.log(user_id);
