@@ -222,12 +222,18 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
 	const name = req.body.collectionName;
 	const date = (new Date()).toLocaleString();
+	// Check if its been uploaded
+	[[{sim_id}]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ?", [name]);
+	if(sim_id){
+		console.log('Collection '+name+' already exists');
+		return res.status(400).send('Collection '+name+' already exists');
+	}
 	const simInsert = "INSERT INTO simulations (sim_name, sim_date, sim_owner) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();";
 	var [[_,[sim_id]]] = await promisePool.query(simInsert, [name, date, user_id]);
-	console.log(user_id);
+	//console.log(user_id);
 	sim_id = sim_id["LAST_INSERT_ID()"];
 
-	console.log("Simulation: " + sim_id);
+	//console.log("Simulation: " + sim_id);
 
 	//res.send('File data inserted successfully.');
   } catch (error) {
@@ -285,7 +291,7 @@ async function tryGetFile(req, res, fileType){
 				throw "";
 		}catch(e){
 			[[{sim_id}]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?", [req.query.sim, user_id]);
-			console.log(sim_id);
+			//console.log(sim_id);
 		}
 
 		if(!sim_id)
@@ -339,7 +345,7 @@ app.get('/api/file-signals', async (req, res) => await tryGetFile(req, res, FILE
 app.get('/api/file-avgconds', async (req, res) => await tryGetFile(req, res, FILE_AVGCONDS));
 
 /*
- * Gets the time based conditions file (output file 11)
+ * Gets the time based conditions file (output file 12)
  */
 app.get('/api/file-conds', async (req, res) => await tryGetFile(req, res, FILE_CONDS));
 
@@ -436,8 +442,8 @@ app.post('/register', async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-    console.log('Server.js App is listening on port 3000');
+app.listen(process.env.PORT, () => {
+    console.log('Server.js App is listening on port '+ process.env.PORT);
 });
 
 // Closes DB Connections on receiving end signals
@@ -1868,8 +1874,11 @@ async function WriteFile_MinTree(user_id, sim_id, lines){
  */
 async function ReadFile(user_id, sim_id, str, fileName){
 	try{
-		if(!fileName) fileName = "";
-
+		if(!fileName) {
+			fileName = "";
+			console.log("No file name");
+		}
+		console.log("Reading in file name: "+fileName);
 		const lines = str.split(/\r?\n/); // end of line, but can work with only \n
 
 		// this is bad, but good enough

@@ -24,7 +24,11 @@ function Charts(props) {
                 expandedCollection={props.expandedCollection}/>);
             break;
         default:
-            ret = (<div/>);
+            ret = (
+            <div>
+                <p>Please Select a Collection on the left and then a Visualization on the right.</p>
+            </div>
+            );
             //console.log("No file type selected");
     }
     return ret;

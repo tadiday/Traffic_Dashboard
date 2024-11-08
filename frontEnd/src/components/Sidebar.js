@@ -8,10 +8,12 @@ function Sidebar(props) {
     if (props.expandedCollection === collectionName) {
       // If the collection is already expanded, collapse it
       props.setExpandedCollection(null);
+      props.setFile_Type(null);
       props.setFiles([]);
     } else {
       // Otherwise, expand the collection and fetch the files
       props.setExpandedCollection(collectionName);
+      props.setFile_Type(null);
       const token = sessionStorage.getItem('token');
       try {
         const response = await fetch(`${process.env.REACT_APP_API_URL}:3000/api/select-uploads?collection_name=${collectionName}`, {
@@ -27,12 +29,12 @@ function Sidebar(props) {
     }
   };
 
-  useEffect(() => {
-    if (props.items.length > 0) {
-      toggleCollection(props.items[0]); // Toggle the first item on initial render
-    }
-    // eslint-disable-next-line
-  }, [props.items]);
+  // useEffect(() => {
+  //   if (props.items.length > 0) {
+  //     toggleCollection(props.items[0]); // Toggle the first item on initial render
+  //   }
+  //   // eslint-disable-next-line
+  // }, []);
 
   return (
     <div className="sidebar">

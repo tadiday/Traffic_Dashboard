@@ -77,8 +77,10 @@ function Main(props) {
             fetchItems();
         } catch (error) {
             console.error('Error uploading file:', error);
-            if(error.response.data.message){
-                alert(error.response.data.message);
+            if(error.response.data){
+                alert(error.response.data);
+            } else {
+                alert("An error occured uploading the file.")
             }
         }
     };
@@ -135,6 +137,8 @@ function Main(props) {
                     file={file} // File to be uploaded
                     files={files} // Files within the selected collection
                     setFiles={setFiles}
+                    file_type={file_type} // The type of file whose visualizations can be chosen
+                    setFile_Type={setFile_Type}
                     collectionName={collectionName} 
                     handleUpload={upload} 
                     items={items} 
