@@ -1661,10 +1661,8 @@ async function WriteFile_Conditions(user_id, sim_id, lines){
 
 
 async function WriteFile_TripProbes(user_id, sim_id, lines){
-	console.log("Adding trip probes");
 	if(await FileExists(FILE_TRIPPROBES, sim_id))
 		return;
-	console.log("Trip probes doesn't exist");
 
 
 	//const format = "3_8fi2b"; //9
@@ -1681,16 +1679,12 @@ async function WriteFile_TripProbes(user_id, sim_id, lines){
 	for(let i = 0; i < lines.length - 1; i++){
 		const lineArgs = ReadLineArgs(lines[i].trim());
 		if(lineArgs.length != 30){
-			console.log(lineArgs.length);
 			continue;
 		}
 		off = CopyToBufArgs(lineArgs, buf, off, format);
 	}
 
-	console.log("Writing trip probes");
 	await FileAdd(FILE_TRIPPROBES, buf, user_id, sim_id);
-	console.log("Wrote trip probes");
-
 }
 
 async function WriteFile_EdgeProbes(user_id, sim_id, lines){
