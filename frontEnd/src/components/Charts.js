@@ -2,6 +2,7 @@
 import React from 'react';
 import AveTrafficConds from './AveTrafficConds';
 import Summary from './Summary';
+import MinPathTree from './MinPathTree';
 
 function Charts(props) {
     const dimensions = { graphWidth: window.innerWidth * 0.6, graphHeight: window.innerHeight * 0.7};
@@ -19,6 +20,13 @@ function Charts(props) {
             break;
         case "Average Traffic Conditions":
             ret = (<AveTrafficConds
+                dimensions={dimensions}
+                selectedGraph={props.selectedGraph}
+                expandedCollection={props.expandedCollection}/>);
+            break;
+
+        case "Paths":
+            ret = (<MinPathTree
                 dimensions={dimensions}
                 selectedGraph={props.selectedGraph}
                 expandedCollection={props.expandedCollection}/>);

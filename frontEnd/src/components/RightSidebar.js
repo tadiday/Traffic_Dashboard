@@ -5,9 +5,10 @@ import './RightSidebar.css';
 function RightSidebar(props) {
     const visualizations = ({ 
         'Summary': ['Traffic Map', 'Total Vehicle Damage'],
-        'Average Traffic Conditions': ['node']
+        'Average Traffic Conditions': ['node'],
+        'Paths': ['node']
     });
-    const outputFileTypes = ['Summary', 'Average Traffic Conditions'];
+    const outputFileTypes = ['Summary', 'Average Traffic Conditions', 'Paths'];
 
     // Handle expanding/collapsing the file types and showing visualizations
     const toggleFile = async (fileName) => {
