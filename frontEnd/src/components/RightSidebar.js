@@ -3,22 +3,28 @@ import React from 'react';
 import './RightSidebar.css';
 
 function RightSidebar(props) {
+    // props.file_type is the selected visualization file type/source
+    // props.files is the list returned from the backend of the file types associated with the collection
+    // Fix dependecies for node graphs TBD 
     const visualizations = ({ 
         'Summary': ['Traffic Map', 'Total Vehicle Damage'],
         'Average Traffic Conditions': ['node'],
-        'Paths': ['node']
+        'Traffic Conditions': [],
+        'Paths' : ['node'],
+        'Trip Completion Probes' : [],
+        'Road Probes' : []
     });
-    const outputFileTypes = ['Summary', 'Average Traffic Conditions', 'Paths'];
+    const outputFileTypes = ['Summary', 'Average Traffic Conditions', 'Traffic Conditions', 'Paths', 'Trip Completion Probes','Road Probes'];
 
     // Handle expanding/collapsing the file types and showing visualizations
     const toggleFile = async (fileName) => {
-        if (props.file === fileName) {
+        if (props.file_type === fileName) {
             // If the file type is already expanded, collapse it
             props.setFile_Type(null);
         } else {
             // Otherwise, expand the file type
             props.setFile_Type(fileName);
-            if(visualizations[fileName][0].length > 0){
+            if(visualizations[fileName].length > 0){
                 props.setSelectedGraph(visualizations[fileName][0]);
             }
         }
@@ -38,10 +44,8 @@ function RightSidebar(props) {
                         </div> {/* Display visualizations if the file type is expanded */} 
                         {props.file_type === file && ( 
                             <ul className="visualization-list"> 
-                                {visualizations[props.file_type] ? ( // Verify there are visualizations for the file type 
-                                visualizations[props.file_type].map((visFile, fileIndex) => <li key={fileIndex} onClick={() => props.setSelectedGraph(visFile)}>{visFile}</li>) 
-                                ) : ( 
-                                <li>No visualization found for this file type</li> )} 
+                                {visualizations[props.file_type].map((visFile, fileIndex) => <li key={fileIndex} onClick={() => props.setSelectedGraph(visFile)}>{visFile}</li>
+                                ) } 
                             </ul> 
                         )} 
                     </li> 

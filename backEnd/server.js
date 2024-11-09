@@ -62,7 +62,7 @@ app.get('/api/verify-token', async (req, res) => {
   	res.status(200).json({ message: 'Token is valid', username: username });
   } catch(exception) {
   	console.log(exception);
-  	res.status(exception.status).json({ message: exception.message });
+  	res.status(exception.status).send(exception.message);
   }
 });
 
@@ -74,7 +74,7 @@ app.get('/api/get-collections', async (req, res) => {
   	//var username = verifyToken(req);
   	var user_id = verifyToken(req).user_id;
   } catch(exception){
-	return res.status(exception.status).json({ message: exception.message });
+	return res.status(exception.status).send(exception.message);
   }
 
   try{
@@ -91,7 +91,6 @@ app.get('/api/get-collections', async (req, res) => {
   }
 });
 
-
 /*
  * Gets the directory for the logged in user, returning an array
  * of objects with values: "sim_name", "sim_date", "sim_id"
@@ -100,7 +99,7 @@ app.get("/api/get-directory", async (req, res) => {
   try{
   	var user_id = verifyToken(req).user_id;
   } catch(exception){
-	return res.status(exception.status).json({ message: exception.message });
+	return res.status(exception.status).send(exception.message);
   }
 
   try{
@@ -122,7 +121,7 @@ app.get('/api/select-uploads', async (req, res) => {
     try{
       var user_id = verifyToken(req).user_id;
     } catch(exception) {
-      return res.status(exception.status).json({ message: exception.message });
+		return res.status(exception.status).send(exception.message);
     }
 
     // query database and stuff
@@ -155,7 +154,7 @@ app.post('/api/delete-collection', async (req, res) => {
   } catch(exception) {
   	if(!exception.status)
 		exception.status = 500;
-    return res.status(exception.status).json({ message: exception.message });
+	return res.status(exception.status).send(exception.message);
   }
 
   try {
@@ -180,7 +179,7 @@ app.post('/api/delete-upload', async (req, res) => {
   try{
     var user_id = verifyToken(req).user_id;
   } catch(exception) {
-    return res.status(exception.status).json({ message: exception.message });
+	return res.status(exception.status).send(exception.message);
   }
 
   try{
@@ -214,7 +213,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   try{
     var user_id = verifyToken(req).user_id;
   } catch(exception) {
-    return res.status(exception.status).json({ message: exception.message });
+	return res.status(exception.status).send(exception.message);
   }
 
   // try and create the simulation document
@@ -222,12 +221,20 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
 	const name = req.body.collectionName;
 	const date = (new Date()).toLocaleString();
+	// Check if its been uploaded
+	const result = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ?", [name]);
+
+	if (result[0] && result[0].length > 0 && result[0][0].sim_id) {
+		console.log('Collection ' + name + ' already exists');
+		return res.status(400).send('Collection ' + name + ' already exists');
+	}
+
 	const simInsert = "INSERT INTO simulations (sim_name, sim_date, sim_owner) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();";
 	var [[_,[sim_id]]] = await promisePool.query(simInsert, [name, date, user_id]);
-	console.log(user_id);
+	//console.log(user_id);
 	sim_id = sim_id["LAST_INSERT_ID()"];
 
-	console.log("Simulation: " + sim_id);
+	//console.log("Simulation: " + sim_id);
 
 	//res.send('File data inserted successfully.');
   } catch (error) {
@@ -271,7 +278,8 @@ async function tryGetFile(req, res, fileType){
 		var user_id = verifyToken(req).user_id;
 	} catch(exception) {
 		var user_id = 1;
-		//return res.status(exception.status).json({ message: exception.message });
+		// TBD uncomment when ready for real use
+		//return res.status(exception.status).send(exception.message);
 	}
 
 
@@ -285,7 +293,7 @@ async function tryGetFile(req, res, fileType){
 				throw "";
 		}catch(e){
 			[[{sim_id}]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?", [req.query.sim, user_id]);
-			console.log(sim_id);
+			//console.log(sim_id);
 		}
 
 		if(!sim_id)
@@ -297,7 +305,7 @@ async function tryGetFile(req, res, fileType){
 
 		// make sure the simulation exists
 		if(!entry)
-		  return res.status(500).send("File not found:", sim_id);
+		  return res.status(500).send("File not found");
 
 		// check whether or not they are allowed
 		if(entry.file_owner != user_id) // make this throw/return an error when done
@@ -435,8 +443,8 @@ app.post('/register', async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-    console.log('Server.js App is listening on port 3000');
+app.listen(process.env.PORT, () => {
+    console.log('Server.js App is listening on port '+ process.env.PORT);
 });
 
 // Closes DB Connections on receiving end signals
@@ -605,27 +613,34 @@ function ReadFile_summary(buf){
 	];
 
 	let out = {total:{}, average:{}};
-	let off = -4;
+	let off = 0;
+
+	const lenA = buf.readInt16LE(off + 0);
+	const lenB = buf.readInt16LE(off + 2);
+	off += 4;
 
 	// read the total
-	for(let i = 0; i < 24; i++){
+	for(let i = 0; i < lenA; i++){
 		let line = [1,2,3,4,5,6];
 		for(let ii = 0; ii < 6; ii++)
-			line[ii] = buf.readFloatLE(off += 4);
-		out.total[SUMMARY_TAGS[i]] = line;
+			line[ii] = buf.readFloatLE((off += 4) - 4);
+		let tag = "";
+		[off,tag] = ReadString(buf, off);
+		out.total[tag] = line;
 	}
 
 	// read the average
-	for(let i = 0; i < 24; i++){
+	for(let i = 0; i < lenB; i++){
 		let line = [1,2,3,4,5,6];
 		for(let ii = 0; ii < 6; ii++)
-			line[ii] = buf.readFloatLE(off += 4);
-		out.average[SUMMARY_TAGS[i]] = line;
+			line[ii] = buf.readFloatLE((off += 4) - 4);
+		let tag = "";
+		[off,tag] = ReadString(buf, off);
+		out.average[tag] = line;
 	}
 
 	return out;
 }
-
 
 
 /*
@@ -1623,12 +1638,6 @@ async function WriteFile_Conditions(user_id, sim_id, lines){
 	const periodSize = formatSize * edgeC + 4 + 2;
 	const totalSize = 2 + 4 + 2 + 2 + periodSize * periodC;
 
-	console.log("-----");
-	console.log(periodC);
-	console.log(formatSize);
-	console.log(periodSize);
-	console.log(totalSize);
-
 	let off = 0;
 	let buf = Buffer.allocUnsafe(totalSize);
 
@@ -1652,7 +1661,6 @@ async function WriteFile_Conditions(user_id, sim_id, lines){
 
 
 async function WriteFile_TripProbes(user_id, sim_id, lines){
-
 	if(await FileExists(FILE_TRIPPROBES, sim_id))
 		return;
 
@@ -1670,11 +1678,11 @@ async function WriteFile_TripProbes(user_id, sim_id, lines){
 
 	for(let i = 0; i < lines.length - 1; i++){
 		const lineArgs = ReadLineArgs(lines[i].trim());
-		if(lineArgs.length != 29)
-			return;
+		if(lineArgs.length != 30){
+			continue;
+		}
 		off = CopyToBufArgs(lineArgs, buf, off, format);
 	}
-
 
 	await FileAdd(FILE_TRIPPROBES, buf, user_id, sim_id);
 }
@@ -1748,7 +1756,7 @@ async function WriteFile_EdgeProbes(user_id, sim_id, lines){
 		linkMap[edge-minLink]++;
 	}
 
-	console.log("" + off + "/" + totalSize);
+	//console.log("" + off + "/" + totalSize);
 
 	off = 10;
 	for(let i = 0; i < links.length; i++){
@@ -1866,51 +1874,50 @@ async function WriteFile_MinTree(user_id, sim_id, lines){
  */
 async function ReadFile(user_id, sim_id, str, fileName){
 	try{
-		if(!fileName) fileName = "";
-
+		if(!fileName) {
+			fileName = "";
+			console.log("No file name");
+		}
+		//console.log("Reading in file name: "+fileName);
 		const lines = str.split(/\r?\n/); // end of line, but can work with only \n
+
+		const summaryFileRegex = /.*summary.*\.out$/i;
+		const nodesRegex = /.*1.*\.dat$/i;
+		const edgesRegex = /.*2.*\.dat$/i;
+		const signalsRegex = /.*3.*\.dat$/i;
+		const averageTrafficConditionsRegex = /.*11.*\.out$/i;
+		const trafficConditionsRegex = /.*12.*\.out$/i;
+		const pathsRegex = /.*13.*\.out$/i;
+		const tripProbesRegex = /.*15.*\.out$/i;
+		const roadProbesRegex = /.*16.*\.out$/i;
 
 		// this is bad, but good enough
 		if(lines.length < 4)
 			return;
 
-		if(lines[1] === " Total Statistics: ")
-			return await WriteFile_summary(user_id, sim_id, lines);
-
-		const argC = lines[1].trim().split(/\s+/).length;
-		const argC2 = lines[3].trim().split(/\s+/).length;
-		if(argC == 3 && (argC2 >= 6 || argC2 == 11)){
-
-			// can either be input file 1 or 3
-			if(argC2 == 11 && lines[2].trim().split(/\s+/).length == 1)
-			  await WriteFile_Input3(user_id, sim_id, lines);
-			else if(argC2 >= 6)
-			  await WriteFile_Input1(user_id, sim_id, lines);
-			return
-		}else if(argC == 6)
-		  return await WriteFile_Input2(user_id, sim_id, lines);
-		else if(argC == 7)
-		  return await WriteFile_MinTree(user_id, sim_id, lines);
-		else if(lines[1].length == 312 || lines[1].length == 269)
-		  return await WriteFile_AvgConditions(user_id, sim_id, lines);
-		else if(lines[3].length == 524)
-		  return await WriteFile_Conditions(user_id, sim_id, lines);
-		else if(argC == 29 && argC2 == 29)
-		  return await WriteFile_TripProbes(user_id, sim_id, lines);
-		else if(argC == 34 && argC2 == 34)
-		  return await WriteFile_EdgeProbes(user_id, sim_id, lines);
+		// Check if it's a summary file 
+		if (summaryFileRegex.test(fileName))
+			return await WriteFile_summary(user_id, sim_id, lines); // output file summary
+		else if(signalsRegex.test(fileName))
+			return await WriteFile_Input3(user_id, sim_id, lines); // input file 3 signals
+		else if(nodesRegex.test(fileName))
+			return await WriteFile_Input1(user_id, sim_id, lines); // input file 1 nodes
+		else if(edgesRegex.test(fileName))
+		  	return await WriteFile_Input2(user_id, sim_id, lines); // input file 2 edges
+		else if(pathsRegex.test(fileName))
+		  	return await WriteFile_MinTree(user_id, sim_id, lines); // output file 13
+		else if(averageTrafficConditionsRegex.test(fileName))
+		  	return await WriteFile_AvgConditions(user_id, sim_id, lines); // output file 11
+		else if(trafficConditionsRegex.test(fileName))
+		  	return await WriteFile_Conditions(user_id, sim_id, lines); // output file 12
+		else if(tripProbesRegex.test(fileName))
+		  	return await WriteFile_TripProbes(user_id, sim_id, lines); // output file 15
+		else if(roadProbesRegex.test(fileName))
+		  	return await WriteFile_EdgeProbes(user_id, sim_id, lines); // output file 16
 
 	}catch(error){
 		console.error("Couldnt read file: (" + fileName + ") ", error);
 	}
-	// 4 -> file 11, 12
-	// 7 -> file 13
-	// 29 -> file 15
-	// 34 -> file 16
-	// 3 -> file 1, 3
-	//   line 2: 1 -> 3
-	// 6 -> file 2
-
 }
 
 
@@ -1942,7 +1949,6 @@ function FileNumToFileType(fileNum){
 
   }
 }
-
 
 
 
