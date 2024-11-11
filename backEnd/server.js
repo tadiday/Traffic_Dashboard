@@ -909,17 +909,18 @@ function ReadFile_TripProbes(buf){
 	let off = 4;
 	for(let i = 0; i < len; i++){
 		let entry = {};
-		off = ReadFromBufFloats(entry, ["time"], buf, off);
-		off = ReadFromBufInts(entry, ["vehicleID"], buf, off);
-		entry.type = buf.readInt8(off);
-		off = ReadFromBufShorts(entry, ["lastLink", "origin", "destination"], buf, off + 1);
+		off = ReadFromBufFloats(entry, ["Time simulation produced record"], buf, off);
+		off = ReadFromBufInts(entry, ["Vehicle ID number"], buf, off);
+		entry["Vehicle class"] = buf.readInt8(off);
+		off = ReadFromBufShorts(entry, ["Vehicle last link", "Origin node", "Destination node"], buf, off + 1);
 		off = ReadFromBufFloats(entry,
-			["scheduleTime", "departTime", "duration", "totalDelay", "stoppedDelay",
-			 "stops", "distance", "averageSpeed",
-			 "fuel", "HC", "CO", "NO", "CO2", "PM",
-			 "expectedCrashes", "expectedTopInjury", "fatelCrashes",
-			 "crashLowDamage", "crashMedDamage", "crashHighDamage",
-			 "totalToll", "accelerationNoise"], buf, off
+			["Scheduled departure time", "Actual departure time", "Trip duration", "Total delay", "Stopped delay",
+			 "Number of stops", "Distance covered", "Average speed",
+			 "Fuel used (L)", "Hydrocarbon produced", "Carbon monoxide produced", "Nitrous oxide produced", 
+			 "CO2 produced", "PM produced", "hydrogen consumption (kg)", // in grams
+			 "Number of expected crashes", "Where injury was highest level", "Where expected a fatal crash",
+			 "Where maximum damage was low", "Where maximum damage was moderate", "Where maximum damage was high",
+			 "Total toll paid", "Total acceleration noise"], buf, off
 		);
 		out[i] = entry;
 	}
@@ -1666,7 +1667,7 @@ async function WriteFile_TripProbes(user_id, sim_id, lines){
 
 
 	//const format = "3_8fi2b"; //9
-	const format = "_fibsssffffffffffffffffffffff";
+	const format = "_fibsssfffffffffffffffffffffff";
 
 	const formatSize = GetLineFormatSize(format);
 	const totalSize = formatSize * lines.length;
