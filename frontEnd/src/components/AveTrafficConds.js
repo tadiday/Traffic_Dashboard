@@ -282,7 +282,6 @@ const AveTrafficConds = (props) => {
                 },
                 defaultEdge: {
                     color: '#FFA07A',
-                // type: 'icon-edge',
                     style: {
                         endArrow: true,
                         icon: true,
