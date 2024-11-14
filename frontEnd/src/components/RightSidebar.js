@@ -10,7 +10,7 @@ function RightSidebar(props) {
         'Summary': ['Traffic Map', 'Total Vehicle Damage'],
         'Average Traffic Conditions': ['node'],
         'Traffic Conditions': [],
-        'Paths' : [],
+        'Paths' : ['node'],
         'Trip Completion Probes' : ["Car Information Filter"],
         'Road Probes' : []
     });

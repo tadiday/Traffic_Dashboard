@@ -62,7 +62,7 @@ app.get('/api/verify-token', async (req, res) => {
   	res.status(200).json({ message: 'Token is valid', username: username });
   } catch(exception) {
   	console.log(exception);
-  	res.status(exception.status).send(exception.message);
+  	res.status(exception.status).json({ message: exception.message });
   }
 });
 
@@ -74,7 +74,7 @@ app.get('/api/get-collections', async (req, res) => {
   	//var username = verifyToken(req);
   	var user_id = verifyToken(req).user_id;
   } catch(exception){
-	return res.status(exception.status).send(exception.message);
+	return res.status(exception.status).json({ message: exception.message });
   }
 
   try{
@@ -91,6 +91,7 @@ app.get('/api/get-collections', async (req, res) => {
   }
 });
 
+
 /*
  * Gets the directory for the logged in user, returning an array
  * of objects with values: "sim_name", "sim_date", "sim_id"
@@ -99,7 +100,7 @@ app.get("/api/get-directory", async (req, res) => {
   try{
   	var user_id = verifyToken(req).user_id;
   } catch(exception){
-	return res.status(exception.status).send(exception.message);
+	return res.status(exception.status).json({ message: exception.message });
   }
 
   try{
@@ -121,7 +122,7 @@ app.get('/api/select-uploads', async (req, res) => {
     try{
       var user_id = verifyToken(req).user_id;
     } catch(exception) {
-		return res.status(exception.status).send(exception.message);
+      return res.status(exception.status).json({ message: exception.message });
     }
 
     // query database and stuff
@@ -154,7 +155,7 @@ app.post('/api/delete-collection', async (req, res) => {
   } catch(exception) {
   	if(!exception.status)
 		exception.status = 500;
-	return res.status(exception.status).send(exception.message);
+    return res.status(exception.status).json({ message: exception.message });
   }
 
   try {
@@ -179,7 +180,7 @@ app.post('/api/delete-upload', async (req, res) => {
   try{
     var user_id = verifyToken(req).user_id;
   } catch(exception) {
-	return res.status(exception.status).send(exception.message);
+    return res.status(exception.status).json({ message: exception.message });
   }
 
   try{
@@ -213,7 +214,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   try{
     var user_id = verifyToken(req).user_id;
   } catch(exception) {
-	return res.status(exception.status).send(exception.message);
+    return res.status(exception.status).json({ message: exception.message });
   }
 
   // try and create the simulation document
@@ -221,20 +222,11 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
 	const name = req.body.collectionName;
 	const date = (new Date()).toLocaleString();
-	// Check if its been uploaded
-	const result = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ?", [name]);
-
-	if (result[0] && result[0].length > 0 && result[0][0].sim_id) {
-		console.log('Collection ' + name + ' already exists');
-		return res.status(400).send('Collection ' + name + ' already exists');
-	}
-
 	const simInsert = "INSERT INTO simulations (sim_name, sim_date, sim_owner) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();";
 	var [[_,[sim_id]]] = await promisePool.query(simInsert, [name, date, user_id]);
-	//console.log(user_id);
 	sim_id = sim_id["LAST_INSERT_ID()"];
 
-	//console.log("Simulation: " + sim_id);
+	console.log("Simulation: " + sim_id);
 
 	//res.send('File data inserted successfully.');
   } catch (error) {
@@ -278,8 +270,7 @@ async function tryGetFile(req, res, fileType){
 		var user_id = verifyToken(req).user_id;
 	} catch(exception) {
 		var user_id = 1;
-		// TBD uncomment when ready for real use
-		//return res.status(exception.status).send(exception.message);
+		//return res.status(exception.status).json({ message: exception.message });
 	}
 
 
@@ -289,11 +280,12 @@ async function tryGetFile(req, res, fileType){
 		let sim_id;
 		try{
 			sim_id = parseInt(req.query.sim); // to throw exception
-			if(isNan(sim_id))
+			if(isNaN(sim_id))
 				throw "";
 		}catch(e){
-			[[{sim_id}]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?", [req.query.sim, user_id]);
-			//console.log(sim_id);
+			[[sim_id]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?", [req.query.sim, user_id]);
+			if(sim_id)
+				sim_id = sim_id.sim_id;
 		}
 
 		if(!sim_id)
@@ -347,9 +339,10 @@ app.get('/api/file-signals', async (req, res) => await tryGetFile(req, res, FILE
 app.get('/api/file-avgconds', async (req, res) => await tryGetFile(req, res, FILE_AVGCONDS));
 
 /*
- * Gets the time based conditions file (output file 12)
+ * Gets the time based conditions file (output file 11)
  */
 app.get('/api/file-conds', async (req, res) => await tryGetFile(req, res, FILE_CONDS));
+
 
 /*
  * Gets the shortest paths file (output file 13)
@@ -443,8 +436,8 @@ app.post('/register', async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT, () => {
-    console.log('Server.js App is listening on port '+ process.env.PORT);
+app.listen(3000, () => {
+    console.log('Server.js App is listening on port 3000');
 });
 
 // Closes DB Connections on receiving end signals
@@ -538,7 +531,7 @@ function ReadFromBufAny(obj, names, buf, off){
   for(let i = 0; i < names.length; i++){
 	let size;
 	let v;
-	let argLen = 1;
+	const mid = names[i].indexOf("_");
 	switch(names[i].charAt(0)){
 		case "b": v = buf.readInt8(off);    off += 1; break;
 		case "s": v = buf.readInt16LE(off); off += 2; break;
@@ -549,10 +542,9 @@ function ReadFromBufAny(obj, names, buf, off){
 			v = buf.readUIntLE(off, vsize);
 			off += vsize;
 			v /= Math.pow(10, names[i].charCodeAt(1) - 48);
-			argLen++;
 		}break;
 	}
-  	obj[names[i].substring(argLen)]= v;
+  	obj[names[i].substring(mid + 1)]= v;
   }
   return off;
 }
@@ -808,7 +800,9 @@ function ReadFile_AvgConditions(buf){
 	return out;
 }
 
-
+/*
+ * file 12
+ */
 function ReadFile_Conditions(buf){
 	let out = {};
 
@@ -900,34 +894,163 @@ function ReadFile_paths(buf){
 	return out;
 }
 
-function ReadFile_TripProbes(buf){
+/*
+ * Reads an input as output file 15 (trip probes)
+ * args (queries):
+ *   origin - the start/origin node to filter by. -1 means all
+ *   dest - the end/destination node to filter by. -1 means all
+ *   skip - the number of logs to skip. skipping starts after time0
+ *   max - the max number of logs to get. default is 500
+ *   stride - returns every nth log where n is this value
+ *   time0 - the start time to filter by
+ *   time1 - the max/cap time to filter by
+ * @param buf (nodejs buffer) The nodejs buffer to read from
+ * @return (table) The summary file as a table/object
+ */
+function ReadFile_TripProbes(buf, args){
 
-	const len = buf.readInt32LE();
+	const len = buf.readInt32LE(0);
+	const pairC = buf.readInt32LE(4);
+	let off = 8;
 
-	let out = Array(len);
+	// find the parameters or defaults
+	let restBeg = -1;
+	let restEnd = -1;
+	let skip = 0;
+	let max = 500;
+	let stride = 1;
+	let time0 = 0;
+	let time1 = 999999999;
+	if(args){
+		if(args.origin) // which origin node to filter by
+			restBeg = args.origin;
+		if(args.dest) // which destination node to filter by
+			restEnd = args.dest;
+		if(args.skip) // how many logs to skip
+			skip = args.skip;
+		if(args.max) // the max number of logs to collect
+			max = args.max;
+		if(args.stride) // what percentage to collect (1/stride)
+			stride = args.stride;
+		if(args.time0) // the min time to collect
+			time0 = args.time0;
+		if(args.time1) // the max time to collect, exclusive
+			time1 = args.time1;
+	}
 
-	let off = 4;
+	// find out how many we want
+	let totalPairs = len;
+	if(restBeg != -1 || restEnd != -1){
+		totalPairs = 0;
+		for(let i = 0; i < pairC; i++){
+			const beg = buf.readInt16LE(off + 0);
+			const end = buf.readInt16LE(off + 2);
+			const quant = buf.readInt32LE(off + 4);
+			const time0 = buf.readFloatLE(off + 8);
+			const time1 = buf.readFloatLE(off + 12);
+
+			if((restBeg == -1 || beg == restBeg) && (restEnd == -1 || end == restEnd)){
+				totalPairs += quant;
+				if(restBeg != -1 && restEnd != -1){
+					off += (pairC - i) * 16;
+					break;
+				}
+			}
+
+			off += 16;
+		}
+	}else if(!args || (!args.origin && !args.dest)){
+		let out = {time0: 999999999, time1:0, total:0};
+
+		out.pairs = Array(pairC).fill({});
+		for(let i = 0; i < pairC; i++){
+			let obj = {};
+			obj.beg = buf.readInt16LE(off + 0);
+			obj.end = buf.readInt16LE(off + 2);
+			obj.quant = buf.readInt32LE(off + 4);
+			obj.time0 = buf.readFloatLE(off + 8);
+			obj.time1 = buf.readFloatLE(off + 12);
+			off += 16;
+
+			out.time0 = Math.min(out.time0, obj.time0);
+			out.time1 = Math.max(out.time1, obj.time1);
+			out.total += obj.quant;
+
+			out.pairs[i] = obj;
+		}
+
+		return out;
+
+	}else
+		off += 16 * pairC;
+
+	let totalMax = Math.max(0, Math.min(max, Math.floor((totalPairs-skip)/stride)));
+	let out = Array(totalMax);
+
+	if(totalMax == 0)
+		return out;
+
+	let totalCount = 0;
 	for(let i = 0; i < len; i++){
 		let entry = {};
-		off = ReadFromBufFloats(entry, ["Time simulation produced record"], buf, off);
-		off = ReadFromBufInts(entry, ["Vehicle ID number"], buf, off);
-		entry["Vehicle class"] = buf.readInt8(off);
-		off = ReadFromBufShorts(entry, ["Vehicle last link", "Origin node", "Destination node"], buf, off + 1);
-		off = ReadFromBufFloats(entry,
-			["Scheduled departure time", "Actual departure time", "Trip duration", "Total delay", "Stopped delay",
-			 "Number of stops", "Distance covered", "Average speed",
-			 "Fuel used (L)", "Hydrocarbon produced", "Carbon monoxide produced", "Nitrous oxide produced", 
-			 "CO2 produced", "PM produced", "hydrogen consumption (kg)", // in grams
-			 "Number of expected crashes", "Where injury was highest level", "Where expected a fatal crash",
-			 "Where maximum damage was low", "Where maximum damage was moderate", "Where maximum damage was high",
-			 "Total toll paid", "Total acceleration noise"], buf, off
-		);
-		out[i] = entry;
+		off = ReadFromBufAny(entry, [
+			"f_Time simulation produced record",
+			"i_Vehicle ID number", "b_Vehicle class",
+			"s_Vehicle last link", "s_Origin node", "s_Destination node",
+		], buf, off);
+		off = ReadFromBufFloats(entry, [
+			"Scheduled departure time", "Actual departure time", "Trip duration", "Total delay", "Stopped delay",
+			"Number of stops", "Distance covered", "Average speed",
+			"Fuel used (L)", "Hydrocarbon produced", "Carbon monoxide produced", "Nitrous oxide produced",
+			"CO2 produced", "PM produced", "hydrogen consumption (kg)", // in grams
+			"Number of expected crashes", "Where injury was highest level", "Where expected a fatal crash",
+			"Where maximum damage was low", "Where maximum damage was moderate", "Where maximum damage was high",
+			"Total toll paid", "Total acceleration noise"
+		], buf, off);
+
+		// make sure its what we are looking for
+		if(entry["Time simulation produced record"] >= time0
+			&& (restBeg == -1 || entry["Origin node"] == restBeg)
+			&& (restEnd == -1 || entry["Destination node"] == restEnd)){
+
+			// limit the time
+			if(entry["Time simulation produced record"] >= time1){
+				out = out.slice(0, Math.floor((totalCount-skip)/stride) + 1);
+				break;
+			}
+
+			// skip some number of elements
+			if(totalCount >= skip){
+				const indx = totalCount - skip;
+				// only get a percentage
+				if(indx % stride == 0){
+					out[indx/stride] = entry;
+					// get only a limited amount
+					if(indx/stride + 1 >= max){
+						break;
+					}
+				}
+			}
+
+			totalCount++;
+		}
 	}
 
 	return out;
 }
 
+/*
+ * Reads an input as output file 16 (edge probes?)
+ * args (queries):
+ *   edge - the edge to filter by. -1 means all
+ *   skip - the number of logs to skip. skipping starts after first time0
+ *   max - the max number of logs to get. Defaults to 500
+ *   stride - returns every nth log where n is this value
+ *   time0 - the start time to filter by
+ *   time1 - the max/cap time to filter by
+ * @param buf (nodejs buffer) The nodejs buffer to read from
+ * @return (table) The summary file as a table/object
+ */
 function ReadFile_EdgeProbes(buf, args){
 	let off = 0;
 
@@ -938,7 +1061,7 @@ function ReadFile_EdgeProbes(buf, args){
 	off += 10;
 
 	// find the parameters or defaults
-	let restEdge = -1;
+	let restEdge = -2;
 	let skip = 0;
 	let max = 500;
 	let stride = 1;
@@ -961,29 +1084,56 @@ function ReadFile_EdgeProbes(buf, args){
 
 	// get the total number of edges for the targeted edge
 	let totalEdges = lineC;
-	if(restEdge != -1){
+	if(restEdge == -2){
+		let out = {};
+		out.time0 = 999999999;
+		out.time1 = 0;
+		out.total = 0;
+		out.edges = Array(edgeC);
+		for(let i = 0; i < edgeC; i++){
+			const edgeID = buf.readInt16LE(off + 0);
+			const quant = buf.readInt32LE(off + 2);
+			const time0 = buf.readFloatLE(off + 6);
+			const time1 = buf.readFloatLE(off + 10);
+
+			out.edges[i] = {edgeID : edgeID, numOfLogs : quant, time0:time0, time1:time1};
+			out.time0 = Math.min(out.time0, time0);
+			out.time1 = Math.max(out.time1, time1);
+			out.total += quant;
+
+			off += 14;
+		}
+		return out;
+
+	}else if(restEdge != -1){
+		totalEdges = 0;
 		for(let i = 0; i < edgeC; i++){
 			const edgeID = buf.readInt16LE(off + 0);
 			const quant = buf.readInt32LE(off + 2);
 
 			if(edgeID == restEdge){
 				totalEdges = quant;
-				off += (edgeC - i) * 6;
+				off += (edgeC - i) * 14;
 				break;
 			}
 
-			off += 6;
+			off += 14;
 		}
 	}else
-		off += edgeC * (2 + 4);
+		off += edgeC * 14;
 
 	//const format11 = "bfibsbsbssffffffffffffffffffffffff";
 	//const format21 = "bfibbsbssfffffffffffffffffffffffff";
 
 	//console.log("" + lineC + " " + edgeC + " " + edgeMin + " " + edgeMax);
 
+	let totalMax = Math.max(0, Math.min(max, Math.floor((totalEdges-skip)/stride)));
+	let out = Array(totalMax);
+
+	if(totalMax == 0)
+		return out;
+
 	let totalCount = 0;
-	let out = Array(Math.min(Math.min(totalEdges, max), Math.floor((totalEdges-skip)/stride)));
 	for(let i = 0; i < lineC; i++){
 		let obj = {};
 		const type = buf.readInt8(off);
@@ -991,25 +1141,25 @@ function ReadFile_EdgeProbes(buf, args){
 		if(type == 11){
 			off = ReadFromBufAny(obj,
 			[
-				"ftime", "ivehicleID", "bvehicleClass", "sedge", "blane",
-				"snextEdge", "bnextLane", "sorigin", "sdest",
-				"fschedDepart", "fdepartTime", "fedgeTime", "fdelay",
-				"fstopDelay", "fstops", "fdist", "avgSpeed", "ffinalSpeed",
-				"ffuel", "fHC", "fCO", "fNO", "fCO2", "fPM", "fenergy",
-				"fexpectCrash", "fexpectHighInjury", "fexpectFatal",
-				"fcrashLow", "fcrashMed", "fcrashHigh", "ftoll", "fnoise"
+				"f_time", "i_vehicleID", "b_vehicleClass", "s_edge", "b_lane",
+				"s_nextEdge", "b_nextLane", "s_origin", "s_dest",
+				"f_schedDepart", "f_departTime", "f_edgeTime", "f_delay",
+				"f_stopDelay", "f_stops", "f_dist", "f_avgSpeed", "f_finalSpeed",
+				"f_fuel", "f_HC", "f_CO", "f_NO", "f_CO2", "f_PM", "f_energy",
+				"f_expectCrash", "f_expectHighInjury", "f_expectFatal",
+				"f_crashLow", "f_crashMed", "f_crashHigh", "f_toll", "f_noise"
 			],
 			buf, off + 1);
 		}else if(type == 21){
 			off = ReadFromBufAny(obj,
 			[
-				"ftime", "ivehicleID", "bvehicleClass", "bvehicleType",
-				"sedge", "blane", "sorigin", "sdest", "n1departSched",
-				"n1departTime", "n1edgeTime", "n3delay", "n3stopDelay",
-				"n3stops", "n3dist", "n1space", "n1speed", "faccel",
-				"n5fuel", "n5energyRate", "n5HC", "n5CO", "n5NO", "n5CO2", "n5PM",
-				"c1expectCrash", "c1expectHighInjury", "c1expectFatal",
-				"c1crashLow", "c1crashMed", "c1crashHigh", "n2toll", "n2noise"
+				"f_time", "i_vehicleID", "b_vehicleClass", "b_vehicleType",
+				"s_edge", "b_lane", "s_origin", "s_dest", "n1_departSched",
+				"n1_departTime", "n1_edgeTime", "n3_delay", "n3_stopDelay",
+				"n3_stops", "n3_dist", "n1space", "n1_speed", "f_accel",
+				"n5_fuel", "n5_energyRate", "n5_HC", "n5_CO", "n5_NO", "n5_CO2", "n5_PM",
+				"c1_expectCrash", "c1_expectHighInjury", "c1_expectFatal",
+				"c1_crashLow", "c1_crashMed", "c1_crashHigh", "n2_toll", "n2_noise"
 			],
 			buf, off + 1);
 		}else{
@@ -1064,7 +1214,7 @@ function ReadFile_Any(buf, fileType, args){
 		case FILE_AVGCONDS: return ReadFile_AvgConditions(buf);
 		case FILE_CONDS: return ReadFile_Conditions(buf);
 		case FILE_PATHS: return ReadFile_paths(buf);
-		case FILE_TRIPPROBES: return ReadFile_TripProbes(buf);
+		case FILE_TRIPPROBES: return ReadFile_TripProbes(buf, args);
 		case FILE_EDGEPROBES: return ReadFile_EdgeProbes(buf, args);
 	}
 }
@@ -1147,12 +1297,14 @@ function WriteString(buf, str, off){
 }
 
 /*
- * bruh
+ *
  * a bunch of nonsense
  */
 function CopyToBufLine(line, buf, off, format){
 	let curOff = 0;
 	let curLen = 1;
+	let lastCh = "b";
+	let lastNum = 0;
 	for(let i = 0; i < format.length; i++){
 		let c = format.charCodeAt(i);
 		if(c <= "9".charCodeAt(0)){ // set length from [0, 9]
@@ -1164,7 +1316,10 @@ function CopyToBufLine(line, buf, off, format){
 			let ch = format.charAt(i);
 			if(ch != "_"){ // "_" means ignore a value
 				let num;
-				if(val.charAt(0) == "*") // invalid value
+				if(ch == "*"){
+					ch = lastCh;
+					num = lastNum;
+				}else if(val.charAt(0) == "*") // invalid value
 					num = -1;
 				else if(ch == "c" || ch == "n"){
 					const parts = val.split(".");
@@ -1176,6 +1331,7 @@ function CopyToBufLine(line, buf, off, format){
 					num = parseInt(val);
 				else if(ch == "f") // float
 					num = parseFloat(val);
+
 				switch(ch){
 					case "s": // short
 						off = buf.writeInt16LE(num, off);
@@ -1196,8 +1352,11 @@ function CopyToBufLine(line, buf, off, format){
 						off = buf.writeUIntLE(num, off, 3);
 					break;
 				}
+				lastCh = ch;
+				lastNum = num;
 			}
-			curOff += curLen;
+			if(c != "*".charCodeAt(0))
+				curOff += curLen;
 		}
 	}
 	return off;
@@ -1212,16 +1371,21 @@ function CopyToBufLine(line, buf, off, format){
  */
 function CopyToBufArgs(args, buf, off, format){
 	let curArg = 0;
+	let lastCh = "b";
+	let lastNum = 0;
 	for(let i = 0; i < format.length; i++){
 		let c = format.charCodeAt(i);
-		if(c >= "a".charCodeAt(0) || c == "_".charCodeAt(0)){ // read value
+		let ch = format.charAt(i);
+		if(c >= "a".charCodeAt(0) || ch == "_" || ch == "*"){ // read value
 			if(curArg >= args.length)
 				return off;
 			let val = args[curArg];
-			let ch = format.charAt(i);
 			if(ch != "_"){ // "_" means ignore a value
 				let num;
-				if(val.charAt(0) == "*") // invalid value
+				if(ch == "*"){
+					ch = lastCh;
+					num = lastNum;
+				}else if(val.charAt(0) == "*") // invalid value
 					num = -1;
 				else if(ch == "c" || ch == "n"){
 					const parts = val.split(".");
@@ -1233,6 +1397,7 @@ function CopyToBufArgs(args, buf, off, format){
 					num = parseInt(val);
 				else if(ch == "f") // float
 					num = parseFloat(val);
+
 				switch(ch){
 					case "s": // short
 						off = buf.writeInt16LE(num, off);
@@ -1253,8 +1418,11 @@ function CopyToBufArgs(args, buf, off, format){
 						off = buf.writeUIntLE(num, off, 3);
 					break;
 				}
+				lastNum = num;
+				lastCh = ch;
 			}
-			curArg++;
+			if(c != "*".charCodeAt(0))
+				curArg++;
 		}
 	}
 	return off;
@@ -1262,8 +1430,12 @@ function CopyToBufArgs(args, buf, off, format){
 
 function GetLineFormatSize(format){
 	let size = 0;
+	let lastCh = "b";
 	for(let i = 0; i < format.length; i++){
-		switch(format.charAt(i)){
+		let ch = format.charAt(i);
+		if(ch == "*")
+			ch = lastCh;
+		switch(ch){
 			case "b":
 				size += 1;
 			break;
@@ -1277,6 +1449,7 @@ function GetLineFormatSize(format){
 				size += 4;
 			break;
 		}
+		lastCh = ch;
 	}
 	return size;
 }
@@ -1318,7 +1491,7 @@ async function FileAdd(fileType, buf, user_id, sim_id){
  * @param sim_id (int) The id of the simulation this file is a part of
  * @param lines (string[]) The file as an array of lines
  */
- async function WriteFile_summary(user_id, sim_id, lines){
+async function WriteFile_summary(user_id, sim_id, lines){
 
 	// make sure doesn't already exist
 	if(await FileExists(FILE_SUMMARY, sim_id))
@@ -1660,41 +1833,92 @@ async function WriteFile_Conditions(user_id, sim_id, lines){
 	await FileAdd(FILE_CONDS, buf, user_id, sim_id);
 }
 
-
+/*
+ * file 15
+ */
 async function WriteFile_TripProbes(user_id, sim_id, lines){
+
 	if(await FileExists(FILE_TRIPPROBES, sim_id))
 		return;
 
 
 	//const format = "3_8fi2b"; //9
-	const format = "_fibsssfffffffffffffffffffffff";
+	const preLine = ((lines[0].charAt(2) == "1") && Math.abs(lines[0].split(/\s+/).length-29.5) == 0.5) ? 0 : 1;
+	const lineC = lines.length - 1;
+	const formatA = "_fibsssffffffffffffff*ffffffff";
+	const formatB = "_fibsssfffffffffffffffffffffff";
 
-	const formatSize = GetLineFormatSize(format);
-	const totalSize = formatSize * lines.length;
+	// count the number
+	let pairs = [];
+	for(let i = preLine; i < lineC; i++){
+		if(lines[i].length != 278 && lines[i].length != 266)
+			return;
+		const beg = parseInt(lines[i].substring(27, 32));
+		const end = parseInt(lines[i].substring(32, 37));
+		const time = parseFloat(lines[i].substring(3, 11));
+		let found = pairs.find((element) => element.beg == beg && element.end == end);
+		if(!found){
+			let obj = {
+				beg:beg,
+				end:end,
+				quant:1,
+				time1:time,
+				time0:time
+			};
+			pairs.push(obj);
+		}else{
+			found.quant++;
+			found.time1 = time;
+		}
+	}
+
+
+	const formatSize = GetLineFormatSize(formatA);
+	const totalSize = formatSize * (lineC - preLine) + 4 + 4 + pairs.length * (2 + 2 + 4 + 4 + 4);
 
 	let off = 0;
 	let buf = Buffer.allocUnsafe(totalSize);
 
-	off = buf.writeInt32LE(lines.length - 1, off); // number of lines
+	off = buf.writeInt32LE(lineC - preLine, off); // number of lines
+	off = buf.writeInt32LE(pairs.length, off);
 
-	for(let i = 0; i < lines.length - 1; i++){
-		const lineArgs = ReadLineArgs(lines[i].trim());
-		if(lineArgs.length != 30){
-			continue;
-		}
-		off = CopyToBufArgs(lineArgs, buf, off, format);
+	for(let i = 0; i < pairs.length; i++){
+		off = buf.writeInt16LE(pairs[i].beg, off);
+		off = buf.writeInt16LE(pairs[i].end, off);
+		off = buf.writeInt32LE(pairs[i].quant, off);
+		off = buf.writeFloatLE(pairs[i].time0, off);
+		off = buf.writeFloatLE(pairs[i].time1, off);
 	}
+
+	for(let i = preLine; i < lineC; i++){
+		const lineArgs = ReadLineArgs(lines[i].trim());
+		if(lineArgs.length == 29)
+			off = CopyToBufArgs(lineArgs, buf, off, formatA);
+		else if(lineArgs.length == 30)
+			off = CopyToBufArgs(lineArgs, buf, off, formatB);
+		else{
+			//console.log(i, lineArgs.length);
+			return;
+		}
+
+	}
+
 
 	await FileAdd(FILE_TRIPPROBES, buf, user_id, sim_id);
 }
 
+/*
+ * file 16
+ */
 async function WriteFile_EdgeProbes(user_id, sim_id, lines){
 
 	if(await FileExists(FILE_EDGEPROBES, sim_id))
 		return;
 
+	const preLine = ((lines[0].startsWith(" 11") || lines[0].startsWith(" 21")) && Math.abs(lines[0].trim().split(/\s+/).length - 33.5) == 0.5) ? 0 : 1;
 	const lineC = lines.length - 1;
-	const format11 = "bfibsbsbssffffffffffffffffffffffff";
+	const format11A = "bfibsbsbssffffffffffffffffffffffff";
+	const format11B = "bfibsbsbssfffffffffffffff*ffffffff";
 	const format21 = "bfibbsbs"+
 					 "sn1n1n1n3n3n3n3"+
 					 "n1n1fn5n5n5n5n5"+
@@ -1705,7 +1929,7 @@ async function WriteFile_EdgeProbes(user_id, sim_id, lines){
 	let links = [];
 	let minLink = 9999;
 	let maxLink = 0;
-	for(let i = 0; i < lineC; i++){
+	for(let i = preLine; i < lineC; i++){
 		const kind = lines[i].substring(1,3);
 		let edge;
 		if(kind === "11"){
@@ -1714,11 +1938,11 @@ async function WriteFile_EdgeProbes(user_id, sim_id, lines){
 		}else if(kind === "21"){
 			edge = parseInt(lines[i].substring(21, 27));
 			format21C++;
-		}else
+		}else if(i < lineC - 1)
 			return;
 
-		if(!links.includes(edge)){
-			links.push(edge);
+		if(!links.some((element) => element.edge == edge)){
+			links.push({edge:edge, quant:0, time1:0, time0:999999999});
 			if(edge < minLink)
 				minLink = edge;
 			if(edge > maxLink)
@@ -1726,43 +1950,54 @@ async function WriteFile_EdgeProbes(user_id, sim_id, lines){
 		}
 	}
 
-	const format11Size = GetLineFormatSize(format11);
+	const format11Size = GetLineFormatSize(format11A);
 	const format21Size = GetLineFormatSize(format21);
-	const headSize = 4 + 2 + 2 + 2 + links.length * (2 + 4);
+	const headSize = 4 + 2 + 2 + 2 + links.length * 14;
 	const totalSize = format11Size * format11C + format21Size * format21C + headSize;
 
 	let off = 0;
 	let buf = Buffer.allocUnsafe(totalSize);
 
-	off = buf.writeInt32LE(lineC, 0);
+	off = buf.writeInt32LE(lineC - preLine, 0);
 	off = buf.writeInt16LE(links.length, off);
 	off = buf.writeInt16LE(minLink, off);
 	off = buf.writeInt16LE(maxLink, off);
 	//off = buf.writeInt16LE(lineC, off);
 	//off = buf.writeInt16LE(lineC, off);
-	off += links.length * (2 + 4);
+	off += links.length * 14;
 
 
 	let linkMap = Array(maxLink - minLink + 1).fill(0);
-	for(let i = 0; i < lineC; i++){
+
+	for(let i = 0; i < links.length; i++)
+		linkMap[links[i].edge - minLink] = i;
+
+	for(let i = preLine; i < lineC; i++){
 		const lineArgs = ReadLineArgs(lines[i].trim());
 		let edge;
 		if(lineArgs[0] == "11"){
-			off = CopyToBufArgs(lineArgs, buf, off, format11);
+			off = CopyToBufArgs(lineArgs, buf, off, lineArgs.length == 33 ? format11B : format11A);
 			edge = parseInt(lineArgs[4]);
 		}else{
 			off = CopyToBufArgs(lineArgs, buf, off, format21);
 			edge = parseInt(lineArgs[5]);
 		}
-		linkMap[edge-minLink]++;
+		let indx = linkMap[edge-minLink];
+		if(!links[indx].time0)
+			links[indx].time0 = parseFloat(lineArgs[1]);
+		else
+			links[indx].time1 = parseFloat(lineArgs[1]);
+		links[indx].quant++;
 	}
 
 	//console.log("" + off + "/" + totalSize);
 
 	off = 10;
 	for(let i = 0; i < links.length; i++){
-		off = buf.writeInt16LE(links[i], off);
-		off = buf.writeInt32LE(linkMap[links[i] - minLink], off);
+		off = buf.writeInt16LE(links[i].edge, off);
+		off = buf.writeInt32LE(links[i].quant, off);
+		off = buf.writeFloatLE(links[i].time0, off);
+		off = buf.writeFloatLE(links[i].time1, off);
 	}
 
 	await FileAdd(FILE_EDGEPROBES, buf, user_id, sim_id);
@@ -1815,10 +2050,12 @@ async function WriteFile_MinTree(user_id, sim_id, lines){
 	let curLine = 2;
 	for(let i = 0; i < periodC; i++){
 		const args = ReadLineArgs(lines[curLine].trim());
+		if(args.length != 3) return;
 		const treeC = parseInt(args[2]);
 		// size of period info + size of trees
 		varSize += (2 + 1 + 1) + bytesPerTree * treeC;
 		curLine += linesPerTree * treeC + 1;
+		if(curLine > lines.length) return;
 	}
 
 	let off = 0;
@@ -1875,50 +2112,54 @@ async function WriteFile_MinTree(user_id, sim_id, lines){
  */
 async function ReadFile(user_id, sim_id, str, fileName){
 	try{
-		if(!fileName) {
-			fileName = "";
-			console.log("No file name");
-		}
-		//console.log("Reading in file name: "+fileName);
-		const lines = str.split(/\r?\n/); // end of line, but can work with only \n
+		if(!fileName) fileName = "";
 
-		const summaryFileRegex = /.*summary.*\.out$/i;
-		const nodesRegex = /.*1.*\.dat$/i;
-		const edgesRegex = /.*2.*\.dat$/i;
-		const signalsRegex = /.*3.*\.dat$/i;
-		const averageTrafficConditionsRegex = /.*11.*\.out$/i;
-		const trafficConditionsRegex = /.*12.*\.out$/i;
-		const pathsRegex = /.*13.*\.out$/i;
-		const tripProbesRegex = /.*15.*\.out$/i;
-		const roadProbesRegex = /.*16.*\.out$/i;
+		const lines = str.split(/\r?\n/); // end of line, but can work with only \n
 
 		// this is bad, but good enough
 		if(lines.length < 4)
 			return;
 
-		// Check if it's a summary file 
-		if (summaryFileRegex.test(fileName))
-			return await WriteFile_summary(user_id, sim_id, lines); // output file summary
-		else if(signalsRegex.test(fileName))
-			return await WriteFile_Input3(user_id, sim_id, lines); // input file 3 signals
-		else if(nodesRegex.test(fileName))
-			return await WriteFile_Input1(user_id, sim_id, lines); // input file 1 nodes
-		else if(edgesRegex.test(fileName))
-		  	return await WriteFile_Input2(user_id, sim_id, lines); // input file 2 edges
-		else if(pathsRegex.test(fileName))
-		  	return await WriteFile_MinTree(user_id, sim_id, lines); // output file 13
-		else if(averageTrafficConditionsRegex.test(fileName))
-		  	return await WriteFile_AvgConditions(user_id, sim_id, lines); // output file 11
-		else if(trafficConditionsRegex.test(fileName))
-		  	return await WriteFile_Conditions(user_id, sim_id, lines); // output file 12
-		else if(tripProbesRegex.test(fileName))
-		  	return await WriteFile_TripProbes(user_id, sim_id, lines); // output file 15
-		else if(roadProbesRegex.test(fileName))
-		  	return await WriteFile_EdgeProbes(user_id, sim_id, lines); // output file 16
+		if(lines[1] === " Total Statistics: ")
+			return await WriteFile_summary(user_id, sim_id, lines);
+
+		const argC = lines[1].trim().split(/\s+/).length;
+		const argC2 = lines[3].trim().split(/\s+/).length;
+		//console.log(fileName, argC, argC2);
+		if(argC == 3 && (argC2 >= 6 || argC2 == 11)){
+
+			// can either be input file 1 or 3
+			if(argC2 == 11 && lines[2].trim().split(/\s+/).length == 1)
+			  await WriteFile_Input3(user_id, sim_id, lines);
+			else if(argC2 >= 6)
+			  await WriteFile_Input1(user_id, sim_id, lines);
+			return
+		}else if(argC == 6)
+		  return await WriteFile_Input2(user_id, sim_id, lines);
+		else if(argC == 7)
+		  return await WriteFile_MinTree(user_id, sim_id, lines);
+		else if(lines[3].length == 312 || lines[3].length == 269)
+		  return await WriteFile_AvgConditions(user_id, sim_id, lines);
+		else if(lines[3].length == 524)
+		  return await WriteFile_Conditions(user_id, sim_id, lines);
+		else if((argC == 29 || argC == 30) && (argC2 == 29 || argC2 == 30))
+		  return await WriteFile_TripProbes(user_id, sim_id, lines);
+		else if((argC == 34 && argC2 == 34) || (argC == 33 && argC2 == 33))
+		  return await WriteFile_EdgeProbes(user_id, sim_id, lines);
+		else
+		  console.log(fileName, argC, argC2);
 
 	}catch(error){
 		console.error("Couldnt read file: (" + fileName + ") ", error);
 	}
+	// 4 -> file 11, 12
+	// 7 -> file 13
+	// 29 -> file 15
+	// 34 -> file 16
+	// 3 -> file 1, 3
+	//   line 2: 1 -> 3
+	// 6 -> file 2
+
 }
 
 
@@ -1950,6 +2191,7 @@ function FileNumToFileType(fileNum){
 
   }
 }
+
 
 
 
