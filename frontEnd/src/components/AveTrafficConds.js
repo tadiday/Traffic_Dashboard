@@ -1,5 +1,6 @@
 // @ts-check
 import React, { useRef, useEffect, useState } from 'react';
+import { Chart } from '@antv/g2';
 // import G6 from '@antv/g6';
 import { Graph, registerEdge, registerNode} from '@antv/g6';
 //import * as G6 from '@antv/g6';
@@ -12,6 +13,19 @@ interface EdgeInfo {
     target: string;
     totalFlow: String;
     co2Emission: String;
+    totalAverageTime: String;
+    averageTime: String;
+    averageVehicles: String;
+    averageQueue: String;
+    averageStops: String;
+    fuel: String;
+    expectedCrashes: String;
+    expectedTopInjurt: String;
+    fatelCrashes: String;
+    crashLowDamage: String;
+    crashMedDamage: String;
+    crashHighDamage: String;
+
 }
 
 //add icon on the edge, not finished
@@ -186,7 +200,7 @@ const AveTrafficConds = (props) => {
             popChart.data(data);
             popChart.render();
         }
-    }
+    };
 
     // Node graph Creation functions
     const getNodeGraphData = async () => {
@@ -240,7 +254,18 @@ const AveTrafficConds = (props) => {
                     source: String(obj.start),
                     target: String(obj.end),
                     totalFlow: condition ? condition.totalFlow : null,
-                    co2Emission: condition ? condition.CO2 : null
+                    co2Emission: condition ? condition.CO2 : null,
+                    totalAverageTime: condition ? condition.totalAverageTime : null,
+                    averageVehicles: condition ? condition.averageVehicles : null,
+                    averageQueue: condition ? condition.averageQueue : null,
+                    averageStops: condition ? condition.averageStops : null,
+                    fuel: condition ? condition.fuel : null,
+                    expectedCrashes: condition ? condition.expectedCrashes : null,
+                    expectedTopInjurt: condition ? condition.expectedTopInjurt : null,
+                    fatelCrashes: condition ? condition.fatelCrashes : null,
+                    crashLowDamage: condition ? condition.crashLowDamage : null,
+                    crashMedDamage: condition ? condition.crashMedDamage : null,
+                    crashHighDamage: condition ? condition.crashHighDamage : null,
                 };
             });
         
@@ -393,6 +418,17 @@ const AveTrafficConds = (props) => {
                             target: edgeData.target,
                             totalFlow: edgeData.totalFlow,
                             co2Emission: edgeData.co2Emission,
+                            totalAverageTime: edgeData.totalAverageTime,
+                            averageVehicles: edgeData.averageVehicles,
+                            averageQueue: edgeData.averageQueue,
+                            averageStops: edgeData.averageStops,
+                            fuel: edgeData.fuel,
+                            expectedCrashes: edgeData.expectedCrashes,
+                            expectedTopInjurt: edgeData.expectedTopInjurt,
+                            fatelCrashes: edgeData.fatelCrashes,
+                            crashLowDamage: edgeData.crashLowDamage,
+                            crashMedDamage: edgeData.crashMedDamage,
+                            crashHighDamage: edgeData.crashHighDamage,
                         };
                         setSelectedEdgeInfo(edgeInfo); 
                         setEdgePopup(true);
@@ -403,7 +439,70 @@ const AveTrafficConds = (props) => {
                 console.log("Error adding data");
             }
         }
-    }
+    };
+
+    const pie = async () =>{
+        if(!props.expandedCollection){
+            return null;
+        }
+        //let dataTypes = ["expectedCrashes", "expectedTopInjurt"];
+        var data = [];
+        // // Get data from the API endpoint
+        const token = sessionStorage.getItem('token');
+        try {
+             const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-avgconds?sim=${props.expandedCollection}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+            response.data.conditions.forEach(elem =>{
+    
+                data.push(
+                    { totalFlow: elem.totalFlow, category: 'Expected Crashes', value: elem.expectedCrashes },
+                    { totalFlow: elem.totalFlow, category: 'Expected Top Injury', value: elem.expectedTopInjurt },
+                    { totalFlow: elem.totalFlow, category: 'Fatal Crashes', value: elem.fatelCrashes },
+                    { totalFlow: elem.totalFlow, category: 'Low Crashes', value: elem.crashLowDamage },
+                    { totalFlow: elem.totalFlow, category: 'Med Crashes', value: elem.crashMedDamage },
+                    { totalFlow: elem.totalFlow, category: 'High Crashes', value: elem.crashHighDamage }
+                );
+   
+            });
+            data.sort((a, b) => a.totalFlow - b.totalFlow);
+            console.log(data);
+        } catch (error) {
+            console.error('Error fetching bar info:', error);
+            return null;
+        }
+
+
+        if (nodeGraphRef.current) {
+            chart = new Chart({
+                container: nodeGraphRef.current,
+                //autoFit: true,
+                height: props.dimensions.graphHeight,
+                width: props.dimensions.graphWidth,
+                title: "Average Crashes",
+            });
+
+            chart
+                .interval()
+                .data(data)
+                .transform({ type: 'groupX', y: 'mean', groupBy: ['category', 'totalFlow']})
+                .transform({ type: 'stackY', reverse: true, orderBy: 'category' })
+                .encode('x', 'totalFlow')
+                .encode('y', 'value')
+                .encode('color', 'category')
+                .scale('color', {
+                    domain: ['Expected Crashes', 'Expected Top Injury', 'Fatal Crashes', 'Low Crashes', 'Med Crashes', 'High Crashes'],
+                    range: ['#baaeea', '#84c2ea', '#ff0000', '#a6ea84', '#ead084','#ea9a84']
+                })
+                .axis('y', { title: 'Average Crash' })
+                .axis('x', { title: 'Total Flow' })
+                
+
+            chart.render();
+        }    
+    };
 
     useEffect(() => {
         if (selectedEdgeInfo) {
@@ -418,8 +517,10 @@ const AveTrafficConds = (props) => {
     }, [selectedEdgeInfo, popChart]);
 
     useEffect(() => {
-        if (props.selectedGraph === 'node') {
+        if (props.selectedGraph === 'Traffic Map') {
             node();
+        }else if(props.selectedGraph === 'Avg Crashes'){
+            pie();
         }
 
         return () => {
@@ -435,16 +536,44 @@ const AveTrafficConds = (props) => {
             <div id="charts" ref={nodeGraphRef} style={{ width: props.dimensions.graphWidth, height: props.dimensions.graphHeight }}></div>
             
             <Popup trigger={edgePopup} setTrigger={setEdgePopup}>
-                <h3>Selected Edge Information</h3>
-                <div id="animation" ref={popUpAnimationRef} style={{ width: 200, height: 200 }}></div>
+                <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Selected Edge Information</h2>
+                <div id="animation" ref={popUpAnimationRef} style={{ width: 100, height: 250, marginTop: '-60px',marginLeft: '190px' }}></div>
+                <div style={{ display: 'flex' }}>
+                    {/* Left Section: Animation on top, Information below */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '20px' }}>
+                    
+                    <div>
+                        {selectedEdgeInfo && (
+                        <div>
+                            <p><strong>Total Flow:</strong> {selectedEdgeInfo.totalFlow.toFixed(3)}</p>
+                            <p><strong>CO2 Emission:</strong> {selectedEdgeInfo.co2Emission.toFixed(3)}</p>
+                            <p><strong>Total Average Time:</strong> {selectedEdgeInfo.totalAverageTime.toFixed(3)}</p>
+                            <p><strong>Average Vehicles:</strong> {selectedEdgeInfo.averageVehicles.toFixed(3)}</p>
+                            <p><strong>Average Queue:</strong> {selectedEdgeInfo.averageQueue.toFixed(3)}</p>
+                            <p><strong>Average Stops:</strong> {selectedEdgeInfo.averageStops.toFixed(3)}</p>
+                            <p><strong>Fuel:</strong> {selectedEdgeInfo.fuel.toFixed(3)}</p>
+                        </div>
+                        )}
+                    </div>
+                    </div>
+
+                    {/* Right Section: Additional Information */}
+                    <div style={{ marginLeft: '150px'}}>
                     {selectedEdgeInfo && (
                         <div>
-                            <p><strong>Total Flow:</strong> {selectedEdgeInfo.totalFlow}</p>
-                            <p><strong>CO2 Emission:</strong> {selectedEdgeInfo.co2Emission}</p>
+                        <p><strong>Expected Crashes:</strong> {selectedEdgeInfo.expectedCrashes.toFixed(3)}</p>
+                        <p><strong>Expected Top Injury:</strong> {selectedEdgeInfo.expectedTopInjurt.toFixed(3)}</p>
+                        <p><strong>Fatal Crashes:</strong> {selectedEdgeInfo.fatelCrashes.toFixed(3)}</p>
+                        <p><strong>Crash Low Damage:</strong> {selectedEdgeInfo.crashLowDamage.toFixed(3)}</p>
+                        <p><strong>Crash Med Damage:</strong> {selectedEdgeInfo.crashMedDamage.toFixed(3)}</p>
+                        <p><strong>Crash High Damage:</strong> {selectedEdgeInfo.crashHighDamage.toFixed(3)}</p>
                         </div>
-
                     )}
+                    </div>
+                </div>
             </Popup>
+
+
         </div>
     );
 }
