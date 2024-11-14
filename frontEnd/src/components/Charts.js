@@ -2,6 +2,7 @@
 import React from 'react';
 import AveTrafficConds from './AveTrafficConds';
 import Summary from './Summary';
+import TripProbe from './TripProbe';
 import MinPathTree from './MinPathTree';
 
 function Charts(props) {
@@ -24,6 +25,11 @@ function Charts(props) {
                 selectedGraph={props.selectedGraph}
                 expandedCollection={props.expandedCollection}/>);
             break;
+        case "Trip Completion Probes":
+            ret = (<TripProbe
+                dimensions={dimensions}
+                selectedGraph={props.selectedGraph}
+                expandedCollection={props.expandedCollection}/>);
 
         case "Paths":
             ret = (<MinPathTree

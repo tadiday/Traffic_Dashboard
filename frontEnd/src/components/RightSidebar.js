@@ -11,7 +11,7 @@ function RightSidebar(props) {
         'Average Traffic Conditions': ['Traffic Map','Avg Crashes'],
         'Traffic Conditions': [],
         'Paths' : ['node'],
-        'Trip Completion Probes' : [],
+        'Trip Completion Probes' : ["Car Information Filter"],
         'Road Probes' : []
     });
     const outputFileTypes = ['Summary', 'Average Traffic Conditions', 'Traffic Conditions', 'Paths', 'Trip Completion Probes','Road Probes'];
