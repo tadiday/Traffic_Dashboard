@@ -457,6 +457,7 @@ const AveTrafficConds = (props) => {
             });
             response.data.conditions.forEach(elem =>{
     
+               if(elem.totalFlow !== 0 && typeof elem.totalFlow !== 'undefined'){
                 data.push(
                     { totalFlow: elem.totalFlow, category: 'Expected Crashes', value: elem.expectedCrashes },
                     { totalFlow: elem.totalFlow, category: 'Expected Top Injury', value: elem.expectedTopInjurt },
@@ -465,6 +466,7 @@ const AveTrafficConds = (props) => {
                     { totalFlow: elem.totalFlow, category: 'Med Crashes', value: elem.crashMedDamage },
                     { totalFlow: elem.totalFlow, category: 'High Crashes', value: elem.crashHighDamage }
                 );
+               }
    
             });
             data.sort((a, b) => a.totalFlow - b.totalFlow);
