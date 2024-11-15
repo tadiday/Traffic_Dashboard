@@ -7,7 +7,7 @@ function RightSidebar(props) {
     // props.files is the list returned from the backend of the file types associated with the collection
     // Fix dependecies for node graphs TBD 
     const visualizations = ({ 
-        'Summary': ['Traffic Map', 'Total Vehicle Damage'],
+        'Summary': ['Traffic Map', 'Total Vehicle Damage', 'Custom Summary Chart'],
         'Average Traffic Conditions': ['Traffic Map','Avg Crashes'],
         'Traffic Conditions': [],
         'Paths' : ['node'],
