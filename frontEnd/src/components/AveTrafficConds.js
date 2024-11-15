@@ -457,7 +457,7 @@ const AveTrafficConds = (props) => {
             });
             response.data.conditions.forEach(elem =>{
     
-               if(elem.totalFlow != 0){
+               if(elem.totalFlow !== 0 && typeof elem.totalFlow !== 'undefined'){
                 data.push(
                     { totalFlow: elem.totalFlow, category: 'Expected Crashes', value: elem.expectedCrashes },
                     { totalFlow: elem.totalFlow, category: 'Expected Top Injury', value: elem.expectedTopInjurt },
