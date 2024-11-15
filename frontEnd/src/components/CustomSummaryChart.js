@@ -43,6 +43,7 @@ function CustomSummaryChart(props) {
       width: props.dimensions.graphWidth,
     });
     setChartInstance(chart);
+    // eslint-disable-next-line
   }, [summaryData, props.dimensions]);
   // Update Chart when selected metrics change
   useEffect(() => {

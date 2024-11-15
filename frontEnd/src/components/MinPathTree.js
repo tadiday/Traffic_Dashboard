@@ -202,7 +202,7 @@ const MinPathTree = (props) => {
     }
 
     //var handleSearch = null
-    var curTrees = [];
+    //var curTrees = [];
     // Node graph Creation functions
     const getNodeGraphData = async () => {
         if(!props.expandedCollection){
@@ -767,7 +767,7 @@ function assignIcons(nodes) {
         node.icon = icons[Math.floor(index / 6)];
     });
 }
-
+// eslint-disable-next-line
 function getEdgeColor(totalFlow) {
     if (totalFlow < 300) {
         return '#15931f';
@@ -777,7 +777,7 @@ function getEdgeColor(totalFlow) {
         return '#ff0901';
     }
 }
-
+// eslint-disable-next-line
 function getEdgeColorForOrigins(id, list) {
     if (list.includes(id)) {
         //console.log("id: ",id)

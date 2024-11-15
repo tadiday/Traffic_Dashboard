@@ -1,6 +1,5 @@
 // @ts-check
 import React, { useRef, useEffect } from 'react';
-import { Chart } from '@antv/g2';
 import { Graph } from '@antv/g6';
 import axios from 'axios';
 

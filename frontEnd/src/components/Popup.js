@@ -6,7 +6,7 @@ function Popup(props) {
   return (props.trigger)?(
     <div className="popup">
         <div className="popup-inner">
-            <img className="close-img" src={closeIcon} onClick={() => props.setTrigger(false)}></img>
+            <img className="close-img" src={closeIcon} alt="Close icon" onClick={() => props.setTrigger(false)}></img>
             {props.children}
         </div>
     </div>
