@@ -71,7 +71,7 @@ function Main(props) {
             // Show the spinner
             setShowSpinner(true);
 
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}:3000/api/upload`, formData, {
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/upload`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     'Authorization': `Bearer ${token}`
@@ -98,7 +98,7 @@ function Main(props) {
         const token = sessionStorage.getItem('token');
 
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/get-collections`, {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/get-collections`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
@@ -122,7 +122,7 @@ function Main(props) {
 
         try {
             console.log("Removing collection:", collectionName);
-            await axios.post(`${process.env.REACT_APP_API_URL}:3000/api/delete-collection`, null, {
+            await axios.post(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/delete-collection`, null, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },
