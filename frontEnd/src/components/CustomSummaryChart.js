@@ -15,7 +15,7 @@ function CustomSummaryChart(props) {
       const token = sessionStorage.getItem('token');
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}:3000/api/file-summary?sim=${props.expandedCollection}`,
+          `${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-summary?sim=${props.expandedCollection}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

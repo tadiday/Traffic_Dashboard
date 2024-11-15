@@ -214,7 +214,7 @@ const AveTrafficConds = (props) => {
         const token = sessionStorage.getItem('token');
         
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-nodes?sim=${props.expandedCollection}`, {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-nodes?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
@@ -232,12 +232,12 @@ const AveTrafficConds = (props) => {
         }
 
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-edges?sim=${props.expandedCollection}`, {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-edges?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
             });
-            const response2 = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-avgconds?sim=${props.expandedCollection}`, {
+            const response2 = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-avgconds?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
@@ -450,7 +450,7 @@ const AveTrafficConds = (props) => {
         // // Get data from the API endpoint
         const token = sessionStorage.getItem('token');
         try {
-             const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-avgconds?sim=${props.expandedCollection}`, {
+             const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-avgconds?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }

@@ -216,7 +216,7 @@ const MinPathTree = (props) => {
         const token = sessionStorage.getItem('token');
         
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-nodes?sim=${props.expandedCollection}`, {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-nodes?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
@@ -234,17 +234,17 @@ const MinPathTree = (props) => {
         }
 
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-edges?sim=${props.expandedCollection}`, {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-edges?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
             });
-            const response2 = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-avgconds?sim=${props.expandedCollection}`, {
+            const response2 = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-avgconds?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
             });
-            const response3 = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-paths?sim=${props.expandedCollection}`, {
+            const response3 = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-paths?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }

@@ -19,6 +19,7 @@ app.use(express.json());
 // Create a sql connection pool, using mysql 2 its already promise based
 const pool = mysql.createPool({
   host: 'localhost',
+  port: process.env.DATABASE_PORT,
   user: 'root',
   password: 'rootpass',
   database: 'traffic_visual',
@@ -406,7 +407,7 @@ app.post('/login', async (req, res) => {
       return res.json({ token: token });
 
     }catch(err){
-      console.error('Error checking user login:', error);
+      console.error('Error checking user login:', err);
       return res.status(401).json({ message: 'Query Failed' });
     }
 });
@@ -436,8 +437,8 @@ app.post('/register', async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-    console.log('Server.js App is listening on port 3000');
+app.listen(process.env.PORT, () => {
+    console.log('Server.js App is listening on port: '+ process.env.PORT);
 });
 
 // Closes DB Connections on receiving end signals
