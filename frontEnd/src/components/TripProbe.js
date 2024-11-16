@@ -1,8 +1,7 @@
-// @ts-check
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Chart } from '@antv/g2';
 import axios from 'axios';
-
+import './TripProbe.css'
 function TripProbe(props) {
     const nodeGraphRef = useRef(null);
     // eslint-disable-next-line
@@ -40,6 +39,8 @@ function TripProbe(props) {
     
     // Render the Car Information Filter bar chart
     const CarInfoFilter = () => {
+        const [selectedMetrics, setSelectedMetrics] = useState([]);
+
         const options = [
             //"Vehicle ID number", // show all returned id numbers
             //"Vehicle class", // Give user option to select vehicle class
@@ -109,7 +110,16 @@ function TripProbe(props) {
             }   
 
         }
-        
+
+        function handleMetricChange(e){
+            const selected = [];
+            for (const option of e.target.options) {
+              if (option.selected) {
+                selected.push(option.value);
+              }
+            }
+            setSelectedMetrics(selected);
+          };
         
         useEffect(() => {
             bar();
@@ -125,16 +135,17 @@ function TripProbe(props) {
         return ( 
             <div id="container" style={{ width: props.dimensions.graphWidth, height: props.dimensions.graphHeight }}>
                 <div id="charts" ref={nodeGraphRef} style={{ height: '65%'}}/>        
-                <div id="options" style={{ height: '50%', overflowY: 'auto'}}>
-                    {options.map(
-                        (key, index) => ( 
-                            <div key={index}> 
-                                <input type="checkbox" id={`checkbox-${index}`} name={key} /> 
-                                <label htmlFor={`checkbox-${index}`}>{key}</label> 
-                            </div> 
-                        )
-                        )
-                    }
+                <div className="controls" style={{ height: '50%', overflowY: 'auto'}}>
+                    <div className="form-group">
+                        <label>Select Metrics:</label>
+                        <select multiple onChange={handleMetricChange}>
+                            {options.map((metric) => (
+                            <option key={metric} value={metric}>
+                                {metric}
+                            </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>       
             </div>
         );
