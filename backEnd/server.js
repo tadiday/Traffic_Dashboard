@@ -21,7 +21,7 @@ const pool = mysql.createPool({
   host: 'localhost',
   port: process.env.DATABASE_PORT,
   user: 'root',
-  password: 'rootpass',
+  password: 'P@ssw0rd1234!',
   database: 'traffic_visual',
   waitForConnections: true,
   connectionLimit: 10,

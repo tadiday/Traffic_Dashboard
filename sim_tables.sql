@@ -34,6 +34,6 @@ CREATE TABLE IF NOT EXISTS text_files (
 
 INSERT INTO users (user_id, username, password) VALUES ('1', 'root', 'rootpass');
 
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'rootpass';
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'P@ssw0rd1234!';
 
 FLUSH PRIVILEGES;
