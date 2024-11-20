@@ -152,6 +152,7 @@ const AveTrafficConds = (props) => {
     
     var chart;
     var popChart;
+    //var miniRing;
     let selectedEdge = null;
     
     // popUpAnimation
@@ -496,7 +497,7 @@ const AveTrafficConds = (props) => {
                 .encode('color', 'category')
                 .scale('color', {
                     domain: ['Expected Crashes', 'Expected Top Injury', 'Fatal Crashes', 'Low Crashes', 'Med Crashes', 'High Crashes'],
-                    range: ['#baaeea', '#84c2ea', '#ff0000', '#a6ea84', '#ead084','#ea9a84']
+                    range: ['#baaeea', '#00e0ff', '#ff0000', '#a6ea84', '#ead084','#ea9a84']
                 })
                 .axis('y', { title: 'Average Crash' })
                 .axis('x', { title: 'Total Flow' })
@@ -505,6 +506,124 @@ const AveTrafficConds = (props) => {
             chart.render();
         }    
     };
+
+    // const mini_ring = async () => {
+    //     if(popUpAnimationRef.current){
+    //         const progress = 0.6;
+    //         miniRing = new Chart({
+    //             container: popUpAnimationRef.current,
+    //             width: 100,
+    //             height: 100,
+    //         })
+
+    //         miniRing.coordinate({ type: 'theta', innerRadius: 0.7 });
+    //         miniRing
+    //             .interval()
+    //             .data([1, progress])
+    //             .encode('y', (d) => d)
+    //             .encode('color', (d, idx) => idx)
+    //             .scale('y', { domain: [0, 1] })
+    //             .scale('color', { range: ['#000000', '#a0ff03'] })
+    //             .animate('enter', { type: 'waveIn' })
+    //             .axis(false)
+    //             .legend(false);
+
+    //         miniRing.text().style({
+    //             text: `${progress * 100}%`,
+    //             x: '50%',
+    //             y: '50%',
+    //             textAlign: 'center',
+    //             fontSize: 16,
+    //             fontStyle: 'bold',
+    //             });
+                
+    //         miniRing.interaction('tooltip', false);
+                
+    //         miniRing.render();
+    //     }
+    // }
+
+    const rose = async () => {
+        if(!props.expandedCollection){
+            return null;
+        }
+        var data = [];
+        // // Get data from the API endpoint
+        const token = sessionStorage.getItem('token');
+        try {
+             const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-avgconds?sim=${props.expandedCollection}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+            response.data.conditions.forEach(elem =>{
+                if(elem.fuel < 60){
+                    data.push({Fuel: elem.fuel,CO2: elem.CO2});
+                }
+            })
+
+            console.log(data);
+            data.sort((a, b) => a.Fuel - b.Fuel);
+        } catch (error) {
+            console.error('Error fetching bar info:', error);
+            return null;
+        }
+
+        
+        if (nodeGraphRef.current) {
+            chart = new Chart({
+                container: nodeGraphRef.current,
+                //autoFit: true,
+                height: props.dimensions.graphHeight,
+                width: props.dimensions.graphWidth,
+                title: "Average CO2 Emission vs. Fuel",
+            });
+
+            chart.coordinate({ type: 'polar', outerRadius: 0.85, center: [100, -100] });
+
+            chart
+                .interval()
+                .transform({ type: 'groupX', y: 'mean'})
+                // .data({
+                //     type: 'fetch',
+                //     value:
+                //     'https://gw.alipayobjects.com/os/bmw-prod/87b2ff47-2a33-4509-869c-dae4cdd81163.csv',
+                // })
+                .data(data)
+                .encode('x', 'Fuel')
+                .encode('color', 'Fuel')
+                .encode('y', 'CO2')
+                .scale('y', { type: 'sqrt' })
+                .scale('color', {
+                    type: 'linear',
+                    domain: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60], // Corresponding data values
+                    //range: ['#003366', '#006bb3', '#3399ff', '#66ccff', '#99ffcc', '#ffcc00', '#ff6600', '#ff3300', '#cc0000', '#990000']
+                    range: [
+                        '#001f33', '#003366', '#00509e', '#006bb3', '#3380cc', 
+                        '#3399ff', '#66ccff', '#99ffcc', '#b3ff99', '#c2f0b0', 
+                        '#d9f8c7', '#ffeb3b', '#ff9800', '#f57c00', '#f44336', 
+                        '#e91e63', '#e53935', '#d32f2f', '#c2185b', '#9c27b0'
+                      ]
+                    
+                      
+                      
+                  })
+                .scale('x', { padding: 0 })
+                .axis(false)
+                .label({
+                    text: 'CO2',
+                    position: 'outside',
+                    formatter: '~s',
+                    transform: [{ type: 'overlapDodgeY' }],
+                })
+                .legend({ color: { position: 'top', length: 400, layout: { justifyContent: 'center' } } })
+                
+                .animate('enter', { type: 'waveIn' })
+                .tooltip({ channel: 'y', valueFormatter: '~s' });
+
+            chart.render();
+        }    
+    }
 
     useEffect(() => {
         if (selectedEdgeInfo) {
@@ -523,6 +642,8 @@ const AveTrafficConds = (props) => {
             node();
         }else if(props.selectedGraph === 'Avg Crashes'){
             pie();
+        }else if(props.selectedGraph === 'Avg CO2'){
+            rose();
         }
 
         return () => {
@@ -560,7 +681,7 @@ const AveTrafficConds = (props) => {
                     </div>
 
                     {/* Right Section: Additional Information */}
-                    <div style={{ marginLeft: '150px'}}>
+                    <div style={{ marginLeft: '300px'}}>
                     {selectedEdgeInfo && (
                         <div>
                         <p><strong>Expected Crashes:</strong> {selectedEdgeInfo.expectedCrashes.toFixed(3)}</p>
