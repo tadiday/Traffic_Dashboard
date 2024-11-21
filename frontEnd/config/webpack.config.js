@@ -187,6 +187,13 @@ module.exports = function (webpackEnv) {
   };
 
   return {
+    devServer: {
+      host: '0.0.0.0',         // Accept connections from all network interfaces
+      port: 4624,              // Use the port mapped by Docker
+      allowedHosts: 'all',     // Allow all host headers (for external access)
+      hot: true,               // Enable hot module replacement
+      historyApiFallback: true // Handle single-page apps
+    },
     target: ['browserslist'],
     // Webpack noise constrained to errors and warnings
     stats: 'errors-warnings',
