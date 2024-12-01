@@ -1,5 +1,5 @@
 //ts-check
-import React, { useEffect } from 'react';
+import React from 'react';
 import './Sidebar.css';
 
 function Sidebar(props) {
@@ -16,7 +16,7 @@ function Sidebar(props) {
       props.setFile_Type(null);
       const token = sessionStorage.getItem('token');
       try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL}:3000/api/select-uploads?collection_name=${collectionName}`, {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/select-uploads?collection_name=${collectionName}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           }

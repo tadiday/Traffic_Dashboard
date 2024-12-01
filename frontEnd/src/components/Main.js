@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import '../components/Main.css';
+import './Main.css'; // Ensure Main.css is imported for styling
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import { jwtDecode } from 'jwt-decode';  // Make sure this is the correct import
+import { jwtDecode } from 'jwt-decode';  // Correct the import for jwtDecode
 import Charts from '../components/Charts';
-import RightSidebar from '../components/RightSidebar'; // Import RightSidebar
+import RightSidebar from '../components/RightSidebar';
 
 function Main(props) {
     const [expandedCollection, setExpandedCollection] = useState(null);
@@ -19,7 +19,9 @@ function Main(props) {
     const navigate = useNavigate();
     const [files, setFiles] = useState([]); // Store files for the expanded collection
     const [file_type, setFile_Type] = useState(null);
-    
+
+    const [showSpinner, setShowSpinner] = useState(false);
+
     // Get items and username
     useEffect(() => {
         const token = sessionStorage.getItem('token');
@@ -39,7 +41,7 @@ function Main(props) {
     function handleNameChange(e) {
         setCollectionName(e.target.value);
     }
-      
+
     function handleFileChange(e) {
         setFile(e.target.files[0]);
     }
@@ -51,7 +53,7 @@ function Main(props) {
             alert("Please select a zip file to upload.");
             return;
         }
-        if(collectionName === ''){
+        if (collectionName === '') {
             alert("Please enter a collection name.");
             return;
         }
@@ -60,27 +62,33 @@ function Main(props) {
             alert("Please select a valid zip file.");
             return;
         }
-    
+
         const formData = new FormData();
         formData.append('file', file);
         formData.append('collectionName', collectionName);
-    
+
         try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}:3000/api/upload`, formData, {
+            // Show the spinner
+            setShowSpinner(true);
+
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/upload`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     'Authorization': `Bearer ${token}`
                 }
             });
             console.log('Collection uploaded successfully:', response.data);
+            // Hide the spinner after completion
+            setShowSpinner(false);
             // Refetch collections after successful upload
             fetchItems();
         } catch (error) {
             console.error('Error uploading file:', error);
-            if(error.response.data){
+            setShowSpinner(false);
+            if (error.response && error.response.data) {
                 alert(error.response.data);
             } else {
-                alert("An error occured uploading the file.")
+                alert("An error occurred uploading the file.");
             }
         }
     };
@@ -88,14 +96,14 @@ function Main(props) {
     // Fetch collections
     const fetchItems = async () => {
         const token = sessionStorage.getItem('token');
-        
+
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/get-collections`, {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/get-collections`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
             });
-            console.log("Fetched collections:", response.data); 
+            console.log("Fetched collections:", response.data);
             setItems(response.data);  // Update the collections
         } catch (error) {
             console.error('Error fetching entries:', error);
@@ -114,7 +122,7 @@ function Main(props) {
 
         try {
             console.log("Removing collection:", collectionName);
-            await axios.post(`${process.env.REACT_APP_API_URL}:3000/api/delete-collection`, null, {
+            await axios.post(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/delete-collection`, null, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },
@@ -133,15 +141,15 @@ function Main(props) {
         <div className="app-container">
             <Navbar username={username} onLogout={handleLogout} />
             <div className="content">
-                <Sidebar 
+                <Sidebar
                     file={file} // File to be uploaded
                     files={files} // Files within the selected collection
                     setFiles={setFiles}
                     file_type={file_type} // The type of file whose visualizations can be chosen
                     setFile_Type={setFile_Type}
-                    collectionName={collectionName} 
-                    handleUpload={upload} 
-                    items={items} 
+                    collectionName={collectionName}
+                    handleUpload={upload}
+                    items={items}
                     removeCollection={removeCollection}
                     handleFileChange={handleFileChange}
                     handleNameChange={handleNameChange}
@@ -150,21 +158,32 @@ function Main(props) {
                 />
                 <div className="main-content">
                     <h2>Welcome, {username}!</h2>
-                    <Charts 
+                    <Charts
                         expandedCollection={expandedCollection}
                         selectedGraph={selectedGraph} // Pass selectedGraph to Charts
                         file_type={file_type}
                         setFile_Type={setFile_Type}
                     />
                 </div>
-                <RightSidebar 
+                <RightSidebar
                     setSelectedGraph={setSelectedGraph}
-                    expandedCollection={expandedCollection} 
+                    expandedCollection={expandedCollection}
                     files={files} // Files within the selected collection
                     file_type={file_type}
                     setFile_Type={setFile_Type}
-                /> {/* Add RightSidebar */}
+                />
             </div>
+            {showSpinner && (
+                <div className="spinner-overlay">
+                    <div className="spinner-container">
+                        <button className="close-button" onClick={() => setShowSpinner(false)}>×</button>
+                        <div className="spinner-message">
+                            <p>Uploading and processing file, please wait...</p>
+                            <div className="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

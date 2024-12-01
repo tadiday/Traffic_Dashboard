@@ -1,6 +1,5 @@
 // @ts-check
 import React, { useRef, useEffect } from 'react';
-import { Chart } from '@antv/g2';
 import { Graph } from '@antv/g6';
 import axios from 'axios';
 
@@ -21,7 +20,7 @@ function Summary(props) {
         const token = sessionStorage.getItem('token');
         
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-nodes?sim=${props.expandedCollection}`, {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-nodes?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
@@ -38,7 +37,7 @@ function Summary(props) {
         }
 
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-edges?sim=${props.expandedCollection}`, {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-edges?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
@@ -133,59 +132,11 @@ function Summary(props) {
         }
     }
 
-    // Render the Total Vehicle Damage bar chart
-    // eslint-disable-next-line
-    const TotalVehicleDamage = async () => {
-        if(!props.expandedCollection){
-            return null;
-        }
-        let dataTypes = ["injury crashes", "fatal crashes", "moderate damage", "minor damage", "no damage"];
-        var data = [];
-        // Get data from the API endpoint
-        const token = sessionStorage.getItem('token');
-        try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-summary?sim=${props.expandedCollection}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                }
-            });
-
-            dataTypes.forEach((type) => {
-                data.push({ Damage: type, Vehicles: response.data.total[type][5] });
-            });
-            console.log(data);
-        } catch (error) {
-            console.error('Error fetching bar info:', error);
-            return null;
-        }
-
-        if (nodeGraphRef.current) {
-            chart = new Chart({
-                container: nodeGraphRef.current,
-                autoFit: true,
-                height: props.dimensions.graphHeight,
-                width: props.dimensions.graphWidth,
-                title: "Total Vehicle Damage",
-            });
-
-            chart
-                .interval()
-                .data(data)
-                .encode('x', 'Damage')
-                .encode('y', 'Vehicles')
-                .encode('color', 'Damage');
-
-            chart.render();
-        }    
-    }
 
     useEffect(() => {
         if (props.selectedGraph === 'Traffic Map') {
             TrafficMap();
-        } else if (props.selectedGraph === 'Total Vehicle Damage') {
-            TotalVehicleDamage();
-        }
-
+        } 
         return () => {
             if (chart) {
                 chart.destroy();

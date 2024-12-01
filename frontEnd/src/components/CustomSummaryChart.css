@@ -1,0 +1,19 @@
+/* frontEnd/src/components/CustomSummaryChart.css */
+.custom-summary-chart {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .controls {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .controls label {
+    margin-right: 20px;
+  }
+  
+  .controls select {
+    margin-left: 5px;
+  }

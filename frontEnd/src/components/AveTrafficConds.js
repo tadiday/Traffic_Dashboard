@@ -1,5 +1,6 @@
 // @ts-check
 import React, { useRef, useEffect, useState } from 'react';
+import { Chart } from '@antv/g2';
 // import G6 from '@antv/g6';
 import { Graph, registerEdge, registerNode} from '@antv/g6';
 //import * as G6 from '@antv/g6';
@@ -12,6 +13,19 @@ interface EdgeInfo {
     target: string;
     totalFlow: String;
     co2Emission: String;
+    totalAverageTime: String;
+    averageTime: String;
+    averageVehicles: String;
+    averageQueue: String;
+    averageStops: String;
+    fuel: String;
+    expectedCrashes: String;
+    expectedTopInjurt: String;
+    fatelCrashes: String;
+    crashLowDamage: String;
+    crashMedDamage: String;
+    crashHighDamage: String;
+
 }
 
 //add icon on the edge, not finished
@@ -138,6 +152,7 @@ const AveTrafficConds = (props) => {
     
     var chart;
     var popChart;
+    //var miniRing;
     let selectedEdge = null;
     
     // popUpAnimation
@@ -186,7 +201,7 @@ const AveTrafficConds = (props) => {
             popChart.data(data);
             popChart.render();
         }
-    }
+    };
 
     // Node graph Creation functions
     const getNodeGraphData = async () => {
@@ -200,7 +215,7 @@ const AveTrafficConds = (props) => {
         const token = sessionStorage.getItem('token');
         
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-nodes?sim=${props.expandedCollection}`, {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-nodes?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
@@ -218,12 +233,12 @@ const AveTrafficConds = (props) => {
         }
 
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-edges?sim=${props.expandedCollection}`, {
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-edges?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
             });
-            const response2 = await axios.get(`${process.env.REACT_APP_API_URL}:3000/api/file-avgconds?sim=${props.expandedCollection}`, {
+            const response2 = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-avgconds?sim=${props.expandedCollection}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
@@ -240,7 +255,18 @@ const AveTrafficConds = (props) => {
                     source: String(obj.start),
                     target: String(obj.end),
                     totalFlow: condition ? condition.totalFlow : null,
-                    co2Emission: condition ? condition.CO2 : null
+                    co2Emission: condition ? condition.CO2 : null,
+                    totalAverageTime: condition ? condition.totalAverageTime : null,
+                    averageVehicles: condition ? condition.averageVehicles : null,
+                    averageQueue: condition ? condition.averageQueue : null,
+                    averageStops: condition ? condition.averageStops : null,
+                    fuel: condition ? condition.fuel : null,
+                    expectedCrashes: condition ? condition.expectedCrashes : null,
+                    expectedTopInjurt: condition ? condition.expectedTopInjurt : null,
+                    fatelCrashes: condition ? condition.fatelCrashes : null,
+                    crashLowDamage: condition ? condition.crashLowDamage : null,
+                    crashMedDamage: condition ? condition.crashMedDamage : null,
+                    crashHighDamage: condition ? condition.crashHighDamage : null,
                 };
             });
         
@@ -392,6 +418,17 @@ const AveTrafficConds = (props) => {
                             target: edgeData.target,
                             totalFlow: edgeData.totalFlow,
                             co2Emission: edgeData.co2Emission,
+                            totalAverageTime: edgeData.totalAverageTime,
+                            averageVehicles: edgeData.averageVehicles,
+                            averageQueue: edgeData.averageQueue,
+                            averageStops: edgeData.averageStops,
+                            fuel: edgeData.fuel,
+                            expectedCrashes: edgeData.expectedCrashes,
+                            expectedTopInjurt: edgeData.expectedTopInjurt,
+                            fatelCrashes: edgeData.fatelCrashes,
+                            crashLowDamage: edgeData.crashLowDamage,
+                            crashMedDamage: edgeData.crashMedDamage,
+                            crashHighDamage: edgeData.crashHighDamage,
                         };
                         setSelectedEdgeInfo(edgeInfo); 
                         setEdgePopup(true);
@@ -402,6 +439,189 @@ const AveTrafficConds = (props) => {
                 console.log("Error adding data");
             }
         }
+    };
+
+    const pie = async () =>{
+        if(!props.expandedCollection){
+            return null;
+        }
+        //let dataTypes = ["expectedCrashes", "expectedTopInjurt"];
+        var data = [];
+        // // Get data from the API endpoint
+        const token = sessionStorage.getItem('token');
+        try {
+             const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-avgconds?sim=${props.expandedCollection}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+            response.data.conditions.forEach(elem =>{
+    
+               if(elem.totalFlow !== 0 && typeof elem.totalFlow !== 'undefined'){
+                data.push(
+                    { totalFlow: elem.totalFlow, category: 'Expected Crashes', value: elem.expectedCrashes },
+                    { totalFlow: elem.totalFlow, category: 'Expected Top Injury', value: elem.expectedTopInjurt },
+                    { totalFlow: elem.totalFlow, category: 'Fatal Crashes', value: elem.fatelCrashes },
+                    { totalFlow: elem.totalFlow, category: 'Low Crashes', value: elem.crashLowDamage },
+                    { totalFlow: elem.totalFlow, category: 'Med Crashes', value: elem.crashMedDamage },
+                    { totalFlow: elem.totalFlow, category: 'High Crashes', value: elem.crashHighDamage }
+                );
+               }
+   
+            });
+            data.sort((a, b) => a.totalFlow - b.totalFlow);
+            console.log(data);
+        } catch (error) {
+            console.error('Error fetching bar info:', error);
+            return null;
+        }
+
+
+        if (nodeGraphRef.current) {
+            chart = new Chart({
+                container: nodeGraphRef.current,
+                //autoFit: true,
+                height: props.dimensions.graphHeight,
+                width: props.dimensions.graphWidth,
+                title: "Average Crashes",
+            });
+
+            chart
+                .interval()
+                .data(data)
+                .transform({ type: 'groupX', y: 'mean', groupBy: ['category', 'totalFlow']})
+                .transform({ type: 'stackY', reverse: true, orderBy: 'category' })
+                .encode('x', 'totalFlow')
+                .encode('y', 'value')
+                .encode('color', 'category')
+                .scale('color', {
+                    domain: ['Expected Crashes', 'Expected Top Injury', 'Fatal Crashes', 'Low Crashes', 'Med Crashes', 'High Crashes'],
+                    range: ['#baaeea', '#00e0ff', '#ff0000', '#a6ea84', '#ead084','#ea9a84']
+                })
+                .axis('y', { title: 'Average Crash' })
+                .axis('x', { title: 'Total Flow' })
+                
+
+            chart.render();
+        }    
+    };
+
+    // const mini_ring = async () => {
+    //     if(popUpAnimationRef.current){
+    //         const progress = 0.6;
+    //         miniRing = new Chart({
+    //             container: popUpAnimationRef.current,
+    //             width: 100,
+    //             height: 100,
+    //         })
+
+    //         miniRing.coordinate({ type: 'theta', innerRadius: 0.7 });
+    //         miniRing
+    //             .interval()
+    //             .data([1, progress])
+    //             .encode('y', (d) => d)
+    //             .encode('color', (d, idx) => idx)
+    //             .scale('y', { domain: [0, 1] })
+    //             .scale('color', { range: ['#000000', '#a0ff03'] })
+    //             .animate('enter', { type: 'waveIn' })
+    //             .axis(false)
+    //             .legend(false);
+
+    //         miniRing.text().style({
+    //             text: `${progress * 100}%`,
+    //             x: '50%',
+    //             y: '50%',
+    //             textAlign: 'center',
+    //             fontSize: 16,
+    //             fontStyle: 'bold',
+    //             });
+                
+    //         miniRing.interaction('tooltip', false);
+                
+    //         miniRing.render();
+    //     }
+    // }
+
+    const rose = async () => {
+        if(!props.expandedCollection){
+            return null;
+        }
+        var data = [];
+        // // Get data from the API endpoint
+        const token = sessionStorage.getItem('token');
+        try {
+             const response = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-avgconds?sim=${props.expandedCollection}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+            response.data.conditions.forEach(elem =>{
+                if(elem.fuel < 60){
+                    data.push({Fuel: elem.fuel,CO2: elem.CO2});
+                }
+            })
+
+            console.log(data);
+            data.sort((a, b) => a.Fuel - b.Fuel);
+        } catch (error) {
+            console.error('Error fetching bar info:', error);
+            return null;
+        }
+
+        
+        if (nodeGraphRef.current) {
+            chart = new Chart({
+                container: nodeGraphRef.current,
+                //autoFit: true,
+                height: props.dimensions.graphHeight,
+                width: props.dimensions.graphWidth,
+                title: "Average CO2 Emission vs. Fuel",
+            });
+
+            chart.coordinate({ type: 'polar', outerRadius: 0.85, center: [100, -100] });
+
+            chart
+                .interval()
+                .transform({ type: 'groupX', y: 'mean'})
+                // .data({
+                //     type: 'fetch',
+                //     value:
+                //     'https://gw.alipayobjects.com/os/bmw-prod/87b2ff47-2a33-4509-869c-dae4cdd81163.csv',
+                // })
+                .data(data)
+                .encode('x', 'Fuel')
+                .encode('color', 'Fuel')
+                .encode('y', 'CO2')
+                .scale('y', { type: 'sqrt' })
+                .scale('color', {
+                    type: 'linear',
+                    domain: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60], // Corresponding data values
+                    //range: ['#003366', '#006bb3', '#3399ff', '#66ccff', '#99ffcc', '#ffcc00', '#ff6600', '#ff3300', '#cc0000', '#990000']
+                    range: [
+                        '#001f33', '#003366', '#00509e', '#006bb3', '#3380cc', 
+                        '#3399ff', '#66ccff', '#99ffcc', '#b3ff99', '#c2f0b0', 
+                        '#d9f8c7', '#ffeb3b', '#ff9800', '#f57c00', '#f44336', 
+                        '#e91e63', '#e53935', '#d32f2f', '#c2185b', '#9c27b0'
+                      ]
+                    
+                      
+                      
+                  })
+                .scale('x', { padding: 0 })
+                .axis(false)
+                .label({
+                    text: 'CO2',
+                    position: 'outside',
+                    formatter: '~s',
+                    transform: [{ type: 'overlapDodgeY' }],
+                })
+                .legend({ color: { position: 'top', length: 400, layout: { justifyContent: 'center' } } })
+                
+                .animate('enter', { type: 'waveIn' })
+                .tooltip({ channel: 'y', valueFormatter: '~s' });
+
+            chart.render();
+        }    
     }
 
     useEffect(() => {
@@ -417,8 +637,12 @@ const AveTrafficConds = (props) => {
     }, [selectedEdgeInfo, popChart]);
 
     useEffect(() => {
-        if (props.selectedGraph === 'node') {
+        if (props.selectedGraph === 'Traffic Map') {
             node();
+        }else if(props.selectedGraph === 'Avg Crashes'){
+            pie();
+        }else if(props.selectedGraph === 'Avg CO2'){
+            rose();
         }
 
         return () => {
@@ -434,16 +658,44 @@ const AveTrafficConds = (props) => {
             <div id="charts" ref={nodeGraphRef} style={{ width: props.dimensions.graphWidth, height: props.dimensions.graphHeight }}></div>
             
             <Popup trigger={edgePopup} setTrigger={setEdgePopup}>
-                <h3>Selected Edge Information</h3>
-                <div id="animation" ref={popUpAnimationRef} style={{ width: 200, height: 200 }}></div>
+                <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Selected Edge Information</h2>
+                <div id="animation" ref={popUpAnimationRef} style={{ width: 100, height: 250, marginTop: '-60px',marginLeft: '190px' }}></div>
+                <div style={{ display: 'flex' }}>
+                    {/* Left Section: Animation on top, Information below */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '20px' }}>
+                    
+                    <div>
+                        {selectedEdgeInfo && (
+                        <div>
+                            <p><strong>Total Flow:</strong> {selectedEdgeInfo.totalFlow.toFixed(3)}</p>
+                            <p><strong>CO2 Emission:</strong> {selectedEdgeInfo.co2Emission.toFixed(3)}</p>
+                            <p><strong>Total Average Time:</strong> {selectedEdgeInfo.totalAverageTime.toFixed(3)}</p>
+                            <p><strong>Average Vehicles:</strong> {selectedEdgeInfo.averageVehicles.toFixed(3)}</p>
+                            <p><strong>Average Queue:</strong> {selectedEdgeInfo.averageQueue.toFixed(3)}</p>
+                            <p><strong>Average Stops:</strong> {selectedEdgeInfo.averageStops.toFixed(3)}</p>
+                            <p><strong>Fuel:</strong> {selectedEdgeInfo.fuel.toFixed(3)}</p>
+                        </div>
+                        )}
+                    </div>
+                    </div>
+
+                    {/* Right Section: Additional Information */}
+                    <div style={{ marginLeft: '300px'}}>
                     {selectedEdgeInfo && (
                         <div>
-                            <p><strong>Total Flow:</strong> {selectedEdgeInfo.totalFlow}</p>
-                            <p><strong>CO2 Emission:</strong> {selectedEdgeInfo.co2Emission}</p>
+                        <p><strong>Expected Crashes:</strong> {selectedEdgeInfo.expectedCrashes.toFixed(3)}</p>
+                        <p><strong>Expected Top Injury:</strong> {selectedEdgeInfo.expectedTopInjurt.toFixed(3)}</p>
+                        <p><strong>Fatal Crashes:</strong> {selectedEdgeInfo.fatelCrashes.toFixed(3)}</p>
+                        <p><strong>Crash Low Damage:</strong> {selectedEdgeInfo.crashLowDamage.toFixed(3)}</p>
+                        <p><strong>Crash Med Damage:</strong> {selectedEdgeInfo.crashMedDamage.toFixed(3)}</p>
+                        <p><strong>Crash High Damage:</strong> {selectedEdgeInfo.crashHighDamage.toFixed(3)}</p>
                         </div>
-
                     )}
+                    </div>
+                </div>
             </Popup>
+
+
         </div>
     );
 }

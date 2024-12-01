@@ -1,0 +1,40 @@
+.form-group {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    height: 100%; /* Full height of workspace */
+}
+
+label {
+    margin-bottom: 0.5em;
+}
+
+.query-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+.queries-list {
+    margin-top: 5px;
+    padding-left: 10px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    min-height: 50px;
+}
+.buttons {
+    margin-top: 10px;
+}
+.vertical-container {
+    display: flex;
+    flex-direction: column; /* Stacks elements vertically */
+    gap: 10px; /* Adds space between elements */
+    margin: 0 auto;
+    position: relative;
+    height: 100%; /* Full height of workspace */
+}
+
+.horizontal-container {
+    display: flex;
+    flex-direction: row; /* Stacks elements vertically */
+}

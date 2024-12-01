@@ -11,7 +11,7 @@ function Login(props) {
   const handleSubmit = async(e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}:3000/login`, {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/login`, {
         username,
         password,
       });

@@ -2,42 +2,67 @@
 import React from 'react';
 import AveTrafficConds from './AveTrafficConds';
 import Summary from './Summary';
+import TripProbe from './TripProbe';
 import MinPathTree from './MinPathTree';
+import CustomSummaryChart from './CustomSummaryChart'; // Import the CustomSummaryChart component
 
 function Charts(props) {
-    const dimensions = { graphWidth: window.innerWidth * 0.6, graphHeight: window.innerHeight * 0.7};
-    //props.setFile_Type("Summary"); // get from elsewhere later in useState
+    const dimensions = { graphWidth: window.innerWidth * 0.6, graphHeight: window.innerHeight * 0.7 };
 
-    var ret;
+    let ret;
 
-    switch(props.file_type){
+    switch (props.file_type) {
         case "Summary":
-            ret = (<Summary
-                dimensions={dimensions}
-                selectedGraph={props.selectedGraph}
-                expandedCollection={props.expandedCollection}
-            />);
+            if (props.selectedGraph === "Custom Summary Chart") {
+                ret = (
+                    <CustomSummaryChart
+                        dimensions={dimensions}
+                        expandedCollection={props.expandedCollection}
+                    />
+                );
+            } else {
+                ret = (
+                    <Summary
+                        dimensions={dimensions}
+                        selectedGraph={props.selectedGraph}
+                        expandedCollection={props.expandedCollection}
+                    />
+                );
+            }
             break;
         case "Average Traffic Conditions":
-            ret = (<AveTrafficConds
-                dimensions={dimensions}
-                selectedGraph={props.selectedGraph}
-                expandedCollection={props.expandedCollection}/>);
+            ret = (
+                <AveTrafficConds
+                    dimensions={dimensions}
+                    selectedGraph={props.selectedGraph}
+                    expandedCollection={props.expandedCollection}
+                />
+            );
             break;
-
+        case "Trip Completion Probes":
+            ret = (
+                <TripProbe
+                    dimensions={dimensions}
+                    selectedGraph={props.selectedGraph}
+                    expandedCollection={props.expandedCollection}
+                />
+            );
+            break; // Added missing break statement here
         case "Paths":
-            ret = (<MinPathTree
-                dimensions={dimensions}
-                selectedGraph={props.selectedGraph}
-                expandedCollection={props.expandedCollection}/>);
+            ret = (
+                <MinPathTree
+                    dimensions={dimensions}
+                    selectedGraph={props.selectedGraph}
+                    expandedCollection={props.expandedCollection}
+                />
+            );
             break;
         default:
             ret = (
-            <div>
-                <p>Please Select a Collection on the left and then a Visualization on the right.</p>
-            </div>
+                <div>
+                    <p>Please Select a Collection on the left and then a Visualization on the right.</p>
+                </div>
             );
-            //console.log("No file type selected");
     }
     return ret;
 }
