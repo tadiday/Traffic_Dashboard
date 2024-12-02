@@ -201,6 +201,8 @@ const MinPathTree = (props) => {
         }
     }
 
+    //var handleSearch = null
+    //var curTrees = [];
     // Node graph Creation functions
     const getNodeGraphData = async () => {
         if(!props.expandedCollection){
@@ -219,6 +221,7 @@ const MinPathTree = (props) => {
                     'Authorization': `Bearer ${token}`,
                 }
             });
+            //console.log("Fetched Nodes:", response.data); 
             nodes = response.data.nodes.map(obj => ({
                 id: String(obj.id),
                 x: obj.x,
@@ -246,8 +249,14 @@ const MinPathTree = (props) => {
                     'Authorization': `Bearer ${token}`,
                 }
             });
+
+            //console.log("Fetched Nodes:", response.data); 
+            //console.log('Edges:', response.data.edges);
+            //console.log('Conditions:', response2.data.conditions);
             edges = response.data.edges.map(obj => {
                 const condition = response2.data.conditions.find(cond => cond.edgeID === obj.id);
+                // console.log('Test:',response2.data.conditions.map(cond => ({ edgeId: cond.edgeID, totalFlow: cond.totalFlow, CO2: cond.CO })));
+                
                 return {
                     edgeIdNum: String(obj.id),
                     edgeLength: String(obj.length),
@@ -262,6 +271,7 @@ const MinPathTree = (props) => {
                 return {
                     iniOrigins: obj.paths[0].origins.map(subarray=>String(subarray[0])),
                     trees: obj.paths[0].edges // root = index# + 1 = search link number
+                    //iniOrigins: obj[0].paths[0].origins.map(subarray=>String(subarray[0])),
                 }
                 
             });
@@ -307,6 +317,7 @@ const MinPathTree = (props) => {
                 },
                 defaultEdge: {
                     color: '#FFA07A',
+                // type: 'icon-edge',
                     style: {
                         endArrow: true,
                         icon: true,
@@ -407,6 +418,13 @@ const MinPathTree = (props) => {
                     // Hide tooltip when mouse leaves the edge
                     chart.on('edge:mouseleave', (e) => {
                         tooltip.style.display = 'none';
+
+                        // Change edge color on mouse leave
+                        chart.updateItem(e.item, {
+                            style: {
+                                //stroke: checkedItems.originDisplay?'#FFA07A':'#FF0000',
+                            },
+                        });
                     }); 
                     // -----------------------------------------------EDGE ENDS ------------------------------------
                     // Event listener to show tooltip on hovering NODE---------------------------------------------
@@ -451,6 +469,10 @@ const MinPathTree = (props) => {
                             console.warn("hover item is null");
                             return;
                         }
+                        //const edgeData = edge.getModel();
+                        //const edgeId = edgeData.edgeIdNum; // assuming edgeIdNum is the identifier for the edge
+                        // Check if edgeId exists in the currentOrigins array
+
 
                         if (edge !== selectedEdge) {
                             if (edge.hasState("disabledHover")) {
@@ -472,6 +494,7 @@ const MinPathTree = (props) => {
                             console.warn("hover item is null");
                             return;
                         }
+                        //const edgeData = edge.getModel();
                         if (edge !== selectedEdge) {
                             if (edge.hasState("disabledHover")) {
                                 return; // Skip hover actions for this item
@@ -495,14 +518,15 @@ const MinPathTree = (props) => {
                         }
                         const edgeData = edge.getModel();
                         if (selectedEdge && selectedEdge !== edge) {
+                            chart.clearItemStates(selectedEdge);
+                            //clear previously highlighted color
                             chart.updateItem(selectedEdge, {
                                 style: {
+                                    //stroke: getEdgeColor(edgeData.totalFlow),
                                     lineWidth: 10,
-                                    opacity: (selectedEdge===previousSearchedEdge || selectedEdge.hasState("disabledHover"))?1:0.1
+                                    opacity: 0.1
                                 },
                             });
-                            chart.clearItemStates(selectedEdge, 'selected');
-                            //clear previously highlighted color
                         }
                         selectedEdge = edge;
                         edge.setState('selected', true);
@@ -538,6 +562,7 @@ const MinPathTree = (props) => {
             ...prevItems,
             [name]: checked,
         }));
+        //console.log("Display origin: ", checkedItems.originDisplay);
         if (currentOrigins){
             console.log("Current Origins: ", currentOrigins);
             currentOrigins.forEach((origin) => {
@@ -574,7 +599,6 @@ const MinPathTree = (props) => {
             chartRef.current.updateItem(previousSearchedEdge, {
                 style: { stroke: '#FFA07A', lineWidth: 10, opacity: 0.1 },
             });
-            chartRef.current.clearItemStates(previousSearchedEdge);
             if (previousBranch){
                 previousBranch.forEach((leaf) => {
                     console.log("Leaf: ", leaf);
@@ -584,11 +608,10 @@ const MinPathTree = (props) => {
                             chartRef.current.updateItem(leafEdge, {
                                 style: {
                                     stroke: '#FFA07A',
-                                    lineWidth: 10,
+                                    lineWidth: 4,
                                     opacity: 0.1
                                 },
                             });
-                             chartRef.current.clearItemStates(leafEdge);
                         }
                     }
 
@@ -602,29 +625,29 @@ const MinPathTree = (props) => {
             // Highlight the node by updating its style
             chartRef.current.updateItem(resultEdge, {
                 style: {
-                    stroke: getEdgeColor(resultEdge.getModel().totalFlow),
-                    lineWidth: 16,
+                    stroke: '#00FF00',
+                    lineWidth: 4,
                     opacity: 1
                 },
             });
-            chartRef.current.setItemState(resultEdge, "disabledHover", true);
             const root = parseInt(searchInput, 10)
             if (currentTree) {
                 const tree = currentTree[root-1];
+                //console.log("Root: ", root);
+                //console.log("Tree: ", tree);
                 tree.forEach((leaf) => {
+                    //console.log("Leaf: ", leaf);
                     if (leaf !== 0 && leaf !== -1 && chartRef.current){
                         const leafEdge = chartRef.current.find('edge', edge => edge.getModel().edgeIdNum === String(leaf));
                         if (leafEdge) {
                             chartRef.current.updateItem(leafEdge, {
                                 style: {
-                                    stroke: getEdgeColor(leafEdge.getModel().totalFlow),
-                                    lineWidth: 16,
+                                    stroke: '#00FF00',
+                                    lineWidth: 4,
                                     opacity: 1
                                 },
                             });
-                            chartRef.current.setItemState(leafEdge, "disabledHover", true);
                         }
-
                     }
 
                 });
@@ -754,6 +777,15 @@ function getEdgeColor(totalFlow) {
         return '#ff0901';
     }
 }
-
+// eslint-disable-next-line
+function getEdgeColorForOrigins(id, list) {
+    if (list.includes(id)) {
+        //console.log("id: ",id)
+        return '#000000';
+    }
+    else {
+        return '#FFA07A';
+    }
+}
 
 export default MinPathTree;
