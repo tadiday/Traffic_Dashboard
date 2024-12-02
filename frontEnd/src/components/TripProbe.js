@@ -4,7 +4,7 @@ import axios from 'axios';
 import './TripProbe.css'
 function TripProbe(props) {
     const nodeGraphRef = useRef(null);
-    const [vClass, setVClass] = useState(["All"]);
+    const [vClass, setVClass] = useState("All");
     const [resultsCount, setResultsCount] = useState(0); // Store results count
     const [queries, setQueries] = useState([]);
     const [maxResult, setMaxResult] = useState(500); // Store max result

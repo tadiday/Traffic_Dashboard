@@ -329,6 +329,12 @@ async function tryGetFile(req, res, fileType){
 app.get('/api/file-summary', async (req, res) => await tryGetFile(req,res, FILE_SUMMARY));
 
 /*
+ * Gets the Overview file
+ */
+
+app.get('/api/file-overview', async (req, res) => await tryGetFile(req,res, FILE_OVERVIEW));
+
+/*
  * Gets the node file (input file 1)
  */
 app.get("/api/file-nodes", async (req, res) => await tryGetFile(req, res, FILE_NODES));
@@ -470,6 +476,7 @@ process.on('SIGINT', shutdown);
 
 // file read and write functions //
 
+const FILE_OVERVIEW = 0;	// file 10
 const FILE_AVGCONDS = 1;	// file 11
 const FILE_CONDS = 2;		// file 12
 const FILE_PATHS = 3;		// file 13
@@ -751,6 +758,173 @@ function ReadFile_signals(buf){
 	}
 
 	return out;
+}
+
+/*
+ * File 10
+ */
+function ReadFile_Overview(buf){
+
+	let off = 0;
+	let obj = {};
+
+	// const sformat1 = "bbsbssfffffffffff";
+	// const sformat2 = "bffffffff";
+
+	obj.signals = Array(buf.readInt32LE(off));
+	off += 4;
+
+	for(let i = 0; i < obj.signals.length; i++){
+		let entry = {};
+		entry.time = buf.readInt16LE(off + 0);
+		entry.signal = buf.readInt16LE(off + 2);
+		entry.a = Array(buf.readInt32LE(off + 4));
+		off += 8;
+		for(let ii = 0; ii < entry.a.length; ii++){
+			entry.a[ii] = {}
+			off = ReadFromBufAny(entry.a[ii], [
+				"b_ph", "b_ln", "s_link", "b_lane",
+				"s_Arri Flow (vph)", "s_Saturation Flow (vph)",
+				"f_Y-critical lane (%)", "f_Y-critical appr (%)", "f_Y-critical sum (%)",
+				"f_Offset Time (sec)", "f_Cycle Time (sec)", "f_Lost Time (sec)", "f_Green Time (sec)",
+				"f_Green Phase (sec)", "f_Inter Green (sec)", "f_Phase Start (sec)", "f_Phase End (sec)"
+			], buf, off);
+		}
+		entry.b = Array(buf.readInt32LE(off));
+		off += 4;
+		for(let ii = 0; ii < entry.b.length; ii++){
+			entry.b[ii] = {};
+			off = ReadFromBufAny(entry.b[ii], [
+				"b_ph", "f_Offset Time (sec)", "f_Cycle Time (sec)", "f_Lost Time (sec)", "f_Green Time (sec)",
+				"f_Green Phase (sec)", "f_Inter Green (sec)", "f_Phase Start", "f_Phase End (sec)"
+			], buf, off);
+		}
+		obj.signals[i] = entry;
+	}
+
+	obj.linkFlow = Array(buf.readInt32LE(off));
+	off += 4;
+
+	// const lfformat = "sssssbfsbbifffsiss";
+
+	for(let i = 0; i < obj.linkFlow.length; i++){
+		let entry = {};
+		entry.time = buf.readInt32LE(off);
+		entry.links = Array(buf.readInt32LE(off + 4));
+		off += 8;
+		for(let ii = 0; ii < entry.links.length; ii++){
+			entry.links[ii] = {};
+			[off, entry.links[ii].Name] = ReadString(buf, off);
+			off = ReadFromBufAny(entry.links[ii], [
+				"s_link", "s_start", "s_end", "s_Speed", "s_Saturation",
+				"b_Lanes", "f_Length", "s_Link Flow (Vehs)", "b_Grn Time (%)", "b_V/C Rat (%)",
+				"i_Total Travel Time (min)", "f_Free Travel Time (min)", "f_Avg Travel Time (min)",
+				"f_Avg Speed (kph)", "s_Avg Stops", "i_Max Veh Pos", "s_Max Veh Obs", "s_Cur Veh Obs"
+			], buf, off);
+		}
+		off = ReadFromBufFloats(entry, [
+			"Total Travel Time (veh-min)",
+			"Total Travel Time (veh-hrs)",
+			"Total Network Travel (veh-km)",
+			"Total Metwork Length (km)",
+			"Average Network Speed (km/h)",
+			"Average Trip Time/Veh (min)",
+			"avarage trip Length/Veh (km)",
+			"Num Invisible Vehicles",
+			"Total Network Stops",
+			"Average Network Stops"
+		], buf, off + 4);
+
+		obj.linkFlow[i] = entry;
+	}
+
+	// const avgODformat1 = "bbbiisffffffffff";
+
+	let avgOD1len = buf.readInt32LE(off);
+	obj.avgOD1 = {};
+	obj.avgOD1.stats = Array(avgOD1len);
+	off += 4;
+
+	for(let i = 0; i < avgOD1len; i++){
+		obj.avgOD1.stats[i] = {};
+		off = ReadFromBufAny(obj.avgOD1.stats[i], [
+			"b_Vehicle Type", "b_Origin Zone", "b_Destination Zone",
+			"i_Number Departed", "i_Number Arrived", "s_Number Entered",
+			"f_First Departure (min)", "f_Last Departure (min)", "f_First Arrival (min)", "f_Last Arrival (min)",
+			"f_Total Trip Time (Veh-Min)", "f_Min Trip Time (min)", "f_Avg Trip Time (min)", "f_Max Trip Time (min)", "f_Trip Time SD (min)",
+			"f_Total Distance (Veh-Km)"
+		], buf, off);
+	}
+
+	const avgOD1len2 = buf.readInt32LE(off);
+	obj.avgOD1.totals = [];
+	off += 4;
+
+	for(let i = 0; i < avgOD1len2; i++){
+		let entry = {};
+		off = ReadFromBufAny(entry, [
+			"i_class"
+		], buf, off);
+		if(entry["class"] != -1){
+			off = ReadFromBufAny(entry, [
+				"f_Total Veh-Km", "f_Total Veh-Hrs"
+			], buf, off);
+			obj.avgOD1.totals.push(entry);
+		}
+	}
+
+	//return obj;
+	// const avgODformat2 = "bbiisfffisf";
+
+	obj.avgOD2 = {};
+	obj.avgOD2.stats = Array(buf.readInt32LE(off));
+	off += 4;
+
+	for(let i = 0; i < obj.avgOD2.stats.length; i++){
+		obj.avgOD2.stats[i] = {};
+		off = ReadFromBufAny(obj.avgOD2.stats[i], [
+			"b_Origin Zone", "b_Destination Zone",
+			"i_Number Departed", "i_Number Arrived", "s_Number Entered",
+			"f_Avg Trip Time (min)", "f_Trip Time SD (min)", "f_Total Trip Time (min)",
+			"i_Max Pre-Trip Parked Vehicles", "s_Longest Pre-Trip Park Time", "f_Total Dist (Veh-Km)"
+		], buf, off);
+	}
+
+	obj.avgOD2.totals = {};
+	obj.avgOD2.totals["All Vehicle Classes Total Veh-Km"] = buf.readFloatLE(off + 0);
+	obj.avgOD2.totals["All Vehicle Classes Total Veh-Hrs"] = buf.readFloatLE(off + 4);
+
+	//return obj;
+
+	off = ReadFromBufAny(obj, [
+		"f_Sum of the total trip time (veh-mins)",
+		"f_Sum of the total trip time (veh-hrs)",
+		"f_Average trip time (mins)",
+		"f_Average trip time (secs)",
+		"i_Total demand to enter network",
+		"i_Vehicles eligible to enter",
+		"i_Vehicles in their driveways",
+		"i_Vehicles left on network",
+		"i_Vehicles that completed trip"
+	], buf, off + 8);
+
+	obj.incd = Array(buf.readInt32LE(off));
+	off += 4;
+
+	for(let i = 0; i < obj.incd.length; i++){
+		obj.incd[i] = {};
+		off = ReadFromBufAny(obj.incd[i], [
+			"i_Link",
+			"i_Start node",
+			"i_End node",
+			"f_Start time",
+			"f_End time",
+			"f_Duration",
+		], buf, off);
+		[off, obj.incd[i]["Lane Losses"]] = ReadString(buf, off);
+	}
+
+	return obj;
 }
 
 /*
@@ -1217,6 +1391,7 @@ function ReadFile_EdgeProbes(buf, args){
  */
 function ReadFile_Any(buf, fileType, args){
 	switch(fileType){
+		case FILE_OVERVIEW: return ReadFile_Overview(buf);
 		case FILE_NODES: return ReadFile_nodes(buf);
 		case FILE_EDGES: return ReadFile_edges(buf);
 		case FILE_SIGNALS: return ReadFile_signals(buf);
@@ -1744,6 +1919,273 @@ async function WriteFile_Input3(user_id, sim_id, lines){
 }
 
 /*
+ * File 10
+ */
+async function WriteFile_Overview(user_id, sim_id, lines){
+
+	if(await FileExists(FILE_OVERVIEW, sim_id))
+		return;
+
+	// formats for the "Signal Timing Plan Summary" section
+	const sformat1 = "bbsbssfffffffffff";
+	const sformat2 = "bffffffff";
+	const sformat1Size = GetLineFormatSize(sformat1);
+	const sformat2Size = GetLineFormatSize(sformat2);
+
+	const lfformat = "sssssbfsbbifffsiss";
+	const lfformatSize = GetLineFormatSize(lfformat);
+
+	const avgODformat1 = "bbbiisffffffffff";
+	const avgODformat2 = "bbiisfffisf";
+	const avgODformat1Size = GetLineFormatSize(avgODformat1);
+	const avgODformat2Size = GetLineFormatSize(avgODformat2);
+
+	let totalSize = 0;
+
+	let obj = {};
+	obj.signals = [];
+	totalSize += 4;
+	obj.linkFlow = [];
+	totalSize += 4;
+	obj.avgOD1 = {stats:[],totals:[]};
+	totalSize += 4;
+	obj.avgOD2 = {stats:[],totals:[]};
+	totalSize += 4;
+	totalSize += 8;
+	obj.garbage = Array(9).fill(0);
+	totalSize += obj.garbage.length * 4;
+	obj.incd = [];
+	totalSize += 4;
+
+	for(let i = 0; i < lines.length; i++){
+		//console.log(lines[i]);
+		if(lines[i].startsWith(" Timing Optimization at")){
+			if(i + 5 >= lines.length) return;
+			let entry = {};
+			let dotPos = lines[i].indexOf(".");
+			if(dotPos == -1) return;
+			let time = parseInt(lines[i].substring(23, dotPos));
+			let id = parseInt(ReadLineArgs(lines[i].trim())[7]);
+			if(time == NaN || id == NaN) return;
+			entry.time = time;
+			entry.signal = id;
+			totalSize += 8;
+			// read the first section of stuffs
+			i += 5;
+			totalSize += 4;
+			entry.a = [];
+			while(lines[i].trim().length > 0){
+				let lineArgs = ReadLineArgs(lines[i].trim());
+				if(lineArgs.length != 17) return;
+				entry.a.push(lineArgs);
+				totalSize += sformat1Size;
+				i++;
+			}
+			// read the second section of stuff
+			i+=4;
+			if(i >= lines.length) return;
+			totalSize += 4;
+			entry.b = [];
+			while(lines[i].trim().length > 0){
+				let lineArgs = ReadLineArgs(lines[i].trim());
+				if(lineArgs.length != 9) return;
+				entry.b.push(lineArgs);
+				totalSize += sformat2Size;
+				i++;
+			}
+			obj.signals.push(entry);
+		}else if(lines[i].startsWith(" LINK FLOW SUMMARIES AT TIME:")){
+			let dotPos = lines[i].indexOf(".");
+			let time = parseInt(lines[i].substring(29), dotPos);
+			if(time == NaN) return;
+			let entry = {};
+			entry.time = time;
+			totalSize += 4;
+			i += 6;
+			if(i >= lines.length) return;
+			entry.edges = [];
+			totalSize += 4;
+			while(lines[i].trim().length > 0){
+				let name = lines[i].substring(19, 19 + 19).trim();
+				let notName = lines[i].substring(0, 19) + lines[i].substring(19 + 19);
+				let lineArgs = ReadLineArgs(notName.trim());
+				if(lineArgs.length != 18) return;
+				entry.edges.push({
+					name : name,
+					a : lineArgs
+				});
+				totalSize += lfformatSize + name.length + 1; // name is 19 bytes
+				i++;
+			}
+
+			i++;
+			totalSize += 4;
+			entry.b = Array(10);
+			for(let q = 0; q < 10; q++, i++){
+				entry.b[q] = parseFloat(lines[i].substring(27, 40).trim());
+				if(entry.b[q] == NaN) return;
+				if(q == 3) i++; // skip the random empty line
+				totalSize += 4;
+			}
+			obj.linkFlow.push(entry);
+
+		}else if(lines[i].startsWith(" AVERAGE/TOTAL O-D TRIP TIMES/DISTANCES BY VEHICLE TYPE")){
+			i += 6;
+			if(i >= lines.length) return;
+			totalSize += 4;
+			while(lines[i].trim().length > 0){
+				let lineArgs = ReadLineArgs(lines[i].trim());
+				if(lineArgs.length != 16) return;
+				obj.avgOD1.stats.push(lineArgs);
+				totalSize += avgODformat1Size;
+				i++;
+			}
+			i++;
+			totalSize += 4;
+			while(lines[i].trim().length > 0){
+				if(!lines[i].startsWith(" - Vehicle class :"))
+					break;
+
+				const clas = parseInt(lines[i].substring(18, 28));
+				const name = lines[i].substring(29, 29+13).trim();
+				const val = lines[i].substring(43);
+
+				if(!obj.avgOD1.totals[clas]){
+					obj.avgOD1.totals[clas] = {"class": clas, "Total Veh-Km":0, "Total Veh-Hrs":0};
+					totalSize += 12;
+				}
+
+				obj.avgOD1.totals[clas][name] = val;
+				i++;
+			}
+		}else if(lines[i].startsWith(" AVERAGE/TOTAL O-D TRIP TIMES/DISTANCES FOR ALL VEHICLE CLASSES")){
+			i += 5;
+			if(i >= lines.length) return;
+			totalSize += 4;
+			while(lines[i+2].trim().length > 0){
+				let lineArgs = ReadLineArgs(lines[i].trim());
+				if(lineArgs.length != avgODformat2.length) return;
+				obj.avgOD2.stats.push(lineArgs);
+				totalSize += avgODformat2Size;
+				i++;
+			}
+			obj.avgOD2.totals[0] = parseFloat(lines[i+0].substring(44).trim());
+			obj.avgOD2.totals[1] = parseFloat(lines[i+1].substring(44).trim());
+		}else if(lines[i].startsWith(" Sum of the total trip time     =")){
+			const lineArgs = ReadLineArgs(lines[i].substring(33).trim());
+			obj.garbage[0] = parseFloat(lineArgs[0]);
+			obj.garbage[1] = parseFloat(lineArgs[2]);
+		}else if(lines[i].startsWith(" Average          trip time     =")){
+			const lineArgs = ReadLineArgs(lines[i].substring(33).trim());
+			obj.garbage[2] = parseFloat(lineArgs[0]);
+			obj.garbage[3] = parseFloat(lineArgs[2]);
+		}else if(lines[i].startsWith("  Total demand to enter network =")){
+			obj.garbage[4] = parseInt(lines[i].substring(33).trim());
+		}else if(lines[i].startsWith("  Vehicles eligible to enter    =")){
+			obj.garbage[5] = parseInt(lines[i].substring(33).trim());
+		}else if(lines[i].startsWith("  Vehicles in their driveways   =")){
+			obj.garbage[6] = parseInt(lines[i].substring(33).trim());
+		}else if(lines[i].startsWith("  Vehicles left on network      =")){
+			obj.garbage[7] = parseInt(lines[i].substring(33).trim());
+		}else if(lines[i].startsWith("  Vehicles that completed trip  =")){
+			obj.garbage[8] = parseInt(lines[i].substring(33).trim());
+		}else if(lines[i].startsWith(" INCIDENT")){
+			if(i + 2 >= lines.length) return;
+			const splits = ReadLineArgs(lines[i].trim());
+			let entry = {};
+			entry.id = parseInt(splits[1]);
+			entry.edge = parseInt(splits[4]);
+			entry.node0 = parseInt(splits[6]);
+			entry.node1 = parseInt(splits[8]);
+			i++;
+			entry.losses = lines[i].substring(14).trim();
+			i++;
+			const splits2 = ReadLineArgs(lines[i].trim());
+			entry.time0 = parseFloat(splits2[2]);
+			entry.time1 = parseFloat(splits2[7]);
+			entry.len = parseFloat(splits2[11]);
+			obj.incd.push(entry);
+			totalSize += 4 * 7 + entry.losses.length + 1;
+		}
+	}
+
+	let off = 0;
+	let buf = Buffer.allocUnsafe(totalSize);
+
+	// write the traffic signal stuff
+	off = buf.writeInt32LE(obj.signals.length, off);
+	for(let i = 0; i < obj.signals.length; i++){
+		off = buf.writeInt16LE(obj.signals[i].time, off);
+		off = buf.writeInt16LE(obj.signals[i].signal, off);
+		off = buf.writeInt32LE(obj.signals[i].a.length, off);
+		for(let ii = 0; ii < obj.signals[i].a.length; ii++)
+			off = CopyToBufArgs(obj.signals[i].a[ii], buf, off, sformat1);
+		off = buf.writeInt32LE(obj.signals[i].b.length, off);
+		for(let ii = 0; ii < obj.signals[i].b.length; ii++)
+			off = CopyToBufArgs(obj.signals[i].b[ii], buf, off, sformat2);
+	}
+
+	// link flow summaries
+	off = buf.writeInt32LE(obj.linkFlow.length, off);
+	for(let ii = 0; ii < obj.linkFlow.length; ii++){
+		off = buf.writeInt32LE(obj.linkFlow[ii].time, off);
+		off = buf.writeInt32LE(obj.linkFlow[ii].edges.length, off);
+		for(let i = 0; i < obj.linkFlow[ii].edges.length; i++){
+			off = WriteString(buf, obj.linkFlow[ii].edges[i].name, off);
+			off = CopyToBufArgs(obj.linkFlow[ii].edges[i].a, buf, off, lfformat);
+		}
+		off = buf.writeInt32LE(obj.linkFlow[ii].b.length, off);
+		for(let i = 0; i < obj.linkFlow[ii].b.length; i++){
+			off = buf.writeFloatLE(obj.linkFlow[ii].b[i], off);
+		}
+	}
+
+	// average OD by type
+	off = buf.writeInt32LE(obj.avgOD1.stats.length, off);
+	for(let i = 0; i < obj.avgOD1.stats.length; i++)
+		off = CopyToBufArgs(obj.avgOD1.stats[i], buf, off, avgODformat1);
+	off = buf.writeInt32LE(obj.avgOD1.totals.length, off);
+	for(const entry of obj.avgOD1.totals){
+		if(!entry){
+			off = buf.writeInt32LE(-1, off);
+		}else{
+			off = buf.writeInt32LE(entry["class"], off);
+			off = buf.writeFloatLE(entry["Total Veh-Km"], off);
+			off = buf.writeFloatLE(entry["Total Veh-Hrs"], off);
+		}
+	}
+
+	// average OD overal
+	off = buf.writeInt32LE(obj.avgOD2.stats.length, off);
+	for(let i = 0; i < obj.avgOD2.stats.length; i++)
+		off = CopyToBufArgs(obj.avgOD2.stats[i], buf, off, avgODformat2);
+	off = buf.writeFloatLE(obj.avgOD2.totals[0], off);
+	off = buf.writeFloatLE(obj.avgOD2.totals[1], off);
+
+	// write garbage at the end
+	for(let i = 0; i < 4; i++)
+		off = buf.writeFloatLE(obj.garbage[i], off);
+	for(let i = 4; i < 9; i++)
+		off = buf.writeInt32LE(obj.garbage[i], off);
+
+
+	off = buf.writeInt32LE(obj.incd.length, off);
+	for(let i = 0; i < obj.incd.length; i++){
+		off = buf.writeInt32LE(obj.incd[i].edge, off);
+		off = buf.writeInt32LE(obj.incd[i].node0, off);
+		off = buf.writeInt32LE(obj.incd[i].node1, off);
+		off = buf.writeFloatLE(obj.incd[i].time0, off);
+		off = buf.writeFloatLE(obj.incd[i].time1, off);
+		off = buf.writeFloatLE(obj.incd[i].len, off);
+		off = WriteString(buf, obj.incd[i].losses, off);
+	}
+
+	//console.log(off,"/",totalSize);
+
+	await FileAdd(FILE_OVERVIEW, buf, user_id, sim_id);
+}
+
+/*
  * File 11
  */
 async function WriteFile_AvgConditions(user_id, sim_id, lines){
@@ -2138,6 +2580,7 @@ async function ReadFile(user_id, sim_id, str, fileName){
 		const pathsRegex = /.*13.*\.out$/i;
 		const tripProbesRegex = /.*15.*\.out$/i;
 		const roadProbesRegex = /.*16.*\.out$/i;
+		const overviewRegex = /.*10.*\.out$/i;
 
 		// this is bad, but good enough
 		if(lines.length < 4)
@@ -2162,6 +2605,8 @@ async function ReadFile(user_id, sim_id, str, fileName){
 			return await WriteFile_TripProbes(user_id, sim_id, lines); // output file 15
 		else if(roadProbesRegex.test(fileName))
 			return await WriteFile_EdgeProbes(user_id, sim_id, lines); // output file 16
+		else if(overviewRegex.test(fileName))
+			return await WriteFile_Overview(user_id, sim_id, lines); // output file 10
 
 	}catch(error){
 		console.error("Couldnt read file: (" + fileName + ") ", error);
