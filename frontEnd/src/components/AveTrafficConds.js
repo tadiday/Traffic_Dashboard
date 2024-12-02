@@ -9,20 +9,20 @@ import Popup from './Popup';
 interface EdgeInfo {
   source: string;
   target: string;
-  totalFlow: String;
-  co2Emission: String;
-  totalAverageTime: String;
-  averageTime: String;
-  averageVehicles: String;
-  averageQueue: String;
-  averageStops: String;
-  fuel: String;
-  expectedCrashes: String;
-  expectedTopInjurt: String;
-  fatelCrashes: String;
-  crashLowDamage: String;
-  crashMedDamage: String;
-  crashHighDamage: String;
+  totalFlow: string;
+  co2Emission: string;
+  totalAverageTime: string;
+  averageTime: string;
+  averageVehicles: string;
+  averageQueue: string;
+  averageStops: string;
+  fuel: string;
+  expectedCrashes: string;
+  expectedTopInjurt: string;
+  fatelCrashes: string;
+  crashLowDamage: string;
+  crashMedDamage: string;
+  crashHighDamage: string;
 }
 
 // Custom edge and node registrations
@@ -152,6 +152,10 @@ const AveTrafficConds = (props) => {
   const popUpAnimationRef = useRef(null);
   const [edgePopup, setEdgePopup] = useState(false);
   const [selectedEdgeInfo, setSelectedEdgeInfo] = useState(null);
+  const [selectedProperty, setSelectedProperty] = useState('totalFlow');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [minProperty, setMinProperty] = useState(null);
+  const [maxProperty, setMaxProperty] = useState(null);
 
   var chart;
   var popChart;
@@ -261,19 +265,20 @@ const AveTrafficConds = (props) => {
           edgeId: String(obj.id),
           source: String(obj.start),
           target: String(obj.end),
-          totalFlow: condition ? condition.totalFlow : null,
-          co2Emission: condition ? condition.CO2 : null,
-          totalAverageTime: condition ? condition.totalAverageTime : null,
-          averageVehicles: condition ? condition.averageVehicles : null,
-          averageQueue: condition ? condition.averageQueue : null,
-          averageStops: condition ? condition.averageStops : null,
-          fuel: condition ? condition.fuel : null,
-          expectedCrashes: condition ? condition.expectedCrashes : null,
-          expectedTopInjurt: condition ? condition.expectedTopInjurt : null,
-          fatelCrashes: condition ? condition.fatelCrashes : null,
-          crashLowDamage: condition ? condition.crashLowDamage : null,
-          crashMedDamage: condition ? condition.crashMedDamage : null,
-          crashHighDamage: condition ? condition.crashHighDamage : null,
+          totalFlow: condition ? parseFloat(condition.totalFlow) : null,
+          co2Emission: condition ? parseFloat(condition.CO2) : null,
+          totalAverageTime: condition ? parseFloat(condition.totalAverageTime) : null,
+          averageTime: condition ? parseFloat(condition.averageTime) : null,
+          averageVehicles: condition ? parseFloat(condition.averageVehicles) : null,
+          averageQueue: condition ? parseFloat(condition.averageQueue) : null,
+          averageStops: condition ? parseFloat(condition.averageStops) : null,
+          fuel: condition ? parseFloat(condition.fuel) : null,
+          expectedCrashes: condition ? parseFloat(condition.expectedCrashes) : null,
+          expectedTopInjurt: condition ? parseFloat(condition.expectedTopInjurt) : null,
+          fatelCrashes: condition ? parseFloat(condition.fatelCrashes) : null,
+          crashLowDamage: condition ? parseFloat(condition.crashLowDamage) : null,
+          crashMedDamage: condition ? parseFloat(condition.crashMedDamage) : null,
+          crashHighDamage: condition ? parseFloat(condition.crashHighDamage) : null,
         };
       });
     } catch (error) {
@@ -325,43 +330,71 @@ const AveTrafficConds = (props) => {
       // Get node and edge data from an API endpoint
       const data = await getNodeGraphData();
 
-      // Add and scale the nodes and render the graph
+      if (!data) return;
+
+      // Check for missing or undefined values
+      const propertyValues = data.edges.map((edge) => edge[selectedProperty]);
+      const hasInvalidValues = propertyValues.some((value) => value == null || isNaN(value));
+
+      if (hasInvalidValues) {
+        setErrorMessage(`Some edges have missing or invalid values for ${selectedProperty}.`);
+      } else {
+        setErrorMessage('');
+      }
+
+      // Calculate the bounding box of the nodes
+      const minX = Math.min(...data.nodes.map((node) => node.x));
+      const maxX = Math.max(...data.nodes.map((node) => node.x));
+      const minY = Math.min(...data.nodes.map((node) => node.y));
+      const maxY = Math.max(...data.nodes.map((node) => node.y));
+      const paddingPercent = 10;
+      // Calculate scaling factors with padding of %
+      const scaleX =
+        (props.dimensions.graphWidth - props.dimensions.graphWidth / paddingPercent) /
+        (maxX - minX);
+      const scaleY =
+        (props.dimensions.graphHeight - props.dimensions.graphHeight / paddingPercent) /
+        (maxY - minY);
+
+      // Choose the smaller scale to maintain aspect ratio
+      const scale = Math.min(scaleX, scaleY);
+
+      // Apply scaling and translation to center the graph
+      const scaledNodes = data.nodes.map((node) => ({
+        ...node,
+        // Add the % padding
+        x: (node.x - minX) * scale + props.dimensions.graphWidth / paddingPercent / 2,
+        y: (node.y - minY) * scale + props.dimensions.graphHeight / paddingPercent / 2,
+      }));
+      data.nodes = scaledNodes;
+
+      // Compute min and max values for the selected property
+      const validValues = propertyValues.filter((value) => value != null && !isNaN(value));
+      const minPropValue = Math.min(...validValues);
+      const maxPropValue = Math.max(...validValues);
+
+      // Update state for legend
+      setMinProperty(minPropValue);
+      setMaxProperty(maxPropValue);
+
+      // Apply the gradient color to edges
+      data.edges.forEach((edge) => {
+        const value = edge[selectedProperty];
+        if (value == null || isNaN(value)) {
+          edge.style = {
+            stroke: '#000000', // Black color for invalid values
+            lineWidth: 10,
+          };
+        } else {
+          edge.style = {
+            stroke: getEdgeColor(value, minPropValue, maxPropValue),
+            lineWidth: 10,
+          };
+        }
+      });
+
       try {
         if (chart && data) {
-          // Calculate the bounding box of the nodes
-          const minX = Math.min(...data.nodes.map((node) => node.x));
-          const maxX = Math.max(...data.nodes.map((node) => node.x));
-          const minY = Math.min(...data.nodes.map((node) => node.y));
-          const maxY = Math.max(...data.nodes.map((node) => node.y));
-          const paddingPercent = 10;
-          // Calculate scaling factors with padding of %
-          const scaleX =
-            (props.dimensions.graphWidth - props.dimensions.graphWidth / paddingPercent) /
-            (maxX - minX);
-          const scaleY =
-            (props.dimensions.graphHeight - props.dimensions.graphHeight / paddingPercent) /
-            (maxY - minY);
-
-          // Choose the smaller scale to maintain aspect ratio
-          const scale = Math.min(scaleX, scaleY);
-
-          // Apply scaling and translation to center the graph
-          const scaledNodes = data.nodes.map((node) => ({
-            ...node,
-            // Add the % padding
-            x: (node.x - minX) * scale + props.dimensions.graphWidth / paddingPercent / 2,
-            y: (node.y - minY) * scale + props.dimensions.graphHeight / paddingPercent / 2,
-          }));
-          data.nodes = scaledNodes;
-
-          // Apply the gradient color to edges
-          data.edges.forEach((edge) => {
-            edge.style = {
-              stroke: getEdgeColor(edge.totalFlow),
-              lineWidth: 10,
-            };
-          });
-
           chart.data(data);
           chart.render();
 
@@ -375,8 +408,14 @@ const AveTrafficConds = (props) => {
             if (edge !== selectedEdge) {
               edge.setState('hover', true);
               const edgeData = edge.getModel();
-              // Darken the color for hover effect
-              const hoverColor = darkenColor(getEdgeColor(edgeData.totalFlow), 0.2);
+              const value = edgeData[selectedProperty];
+              let hoverColor = '#000000';
+              if (value != null && !isNaN(value)) {
+                hoverColor = darkenColor(
+                  getEdgeColor(value, minPropValue, maxPropValue),
+                  0.2
+                );
+              }
               chart.updateItem(edge, {
                 style: {
                   stroke: hoverColor,
@@ -395,9 +434,14 @@ const AveTrafficConds = (props) => {
             const edgeData = edge.getModel();
             if (edge !== selectedEdge) {
               chart.clearItemStates(edge);
+              const value = edgeData[selectedProperty];
+              let color = '#000000';
+              if (value != null && !isNaN(value)) {
+                color = getEdgeColor(value, minPropValue, maxPropValue);
+              }
               chart.updateItem(edge, {
                 style: {
-                  stroke: getEdgeColor(edgeData.totalFlow),
+                  stroke: color,
                   lineWidth: 10,
                 },
               });
@@ -414,32 +458,21 @@ const AveTrafficConds = (props) => {
             if (selectedEdge && selectedEdge !== edge) {
               chart.clearItemStates(selectedEdge);
               // Clear previously highlighted color
+              const prevValue = selectedEdge.getModel()[selectedProperty];
+              let prevColor = '#000000';
+              if (prevValue != null && !isNaN(prevValue)) {
+                prevColor = getEdgeColor(prevValue, minPropValue, maxPropValue);
+              }
               chart.updateItem(selectedEdge, {
                 style: {
-                  stroke: getEdgeColor(edgeData.totalFlow),
+                  stroke: prevColor,
                   lineWidth: 10,
                 },
               });
             }
             selectedEdge = edge;
             edge.setState('selected', true);
-            const edgeInfo = {
-              source: edgeData.source,
-              target: edgeData.target,
-              totalFlow: edgeData.totalFlow,
-              co2Emission: edgeData.co2Emission,
-              totalAverageTime: edgeData.totalAverageTime,
-              averageVehicles: edgeData.averageVehicles,
-              averageQueue: edgeData.averageQueue,
-              averageStops: edgeData.averageStops,
-              fuel: edgeData.fuel,
-              expectedCrashes: edgeData.expectedCrashes,
-              expectedTopInjurt: edgeData.expectedTopInjurt,
-              fatelCrashes: edgeData.fatelCrashes,
-              crashLowDamage: edgeData.crashLowDamage,
-              crashMedDamage: edgeData.crashMedDamage,
-              crashHighDamage: edgeData.crashHighDamage,
-            };
+            const edgeInfo = { ...edgeData };
             setSelectedEdgeInfo(edgeInfo);
             setEdgePopup(true);
           });
@@ -528,7 +561,7 @@ const AveTrafficConds = (props) => {
       }
     };
     // eslint-disable-next-line
-  }, [selectedEdgeInfo, popChart]);
+  }, [selectedEdgeInfo]);
 
   useEffect(() => {
     if (props.selectedGraph === 'Traffic Map') {
@@ -543,10 +576,67 @@ const AveTrafficConds = (props) => {
       }
     };
     // eslint-disable-next-line
-  }, [nodeGraphRef, props.expandedCollection, props.selectedGraph]);
+  }, [nodeGraphRef, props.expandedCollection, props.selectedGraph, selectedProperty]);
 
   return (
     <div>
+      {/* Dropdown Menu and Legend */}
+      <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+        <label htmlFor="property-select" style={{ marginRight: '10px' }}>
+          Select Property:
+        </label>
+        <select
+          id="property-select"
+          value={selectedProperty}
+          onChange={(e) => setSelectedProperty(e.target.value)}
+        >
+          <option value="totalFlow">Total Flow</option>
+          <option value="co2Emission">CO2 Emission</option>
+          <option value="totalAverageTime">Total Average Time</option>
+          <option value="averageTime">Average Time</option>
+          <option value="averageVehicles">Average Vehicles</option>
+          <option value="averageQueue">Average Queue</option>
+          <option value="averageStops">Average Stops</option>
+          <option value="fuel">Fuel</option>
+          <option value="expectedCrashes">Expected Crashes</option>
+          <option value="expectedTopInjurt">Expected Top Injury</option>
+          <option value="fatelCrashes">Fatal Crashes</option>
+          <option value="crashLowDamage">Crash Low Damage</option>
+          <option value="crashMedDamage">Crash Med Damage</option>
+          <option value="crashHighDamage">Crash High Damage</option>
+        </select>
+
+        {/* Legend */}
+        {minProperty != null && maxProperty != null && (
+          <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
+            <div style={{ marginRight: '10px' }}>Legend:</div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ textAlign: 'right', marginRight: '5px' }}>
+                {minProperty.toFixed(2)}
+              </div>
+              <div
+                style={{
+                  width: '100px',
+                  height: '10px',
+                  background: `linear-gradient(to right, ${rgbToHex(
+                    GREEN
+                  )}, ${rgbToHex(YELLOW)}, ${rgbToHex(ORANGE)}, ${rgbToHex(RED)})`,
+                  margin: '0 5px',
+                }}
+              ></div>
+              <div style={{ textAlign: 'left', marginLeft: '5px' }}>
+                {maxProperty.toFixed(2)}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Error Message */}
+      {errorMessage && (
+        <div style={{ color: 'red', marginBottom: '10px' }}>{errorMessage}</div>
+      )}
+
       <div
         id="charts"
         ref={nodeGraphRef}
@@ -574,25 +664,25 @@ const AveTrafficConds = (props) => {
               {selectedEdgeInfo && (
                 <div>
                   <p>
-                    <strong>Total Flow:</strong> {selectedEdgeInfo.totalFlow.toFixed(3)}
+                    <strong>Total Flow:</strong> {selectedEdgeInfo.totalFlow?.toFixed(3)}
                   </p>
                   <p>
-                    <strong>CO2 Emission:</strong> {selectedEdgeInfo.co2Emission.toFixed(3)}
+                    <strong>CO<sub>2</sub> Emission:</strong> {selectedEdgeInfo.co2Emission?.toFixed(3)}
                   </p>
                   <p>
-                    <strong>Total Average Time:</strong> {selectedEdgeInfo.totalAverageTime.toFixed(3)}
+                    <strong>Total Average Time:</strong> {selectedEdgeInfo.totalAverageTime?.toFixed(3)}
                   </p>
                   <p>
-                    <strong>Average Vehicles:</strong> {selectedEdgeInfo.averageVehicles.toFixed(3)}
+                    <strong>Average Vehicles:</strong> {selectedEdgeInfo.averageVehicles?.toFixed(3)}
                   </p>
                   <p>
-                    <strong>Average Queue:</strong> {selectedEdgeInfo.averageQueue.toFixed(3)}
+                    <strong>Average Queue:</strong> {selectedEdgeInfo.averageQueue?.toFixed(3)}
                   </p>
                   <p>
-                    <strong>Average Stops:</strong> {selectedEdgeInfo.averageStops.toFixed(3)}
+                    <strong>Average Stops:</strong> {selectedEdgeInfo.averageStops?.toFixed(3)}
                   </p>
                   <p>
-                    <strong>Fuel:</strong> {selectedEdgeInfo.fuel.toFixed(3)}
+                    <strong>Fuel:</strong> {selectedEdgeInfo.fuel?.toFixed(3)}
                   </p>
                 </div>
               )}
@@ -604,22 +694,22 @@ const AveTrafficConds = (props) => {
             {selectedEdgeInfo && (
               <div>
                 <p>
-                  <strong>Expected Crashes:</strong> {selectedEdgeInfo.expectedCrashes.toFixed(3)}
+                  <strong>Expected Crashes:</strong> {selectedEdgeInfo.expectedCrashes?.toFixed(3)}
                 </p>
                 <p>
-                  <strong>Expected Top Injury:</strong> {selectedEdgeInfo.expectedTopInjurt.toFixed(3)}
+                  <strong>Expected Top Injury:</strong> {selectedEdgeInfo.expectedTopInjurt?.toFixed(3)}
                 </p>
                 <p>
-                  <strong>Fatal Crashes:</strong> {selectedEdgeInfo.fatelCrashes.toFixed(3)}
+                  <strong>Fatal Crashes:</strong> {selectedEdgeInfo.fatelCrashes?.toFixed(3)}
                 </p>
                 <p>
-                  <strong>Crash Low Damage:</strong> {selectedEdgeInfo.crashLowDamage.toFixed(3)}
+                  <strong>Crash Low Damage:</strong> {selectedEdgeInfo.crashLowDamage?.toFixed(3)}
                 </p>
                 <p>
-                  <strong>Crash Med Damage:</strong> {selectedEdgeInfo.crashMedDamage.toFixed(3)}
+                  <strong>Crash Med Damage:</strong> {selectedEdgeInfo.crashMedDamage?.toFixed(3)}
                 </p>
                 <p>
-                  <strong>Crash High Damage:</strong> {selectedEdgeInfo.crashHighDamage.toFixed(3)}
+                  <strong>Crash High Damage:</strong> {selectedEdgeInfo.crashHighDamage?.toFixed(3)}
                 </p>
               </div>
             )}
@@ -681,33 +771,28 @@ function darkenColor(hexColor, amount) {
   return rgbToHex({ r: Math.round(r), g: Math.round(g), b: Math.round(b) });
 }
 
-// Updated getEdgeColor function with the new gradient
-function getEdgeColor(totalFlow) {
-  const minFlow = 300;
-  const maxFlow = 600;
-
-  if (totalFlow <= minFlow) {
-    // Below minimum flow, return green
+// Updated getEdgeColor function with dynamic gradient
+function getEdgeColor(value, minValue, maxValue) {
+  if (value <= minValue) {
     return rgbToHex(GREEN);
-  } else if (totalFlow >= maxFlow) {
-    // Above maximum flow, return red
+  } else if (value >= maxValue) {
     return rgbToHex(RED);
   } else {
-    // Interpolate between colors
     let factor;
     let color;
 
-    if (totalFlow <= 400) {
-      // Interpolate from Green to Yellow
-      factor = (totalFlow - minFlow) / (400 - minFlow);
+    const range = maxValue - minValue;
+    const oneThird = range / 3;
+    const twoThirds = (2 * range) / 3;
+
+    if (value <= minValue + oneThird) {
+      factor = (value - minValue) / oneThird;
       color = interpolateColor(GREEN, YELLOW, factor);
-    } else if (totalFlow <= 500) {
-      // Interpolate from Yellow to Orange
-      factor = (totalFlow - 400) / (500 - 400);
+    } else if (value <= minValue + twoThirds) {
+      factor = (value - (minValue + oneThird)) / oneThird;
       color = interpolateColor(YELLOW, ORANGE, factor);
     } else {
-      // Interpolate from Orange to Red
-      factor = (totalFlow - 500) / (maxFlow - 500);
+      factor = (value - (minValue + twoThirds)) / oneThird;
       color = interpolateColor(ORANGE, RED, factor);
     }
 
