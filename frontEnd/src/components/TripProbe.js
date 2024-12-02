@@ -4,49 +4,18 @@ import axios from 'axios';
 import './TripProbe.css'
 function TripProbe(props) {
     const nodeGraphRef = useRef(null);
-    const [vClass, setVClass] = useState("All");
-    const [resultsCount, setResultsCount] = useState(0); // Store results count
-    const [queries, setQueries] = useState([]);
-    const [maxResult, setMaxResult] = useState(500); // Store max result
-    const [skip, setSkip] = useState(0); // Store skip value
-    const [used, setUsed] = useState(0);
     var tripProbeData = null;
-    // eslint-disable-next-line
-    // const keys = [ "Time simulation produced record",
-    //     "Vehicle ID number", 
-    //     "Vehicle class", 
-    //     "Vehicle last link", 
-    //     "Origin node", 
-    //     "Destination node", 
-    //     "Scheduled departure time", 
-    //     "Actual departure time", 
-    //     "Trip duration", 
-    //     "Total delay", 
-    //     "Stopped delay", 
-    //     "Number of stops", 
-    //     "Distance covered", 
-    //     "Average speed", 
-    //     "Fuel used (L)", 
-    //     "Hydrocarbon produced", 
-    //     "Carbon monoxide produced", 
-    //     "Nitrous oxide produced", 
-    //     "CO2 produced", 
-    //     "PM produced", 
-    //     "hydrogen consumption (kg)", 
-    //     "Number of expected crashes", 
-    //     "Where injury was highest level", 
-    //     "Where expected a fatal crash", 
-    //     "Where maximum damage was low", 
-    //     "Where maximum damage was moderate", 
-    //     "Where maximum damage was high", 
-    //     "Total toll paid", 
-    //     "Total acceleration noise"
-    //    ];
     var chart = null;
     
     // Render the Car Information Filter bar chart
     const CarInfoFilter = () => {
         const [selectedMetrics, setSelectedMetrics] = useState([]);
+        const [vClass, setVClass] = useState("All");
+        const [resultsCount, setResultsCount] = useState(0); // Store results count
+        const [queries, setQueries] = useState([]);
+        const [maxResult, setMaxResult] = useState(500); // Store max result
+        const [skip, setSkip] = useState(0); // Store skip value
+        const [used, setUsed] = useState(0);
 
         const options = [
             //"Vehicle ID number", // show all returned id numbers
@@ -104,24 +73,16 @@ function TripProbe(props) {
         }
 
         function handleMetricChange(e){
-            var selected = [];
-            if(e.target.options[0].selected) {
-                selected = options
-                for(const option of e.target.options){
-                    option.selected = true;
-                }
-                e.target.options[0].selected = false; // deselect all now
+            const selected = Array.from(e.target.selectedOptions, (option) => option.value);
+            
+            if(selected.includes("All")) {
+                setSelectedMetrics(options);
             } else {
-                for (const option of e.target.options) {
-                    if (option.selected) {
-                      selected.push(option.value);
-                    }
-                  }
+                setSelectedMetrics(selected);
             }
-            setSelectedMetrics(selected);
             //console.log(selected.toString())
         };
-        
+        //Set max and skip entries dynamically
         function handleNumChange(e, set){
             set(Math.floor(e.target.value));
         }
@@ -156,10 +117,10 @@ function TripProbe(props) {
                 }
             };
         // eslint-disable-next-line
-        }, [nodeGraphRef, props.expandedCollection, props.selectedGraph]);
+        }, [nodeGraphRef, props.expandedCollection, props.selectedGraph, maxResult, skip]);
         // Update chart when a metric changes
         useEffect(() => {
-            if (!tripProbeData || selectedMetrics.length === 0 || selectedMetrics[0] === "All") return;
+            if (!tripProbeData || selectedMetrics.length === 0 || selectedMetrics[0] === "All" || chart === null) return;
             // filter by car class
             const classedData = tripProbeData.filter(item => {
                 if (vClass === "All" || item["Vehicle class"] === parseInt(vClass)){
@@ -215,23 +176,23 @@ function TripProbe(props) {
               .encode('color', 'Metric');
             // Render the chart
             chart.render();
-          }, [selectedMetrics]);
+          }, [selectedMetrics, queries, vClass]);
         // Update query output
         useEffect(() => {
             document.getElementById("queries-display").innerHTML = queries.length
                 ? queries.map((q) => `<p>${q["item"]} ${q["operator"]} ${q["value"]}</p>`).join('')
                 : '<em>No queries added yet.</em>';
-        },  [])
+        },  [queries])
         return ( 
             <div id="container" style={{ width: props.dimensions.graphWidth, height: props.dimensions.graphHeight }}>
                 <div id="charts" ref={nodeGraphRef} style={{ height: '65%'}}/>        
                 <div className="controls" style={{ height: '50%', overflowY: 'auto'}}>
                     <div className="form-group">
                         <label>Select Metrics * :</label>
-                        <select multiple onChange={handleMetricChange}>
+                        <select multiple value={selectedMetrics} onChange={handleMetricChange}>
                             <option key={'All'} value={'All'}>All</option>
                             {options.map((metric) => (
-                            <option key={metric} value={metric}>
+                            <option key={metric} value={metric} >
                                 {metric}
                             </option>
                             ))}
