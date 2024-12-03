@@ -5,6 +5,7 @@ import TrafficConds from './TrafficConds';
 import Summary from './Summary';
 import TripProbe from './TripProbe';
 import MinPathTree from './MinPathTree';
+import Signals from './Signals';
 import CustomSummaryChart from './CustomSummaryChart'; // Import the CustomSummaryChart component
 
 function Charts(props) {
@@ -67,6 +68,15 @@ function Charts(props) {
                 />
             );
             break;
+        case "Signals":
+                ret = (
+                    <Signals
+                        dimensions={dimensions}
+                        selectedGraph={props.selectedGraph}
+                        expandedCollection={props.expandedCollection}
+                    />
+                );
+                break;
         default:
             ret = (
                 <div>

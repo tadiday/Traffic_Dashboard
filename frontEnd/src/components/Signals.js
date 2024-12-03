@@ -1,10 +1,13 @@
 // @ts-check
 import React, { useRef, useEffect, useState } from 'react';
 // import G6 from '@antv/g6';
-import { Graph, registerEdge, registerNode } from '@antv/g6';
+import { Graph, registerEdge, registerNode} from '@antv/g6';
 //import * as G6 from '@antv/g6';
 import axios from 'axios';
 import Popup from './Popup';
+import { Tabs } from 'antd';
+
+const { TabPane } = Tabs;
 
 // eslint-disable-next-line
 interface EdgeInfo {
@@ -130,7 +133,7 @@ registerNode('icon-node', {
 }, 'single-node');
 
 
-const MinPathTree = (props) => {
+const Signals = (props) => {
     const nodeGraphRef = useRef(null);
     const popUpAnimationRef = useRef(null);
     const chartRef = useRef(null);
@@ -145,8 +148,17 @@ const MinPathTree = (props) => {
     const [maxNumberOfTrees, setMaxNumberOfTrees] = useState(0);
     const [currentOrigins, setCurrentOrigins] = useState(String['']);
     const [currentTree, setCurrentTree] = useState([]);
-    const [previousBranch, setPreviousBranch] = useState([]);
-    //var chart;
+
+    const [signalTimeInfo, setSignalTimeInfo] = useState([]);
+
+    const [time, setTime] = useState(0); // State to track slider value
+    const [signal, setSignal] = useState(1); // State to track signal value
+
+    const [tabsNum, setTabsNum] = useState([0, 0, 0]); // State to track signal value
+    const [curTabInfo, setCurTabInfo] = useState([]);
+
+    const [selectedOption, setSelectedOption] = useState('Signal 5');
+    
     var popChart;
     let selectedEdge = null;
 
@@ -212,6 +224,7 @@ const MinPathTree = (props) => {
         var nodes = [];
         var edges = [];
         var minPaths = [];
+        var signals = [];
 
         const token = sessionStorage.getItem('token');
         
@@ -221,7 +234,6 @@ const MinPathTree = (props) => {
                     'Authorization': `Bearer ${token}`,
                 }
             });
-            //console.log("Fetched Nodes:", response.data); 
             nodes = response.data.nodes.map(obj => ({
                 id: String(obj.id),
                 x: obj.x,
@@ -249,13 +261,14 @@ const MinPathTree = (props) => {
                     'Authorization': `Bearer ${token}`,
                 }
             });
+            const response4 = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-overview?sim=${props.expandedCollection}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
 
-            //console.log("Fetched Nodes:", response.data); 
-            //console.log('Edges:', response.data.edges);
-            //console.log('Conditions:', response2.data.conditions);
             edges = response.data.edges.map(obj => {
                 const condition = response2.data.conditions.find(cond => cond.edgeID === obj.id);
-                // console.log('Test:',response2.data.conditions.map(cond => ({ edgeId: cond.edgeID, totalFlow: cond.totalFlow, CO2: cond.CO })));
                 
                 return {
                     edgeIdNum: String(obj.id),
@@ -270,11 +283,21 @@ const MinPathTree = (props) => {
             minPaths = response3.data.periods.map(obj => {
                 return {
                     iniOrigins: obj.paths[0].origins.map(subarray=>String(subarray[0])),
-                    trees: obj.paths[0].edges // root = index# + 1 = search link number
-                    //iniOrigins: obj[0].paths[0].origins.map(subarray=>String(subarray[0])),
+                    trees: obj.paths[0].edges
                 }
                 
             });
+
+
+            signals = response4.data.signals.map(obj => {
+                return {
+                    timeNum: String(obj.time),
+                    signalNum: String(obj.signal),
+                    linkInfoA: obj.a,
+                    infoB: obj.b
+                }
+            })
+
 
         
         } catch (error) {
@@ -284,7 +307,7 @@ const MinPathTree = (props) => {
 
         assignIcons(nodes);
 
-        return { nodes: nodes, edges: edges, minPaths: minPaths};
+        return { nodes: nodes, edges: edges, minPaths: minPaths, signals: signals};
     };
 
     var chart;
@@ -333,7 +356,7 @@ const MinPathTree = (props) => {
             const tooltip = document.createElement('div');
             tooltip.style.position = 'absolute';
             tooltip.style.padding = '5px';
-            tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.75)';
+            tooltip.style.backgroundColor = '#660000';
             tooltip.style.color = 'white';
             tooltip.style.borderRadius = '4px';
             tooltip.style.display = 'none';
@@ -346,8 +369,6 @@ const MinPathTree = (props) => {
             // Add and scale the nodes and render the graph
             try {  
                 if(chart && data){
-                    console.log(data.nodes);
-                    console.log(data.edges);
                     // Calculate the bounding box of the nodes
                     const minX = Math.min(...data.nodes.map(node => node.x));
                     const maxX = Math.max(...data.nodes.map(node => node.x));
@@ -383,8 +404,8 @@ const MinPathTree = (props) => {
                     setCurrentTree(data.minPaths[0].trees);
                     setCurrentOrigins(data.minPaths[0].iniOrigins);
                     setMaxNumberOfTrees(data.minPaths[0].trees.length);
-                    console.log("Current: ", data.minPaths[0].trees.length);
-                    console.log("origins: ", data.minPaths[0].iniOrigins);
+                    
+                    setSignalTimeInfo(data.signals);
                     chart.render();
 
                     // Event listener to show tooltip on hovering EDGE---------------------------------------------
@@ -562,11 +583,8 @@ const MinPathTree = (props) => {
             ...prevItems,
             [name]: checked,
         }));
-        //console.log("Display origin: ", checkedItems.originDisplay);
         if (currentOrigins){
-            console.log("Current Origins: ", currentOrigins);
             currentOrigins.forEach((origin) => {
-                console.log("origin: ", origin);
                 if (chartRef.current){
                     const originEdge = chartRef.current.find('edge', edge => edge.getModel().edgeIdNum === origin);
                     if (originEdge) {
@@ -589,89 +607,85 @@ const MinPathTree = (props) => {
         }
     }
 
-    const handleSearch = () => {
+    // Handle slider change
+    const handleSliderChange = (newTime, option) => {
         if (!chartRef.current) {
             console.log("nochart");
             return
         };
-        // Reset previous searched edge style
-        if (previousSearchedEdge) {
-            chartRef.current.updateItem(previousSearchedEdge, {
-                style: { stroke: '#FFA07A', lineWidth: 10, opacity: 0.1 },
-            });
-            if (previousBranch){
-                previousBranch.forEach((leaf) => {
-                    console.log("Leaf: ", leaf);
-                    if (leaf !== 0 && leaf !== -1 && chartRef.current){
-                        const leafEdge = chartRef.current.find('edge', edge => edge.getModel().edgeIdNum === String(leaf));
-                        if (leafEdge) {
-                            chartRef.current.updateItem(leafEdge, {
-                                style: {
-                                    stroke: '#FFA07A',
-                                    lineWidth: 4,
-                                    opacity: 0.1
-                                },
-                            });
-                        }
-                    }
 
-                });
-            }
-        }
-        
-        // Find nodes or edges that match the search input
-        const resultEdge = chartRef.current.find('edge', edge => edge.getModel().edgeIdNum === searchInput);
-        if (resultEdge) {
-            // Highlight the node by updating its style
-            chartRef.current.updateItem(resultEdge, {
-                style: {
-                    stroke: '#00FF00',
-                    lineWidth: 4,
-                    opacity: 1
-                },
+        setTime(newTime);
+        console.log("New Time: ", newTime);
+
+        //reset previous
+        if (tabsNum){
+            tabsNum.forEach((num) => {
+                if (chartRef.current){
+                    const leafEdge = chartRef.current.find('edge', edge => edge.getModel().edgeIdNum === String(num));
+                    if (leafEdge) {
+                        chartRef.current.clearItemStates(leafEdge);
+                        chartRef.current.updateItem(leafEdge, {
+                            style: {
+                                stroke: '#FFA07A',
+                                lineWidth: 4,
+                                opacity: 0.1
+                            },
+                        });
+                    }
+                }
+
             });
-            const root = parseInt(searchInput, 10)
-            if (currentTree) {
-                const tree = currentTree[root-1];
-                //console.log("Root: ", root);
-                //console.log("Tree: ", tree);
-                tree.forEach((leaf) => {
-                    //console.log("Leaf: ", leaf);
-                    if (leaf !== 0 && leaf !== -1 && chartRef.current){
-                        const leafEdge = chartRef.current.find('edge', edge => edge.getModel().edgeIdNum === String(leaf));
-                        if (leafEdge) {
-                            chartRef.current.updateItem(leafEdge, {
+        }
+
+        if (signalTimeInfo) {
+            const curTimeInfo =  signalTimeInfo.find( timeInfo => timeInfo["timeNum"] === String(newTime) 
+                                                        && timeInfo["signalNum"] === (option === 'Signal 5'? String(5): String(6)));
+            if (curTimeInfo){
+                var linkList = curTimeInfo["linkInfoA"];
+
+                var tempTabNum = [];
+                linkList.forEach((linkSignal)=>{
+                    const linkNum = linkSignal["link"];
+                    tempTabNum.push(linkNum);
+                    if(chartRef.current)
+                    {
+                        const signalEdge = chartRef.current.find('edge', edge => edge.getModel().edgeIdNum === String(linkNum));
+                        if (signalEdge) {
+                            chartRef.current.setItemState(signalEdge, "disabledHover", true);
+                            chartRef.current.updateItem(signalEdge, {
                                 style: {
-                                    stroke: '#00FF00',
+                                    stroke: '#000000',
                                     lineWidth: 4,
                                     opacity: 1
                                 },
                             });
                         }
                     }
+                })
 
-                });
-                setPreviousBranch(tree);
+                var tempStr = "";
+                var tempArr = [];
+                linkList.forEach((item) => {
+                    for (const key in item) {
+                        if (item.hasOwnProperty(key)) {
+                            tempStr+= `${key}: ${item[key]}` + '\n'
+                        }
+                    }
+                    tempArr.push(tempStr);
+                    tempStr = "";
+                })
+                setTabsNum(tempTabNum);
+                setCurTabInfo(tempArr);
             }
-
-            if (checkedItems.display){
-                const edgeData = resultEdge.getModel();
-                const edgeInfo = {
-                    source: edgeData.source,
-                    target: edgeData.target,
-                    totalFlow: edgeData.totalFlow,
-                    co2Emission: edgeData.co2Emission,
-                };
-                setSelectedEdgeInfo(edgeInfo); 
-                setEdgePopup(true);
-            }
-
-            // Center the view on the searched node
-            chartRef.current.focusItem(resultEdge, true);
-            setPreviousSearchedEdge(resultEdge);
-        } else {
-            alert('Edge not found');
         }
+    };
+
+    const handleRadioChange = (event) => {
+        console.log("Signal:" , event.target.value);
+        console.log("Time:", time);
+        setSelectedOption(event.target.value);
+        handleSliderChange(time, event.target.value);
+        
     };
 
     useEffect(() => {
@@ -687,7 +701,7 @@ const MinPathTree = (props) => {
     }, [selectedEdgeInfo, popChart]);
 
     useEffect(() => {
-        if (props.selectedGraph === 'Minimum Path Trees' && !chartRef.current) {
+        if (props.selectedGraph === 'Time Optimizations' && !chartRef.current) {
             node();
         }
 
@@ -695,54 +709,89 @@ const MinPathTree = (props) => {
             if (chartRef.current || chart) {
                 chart.destroy(); // Cleanup on unmount
                 chartRef.current = null;
-                console.log("Chart is destroyed")
             }
         };
     // eslint-disable-next-line
     }, [ props.expandedCollection, props.selectedGraph])
-
-    const placeholder = `Enter edge ID 1-${maxNumberOfTrees}`
     
     return (
         <div>
-            <div style={{ marginBottom: "8px" }}>
-                <span style={{ marginRight: "8px" }}>Search a minimum path tree by its root:</span>
-                <input
-                    type="text"
-                    value={searchInput}
-                    placeholder={placeholder}
-                    onChange={(e) => setSearchInput(e.target.value)}
+            <div id="charts" ref={nodeGraphRef} style={{ width: props.dimensions.graphWidth, height: props.dimensions.graphHeight}}>
+            </div>
+            <p style={{ padding: '20px', paddingTop:'10px' }}> Timing Optimization at {time} minutes for {selectedOption}</p>
+            {/* Timeline Slider with markers */}
+            <div style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '50px',
+                        borderRadius: '5px',
+                        color: '#660000', fontSize: '16px', fontWeight: 'bold', padding: '20px' 
+                        }}
+            >
+                <label>
+                Start by setting the time  <span style={{ fontWeight: 'bold' }}>»</span>
+                <div><input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={time}
+                        step="5"  // Step value added here
+                        onChange={(e) => handleSliderChange(Number(e.target.value), selectedOption)}
+                        style={{
+                            width: '70%',
+                            height: '10px',
+                            position: 'absolute',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: '#660000',
+                            borderRadius: '5px',
+                            outline: 'none',
+                            WebkitAppearance: 'none',
+                            MozAppearance: 'none',
+                            padding:'3px'
+                        }}
+                        className="custom-slider"
                 />
-                <button onClick={handleSearch}>Search</button>
+                </div>
+                </label>
+                <style>
+                    {`
+                            .custom-slider::-webkit-slider-thumb {
+                                -webkit-appearance: none;
+                                appearance: none;
+                                width: 20px;
+                                height: 20px;
+                                background: #FFFFFF; /* Thumb color */
+                                border-radius: 50%;
+                                cursor: pointer;
+                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+                            }
+                    `}
+                </style>
             </div>
 
-            <div>
+            <div style={{ color: '#660000', fontSize: '16px', fontWeight: 'bold', padding: '20px' }}>
                 <label>
                     <input
-                        type="checkbox"
-                        name="display"
-                        checked={displayIsChecked}
-                        onChange={handleCheckboxChange}
+                        type="radio"
+                        name="group1"
+                        value="Signal 5"
+                        checked={selectedOption === 'Signal 5'}
+                        onChange={handleRadioChange}
                     />
-                    <span style={{ marginRight: "8px" }}>Display searched root information</span>
+                    Signal 5
                 </label>
-            </div>
-            <div>
                 <label>
                     <input
-                        type="checkbox"
-                        name="originDisplay"
-                        checked={originIsChecked}
-                        onChange={handleOriginCheckboxChange}
+                    type="radio"
+                    name="group1"
+                    value="Signal 6"
+                    checked={selectedOption === 'Signal 6'}
+                    onChange={handleRadioChange}
                     />
-                    <span style={{ marginRight: "8px" }}>Display origins</span>
+                    Signal 6
                 </label>
             </div>
-            <div id="charts" ref={nodeGraphRef} style={{ width: props.dimensions.graphWidth, height: props.dimensions.graphHeight }}>
-            </div>
-
-            
-
             
             <Popup trigger={edgePopup} setTrigger={setEdgePopup}>
                 <h3>Selected Edge Information</h3>
@@ -755,7 +804,26 @@ const MinPathTree = (props) => {
 
                     )}
             </Popup>
+
+            <div style={{ padding: '20px' }}>
+            <h1>Relative Edges Information</h1>
+            <Tabs defaultActiveKey="1">
+                <TabPane tab={"Edge " + String(tabsNum[0])} key="1">
+                <h3>Information for Edge {tabsNum[0]}</h3>
+                <p style={{ whiteSpace: "pre-line" }}>{tabsNum[0]!==0?curTabInfo[0]:"No Edge Information Available"}</p>
+                </TabPane>
+                <TabPane tab={"Edge " + String(tabsNum[1])} key="2">
+                <h3>Information for Edge {tabsNum[1]}</h3>
+                <p style={{ whiteSpace: "pre-line" }}>{tabsNum[1]!==0?curTabInfo[1]:"No Edge Information Available"}</p>
+                </TabPane>
+                <TabPane tab={"Edge " + String(tabsNum[2])} key="3">
+                <h3>Information for Edge {tabsNum[2]}</h3>
+                <p style={{ whiteSpace: "pre-line" }}>{tabsNum[0]!==0?curTabInfo[2]:"No Edge Information Available"}</p>
+                </TabPane>
+            </Tabs>
+            </div>
         </div>
+        
     );
 }
 
@@ -779,7 +847,6 @@ function getEdgeColor(totalFlow) {
 // eslint-disable-next-line
 function getEdgeColorForOrigins(id, list) {
     if (list.includes(id)) {
-        //console.log("id: ",id)
         return '#000000';
     }
     else {
@@ -787,4 +854,4 @@ function getEdgeColorForOrigins(id, list) {
     }
 }
 
-export default MinPathTree;
+export default Signals;
