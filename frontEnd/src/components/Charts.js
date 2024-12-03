@@ -1,6 +1,7 @@
 // @ts-check
 import React from 'react';
 import AveTrafficConds from './AveTrafficConds';
+import TrafficConds from './TrafficConds';
 import Summary from './Summary';
 import TripProbe from './TripProbe';
 import MinPathTree from './MinPathTree';
@@ -33,6 +34,15 @@ function Charts(props) {
         case "Average Traffic Conditions":
             ret = (
                 <AveTrafficConds
+                    dimensions={dimensions}
+                    selectedGraph={props.selectedGraph}
+                    expandedCollection={props.expandedCollection}
+                />
+            );
+            break;
+        case "Traffic Conditions":
+            ret = (
+                <TrafficConds
                     dimensions={dimensions}
                     selectedGraph={props.selectedGraph}
                     expandedCollection={props.expandedCollection}

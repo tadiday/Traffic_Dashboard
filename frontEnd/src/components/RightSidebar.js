@@ -9,7 +9,7 @@ function RightSidebar(props) {
     const visualizations = ({ 
         'Summary': ['Traffic Map', 'Custom Summary Chart'],
         'Average Traffic Conditions': ['Traffic Map','Avg Crashes', 'Avg CO2'],
-        'Traffic Conditions': [],
+        'Traffic Conditions': ['Traffic in Series'],
         'Paths' : ['node'],
         'Trip Completion Probes' : ["Car Information Filter"],
         'Road Probes' : []
