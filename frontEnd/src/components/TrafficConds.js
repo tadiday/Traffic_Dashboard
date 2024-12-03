@@ -7,10 +7,8 @@ const AveTrafficConds = (props) => {
   const nodeGraphRef = useRef(null);
   let chart;
 
-  // State to hold the selected metric
-  const [selectedMetric, setSelectedMetric] = useState('totalFlow'); // Default to 'totalFlow'
+  const [selectedMetric, setSelectedMetric] = useState('totalFlow');
 
-  // Function to aggregate traffic data
   const aggregateTrafficData = (edges) => {
     let aggregatedData = {
       totalFlow: 0,
@@ -66,15 +64,14 @@ const AveTrafficConds = (props) => {
         }
       );
 
-      // Process each period
       response.data.periods.forEach((period) => {
         if (Array.isArray(period.edges)) {
           const aggregatedData = aggregateTrafficData(period.edges);
 
-          // Push the aggregated data into the array
+
           data.push({
             period: period.time,
-            ...aggregatedData, // Spread the aggregated data into the result
+            ...aggregatedData, 
           });
         }
       });
@@ -83,7 +80,6 @@ const AveTrafficConds = (props) => {
       return null;
     }
 
-    // Render the chart if the container is available
     if (nodeGraphRef.current) {
       chart = new Chart({
         container: nodeGraphRef.current,
@@ -93,7 +89,6 @@ const AveTrafficConds = (props) => {
         title: 'Traffic Data',
       });
 
-      // Use the selected metric for the graph
       chart.interval().data(data)
       .encode('x', 'period')
       .encode('y', selectedMetric);
@@ -101,7 +96,6 @@ const AveTrafficConds = (props) => {
     }
   };
 
-  // Function to handle dropdown selection change
   const handleMetricChange = (event) => {
     setSelectedMetric(event.target.value);
   };
@@ -116,7 +110,6 @@ const AveTrafficConds = (props) => {
         chart.destroy();
       }
     };
-    // eslint-disable-next-line
   }, [nodeGraphRef, props.expandedCollection, props.selectedGraph, selectedMetric]);
 
   return (
