@@ -49,58 +49,60 @@ const AveTrafficConds = (props) => {
     return aggregatedData;
   };
 
-  // Function to fetch and process traffic data
-  const bar = async () => {
-    if (!props.expandedCollection) return null;
-
-    const data = [];
-    const token = sessionStorage.getItem('token');
-    
-    try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-conds?sim=${props.expandedCollection}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      response.data.periods.forEach((period) => {
-        if (Array.isArray(period.edges)) {
-          const aggregatedData = aggregateTrafficData(period.edges);
-
-
-          data.push({
-            period: period.time,
-            ...aggregatedData, 
-          });
-        }
-      });
-    } catch (error) {
-      console.error('Error fetching bar info:', error);
-      return null;
-    }
-
-    if (nodeGraphRef.current) {
-      chart = new Chart({
-        container: nodeGraphRef.current,
-        height: props.dimensions.graphHeight,
-        width: props.dimensions.graphWidth,
-        autoFit: true,
-        title: 'Traffic Data',
-      });
-
-      chart.interval().data(data)
-      .encode('x', 'period')
-      .encode('y', selectedMetric);
-      chart.render();
-    }
-  };
-
+  
   const handleMetricChange = (event) => {
     setSelectedMetric(event.target.value);
   };
 
   useEffect(() => {
+    // Function to fetch and process traffic data
+    const bar = async () => {
+      if (!props.expandedCollection) return null;
+
+      const data = [];
+      const token = sessionStorage.getItem('token');
+      
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-conds?sim=${props.expandedCollection}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        response.data.periods.forEach((period) => {
+          if (Array.isArray(period.edges)) {
+            const aggregatedData = aggregateTrafficData(period.edges);
+
+
+            data.push({
+              period: period.time,
+              ...aggregatedData, 
+            });
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching bar info:', error);
+        return null;
+      }
+
+      if (nodeGraphRef.current) {
+        // eslint-disable-next-line
+        chart = new Chart({
+          container: nodeGraphRef.current,
+          height: props.dimensions.graphHeight,
+          width: props.dimensions.graphWidth,
+          autoFit: true,
+          title: 'Traffic Data',
+        });
+
+        chart.interval().data(data)
+        .encode('x', 'period')
+        .encode('y', selectedMetric);
+        chart.render();
+      }
+    };
+
     if (props.selectedGraph === 'Traffic in Series') {
       bar();
     }

@@ -139,20 +139,24 @@ const Signals = (props) => {
     const chartRef = useRef(null);
     const [edgePopup, setEdgePopup] = useState(false);
     const [selectedEdgeInfo, setSelectedEdgeInfo] = useState(null);
-    const [searchInput, setSearchInput] = useState('');
-    const [previousSearchedEdge, setPreviousSearchedEdge] = useState(null); // Store previous edge
+    // const [searchInput, setSearchInput] = useState('');
+    // const [previousSearchedEdge, setPreviousSearchedEdge] = useState(null); // Store previous edge
+    // eslint-disable-next-line
     const [checkedItems, setCheckedItems] = useState({
         display: false,
         originDisplay: false,
     });
+    // eslint-disable-next-line
     const [maxNumberOfTrees, setMaxNumberOfTrees] = useState(0);
+    // eslint-disable-next-line
     const [currentOrigins, setCurrentOrigins] = useState(String['']);
+    // eslint-disable-next-line
     const [currentTree, setCurrentTree] = useState([]);
 
     const [signalTimeInfo, setSignalTimeInfo] = useState([]);
 
     const [time, setTime] = useState(0); // State to track slider value
-    const [signal, setSignal] = useState(1); // State to track signal value
+    //const [signal, setSignal] = useState(1); // State to track signal value
 
     const [tabsNum, setTabsNum] = useState([0, 0, 0]); // State to track signal value
     const [curTabInfo, setCurTabInfo] = useState([]);
@@ -162,8 +166,8 @@ const Signals = (props) => {
     var popChart;
     let selectedEdge = null;
 
-    var displayIsChecked;
-    var originIsChecked;
+    // var displayIsChecked;
+    // var originIsChecked;
 
     // popUpAnimation
     const animation = async() => {
@@ -569,43 +573,43 @@ const Signals = (props) => {
         }
     }
     
-    const handleCheckboxChange = (event) => {
-        const { name, checked } = event.target;
-        setCheckedItems((prevItems) => ({
-            ...prevItems,
-            [name]: checked,
-        }));
-        console.log("Display info: ", checkedItems.display);
-    };
-    const handleOriginCheckboxChange = (event) => {
-        const { name, checked } = event.target;
-        setCheckedItems((prevItems) => ({
-            ...prevItems,
-            [name]: checked,
-        }));
-        if (currentOrigins){
-            currentOrigins.forEach((origin) => {
-                if (chartRef.current){
-                    const originEdge = chartRef.current.find('edge', edge => edge.getModel().edgeIdNum === origin);
-                    if (originEdge) {
-                        if (!checkedItems.originDisplay){
-                            chartRef.current.setItemState(originEdge, "disabledHover", true);
-                        }
-                        else{
-                            chartRef.current.clearItemStates(originEdge);
-                        }
-                        chartRef.current.updateItem(originEdge, {
-                            style: {
-                                stroke: checkedItems.originDisplay?'#FFA07A':'#FF0000',
-                                opacity: checkedItems.originDisplay?0.1:1,
-                            },
-                        });
-                    }
-                }
+    // const handleCheckboxChange = (event) => {
+    //     const { name, checked } = event.target;
+    //     setCheckedItems((prevItems) => ({
+    //         ...prevItems,
+    //         [name]: checked,
+    //     }));
+    //     console.log("Display info: ", checkedItems.display);
+    // };
+    // const handleOriginCheckboxChange = (event) => {
+    //     const { name, checked } = event.target;
+    //     setCheckedItems((prevItems) => ({
+    //         ...prevItems,
+    //         [name]: checked,
+    //     }));
+    //     if (currentOrigins){
+    //         currentOrigins.forEach((origin) => {
+    //             if (chartRef.current){
+    //                 const originEdge = chartRef.current.find('edge', edge => edge.getModel().edgeIdNum === origin);
+    //                 if (originEdge) {
+    //                     if (!checkedItems.originDisplay){
+    //                         chartRef.current.setItemState(originEdge, "disabledHover", true);
+    //                     }
+    //                     else{
+    //                         chartRef.current.clearItemStates(originEdge);
+    //                     }
+    //                     chartRef.current.updateItem(originEdge, {
+    //                         style: {
+    //                             stroke: checkedItems.originDisplay?'#FFA07A':'#FF0000',
+    //                             opacity: checkedItems.originDisplay?0.1:1,
+    //                         },
+    //                     });
+    //                 }
+    //             }
 
-            });
-        }
-    }
+    //         });
+    //     }
+    // }
 
     // Handle slider change
     const handleSliderChange = (newTime, option) => {
@@ -668,6 +672,7 @@ const Signals = (props) => {
                 linkList.forEach((item) => {
                     for (const key in item) {
                         if (item.hasOwnProperty(key)) {
+                            // eslint-disable-next-line
                             tempStr+= `${key}: ${item[key]}` + '\n'
                         }
                     }
