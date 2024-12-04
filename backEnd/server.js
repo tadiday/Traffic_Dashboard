@@ -18,7 +18,7 @@ app.use(express.json());
 
 // Create a sql connection pool, using mysql 2 its already promise based
 const pool = mysql.createPool({
-  host: 'localhost',
+  host: process.env.SQL_HOST, // 'localhost' for us but 'traffic_visual-mysqlserver' for docker,
   port: process.env.DATABASE_PORT,
   user: 'root',
   password: 'P@ssw0rd1234!',
@@ -280,7 +280,7 @@ async function tryGetFile(req, res, fileType){
 	} catch(exception) {
 		var user_id = 1;
 		// TBD uncomment when ready for real use
-		//return res.status(exception.status).send(exception.message);
+		return res.status(exception.status).send(exception.message);
 	}
 
 
