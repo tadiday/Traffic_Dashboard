@@ -10,7 +10,7 @@ function RightSidebar(props) {
         'Summary': ['Traffic Map', 'Custom Summary Chart'],
         'Average Traffic Conditions': ['Traffic Map','Avg Crashes', 'Avg CO2'],
         'Traffic Conditions': ['Traffic in Series'],
-        'Paths' : ['node'],
+        'Paths' : ['Minimum Path Trees'],
         'Simulation Details': ['Time Optimizations'],
         'Trip Completion Probes' : ["Car Information Filter"],
         'Road Probes' : []
