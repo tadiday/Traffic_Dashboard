@@ -68,7 +68,7 @@ function Charts(props) {
                 />
             );
             break;
-        case "Signals":
+        case "Simulation Details":
                 ret = (
                     <Signals
                         dimensions={dimensions}

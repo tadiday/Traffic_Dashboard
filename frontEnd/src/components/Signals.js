@@ -321,7 +321,7 @@ const Signals = (props) => {
                 height: props.dimensions.graphHeight,
         
                 modes: {
-                    default: ['drag-canvas', 'drag-node', 'zoom-canvas'],
+                    default: ['drag-canvas', 'drag-node'],
             
                 },
                 defaultNode: {
