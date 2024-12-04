@@ -6,7 +6,9 @@ import Summary from './Summary';
 import TripProbe from './TripProbe';
 import MinPathTree from './MinPathTree';
 import Signals from './Signals';
-import CustomSummaryChart from './CustomSummaryChart'; // Import the CustomSummaryChart component
+import CustomSummaryChart from './CustomSummaryChart';
+import EdgeLogsBarChart from './EdgeLogsBarChart';
+import EdgeLogsTreemap from './EdgeLogsTreemap';
 
 function Charts(props) {
     const dimensions = { graphWidth: window.innerWidth * 0.6, graphHeight: window.innerHeight * 0.7 };
@@ -77,6 +79,25 @@ function Charts(props) {
                     />
                 );
                 break;
+        case 'Road Probes':
+            if (props.selectedGraph === 'Edge Logs Bar Chart') {
+                ret = (
+                <EdgeLogsBarChart
+                    dimensions={dimensions}
+                    selectedGraph={props.selectedGraph}
+                    expandedCollection={props.expandedCollection}
+                />
+                );
+            } else {
+                ret = (
+                <EdgeLogsTreemap
+                    dimensions={dimensions}
+                    selectedGraph={props.selectedGraph}
+                    expandedCollection={props.expandedCollection}
+                />
+                );
+            }
+            break;
         default:
             ret = (
                 <div>

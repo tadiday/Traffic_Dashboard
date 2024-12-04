@@ -6,14 +6,14 @@ function RightSidebar(props) {
     // props.file_type is the selected visualization file type/source
     // props.files is the list returned from the backend of the file types associated with the collection
     // Fix dependecies for node graphs TBD 
-    const visualizations = ({ 
+    const visualizations = ({
+        'Road Probes': ['Edge Logs Bar Chart', 'Edge Logs Treemap'],
         'Summary': ['Traffic Map', 'Custom Summary Chart'],
         'Average Traffic Conditions': ['Traffic Map','Avg Crashes', 'Avg CO2'],
         'Traffic Conditions': ['Traffic in Series'],
         'Paths' : ['Minimum Path Trees'],
         'Simulation Details': ['Time Optimizations'],
         'Trip Completion Probes' : ["Car Information Filter"],
-        'Road Probes' : []
     });
     const outputFileTypes = ['Summary', 'Average Traffic Conditions', 'Traffic Conditions', 'Paths', 'Simulation Details', 'Trip Completion Probes','Road Probes'];
 
