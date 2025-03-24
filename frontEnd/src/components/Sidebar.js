@@ -3,6 +3,22 @@ import React from 'react';
 import './Sidebar.css';
 
 function Sidebar(props) {
+
+  function FileNumToFileType(fileNum) {
+    switch (fileNum) {
+      case 0: return 10;
+      case 1: return 11;
+      case 2: return 12;
+      case 3: return 13;
+      case 4: return 'summary';
+      case 5: return 14;
+      case 6: return 15;
+      case 7: return 1;
+      case 8: return 2;
+      case 9: return 3;
+
+    }
+  }
   // Handle expanding/collapsing the collection and fetching files
   const toggleCollection = async (collectionName) => {
     if (props.expandedCollection === collectionName) {
@@ -60,7 +76,10 @@ function Sidebar(props) {
                 {props.files.length === 0 ? (
                   <li>No files found in this collection</li>
                 ) : (
-                  props.files.map((file, fileIndex) => <li key={fileIndex}>{file}</li>)
+                  props.files.map((file, fileIndex) => 
+                  <li key={fileIndex}>
+                    {file} <span className='file-type'>(file {FileNumToFileType(fileIndex)})</span>
+                  </li>)
                 )}
               </ul>
             )}

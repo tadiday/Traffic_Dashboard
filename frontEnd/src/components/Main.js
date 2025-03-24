@@ -22,6 +22,8 @@ function Main(props) {
 
     const [showSpinner, setShowSpinner] = useState(false);
 
+    const [isHelpOpen, setIsHelpOpen] = useState(false);
+
     // Get items and username
     useEffect(() => {
         const token = sessionStorage.getItem('token');
@@ -157,7 +159,21 @@ function Main(props) {
                     setExpandedCollection={setExpandedCollection}
                 />
                 <div className="main-content">
-                    <h2>Welcome, {username}!</h2>
+                    <div className="header-container">
+                        <h2>Welcome, {username}!</h2>
+                        <button className="help-button" onClick={() => setIsHelpOpen(true)}>Help</button>
+                    </div>
+
+                    {isHelpOpen && (
+                        <div className="help-overlay">
+                            <div className="help-box">
+                                <h3>Need Help?</h3>
+                                <p>{selectedGraph}</p>
+                                <button onClick={() => setIsHelpOpen(false)}>Close</button>
+                            </div>
+                        </div>
+                    )}
+
                     <Charts
                         expandedCollection={expandedCollection}
                         selectedGraph={selectedGraph} // Pass selectedGraph to Charts
