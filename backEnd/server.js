@@ -18,15 +18,15 @@ app.use(express.json());
 
 // Create a sql connection pool, using mysql 2 its already promise based
 const pool = mysql.createPool({
-  host: process.env.SQL_HOST, // 'localhost' for us but 'traffic_visual-mysqlserver' for docker,
-  port: process.env.DATABASE_PORT,
-  user: 'root',
-  password: 'P@ssw0rd1234!',
-  database: 'traffic_visual',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  multipleStatements: true
+	host: process.env.SQL_HOST, // 'localhost' for us but 'traffic_visual-mysqlserver' for docker,
+	port: process.env.DATABASE_PORT,
+	user: 'root',
+	password: 'P@ssw0rd1234!',
+	database: 'traffic_visual',
+	waitForConnections: true,
+	connectionLimit: 10,
+	queueLimit: 0,
+	multipleStatements: true
 });
 
 const promisePool = pool.promise() // Makes the query commands return a promise
@@ -38,58 +38,58 @@ const promisePool = pool.promise() // Makes the query commands return a promise
  * @throws If there is no "token" or the "token" is invalid, and object is thrown ({status, message})
  */
 function verifyToken(req) {
-  const token = req.headers['authorization'];
-  if (!token) {
-	throw { status: 403, message: 'No token provided!' };
-  }
-  const actualToken = token.split(' ')[1];
+	const token = req.headers['authorization'];
+	if (!token) {
+		throw { status: 403, message: 'No token provided!' };
+	}
+	const actualToken = token.split(' ')[1];
 
-  try{
-	  let decoded = jwt.verify(actualToken, process.env.SECRET_KEY);
-	  if (!decoded) {
-		throw { status: 401, message: 'Failed to authenticate token.' };
-	  }
+	try {
+		let decoded = jwt.verify(actualToken, process.env.SECRET_KEY);
+		if (!decoded) {
+			throw { status: 401, message: 'Failed to authenticate token.' };
+		}
 
-	  return decoded;
-  }catch(err){
-  	throw { status: 401, message: "Login Token has expired" };
-  }
+		return decoded;
+	} catch (err) {
+		throw { status: 401, message: "Login Token has expired" };
+	}
 }
 
 // Verifies User token
 app.get('/api/verify-token', async (req, res) => {
-  try{
-  	let username = verifyToken(req).username;
-  	res.status(200).json({ message: 'Token is valid', username: username });
-  } catch(exception) {
-  	console.log(exception);
-  	res.status(exception.status).send(exception.message);
-  }
+	try {
+		let username = verifyToken(req).username;
+		res.status(200).json({ message: 'Token is valid', username: username });
+	} catch (exception) {
+		console.log(exception);
+		res.status(exception.status).send(exception.message);
+	}
 });
 
 
 
 // Gets Collection Names associated with the token
 app.get('/api/get-collections', async (req, res) => {
-  try{
-  	//var username = verifyToken(req);
-  	var user_id = verifyToken(req).user_id;
-  } catch(exception){
-	return res.status(exception.status).send(exception.message);
-  }
+	try {
+		//var username = verifyToken(req);
+		var user_id = verifyToken(req).user_id;
+	} catch (exception) {
+		return res.status(exception.status).send(exception.message);
+	}
 
-  try{
+	try {
 
-  	const [sims] = await promisePool.query("SELECT sim_name FROM simulations WHERE sim_owner = ?", [user_id]);
+		const [sims] = await promisePool.query("SELECT sim_name FROM simulations WHERE sim_owner = ?", [user_id]);
 
-	// reduce from simulation info to just simulation name
-  	const simNames = sims.map((sim) => sim.sim_name);
-  	return res.json(simNames);
+		// reduce from simulation info to just simulation name
+		const simNames = sims.map((sim) => sim.sim_name);
+		return res.json(simNames);
 
-  } catch (err) {
-    console.error("Error getting collections:", err);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
+	} catch (err) {
+		console.error("Error getting collections:", err);
+		return res.status(500).json({ message: 'Internal server error' });
+	}
 });
 
 
@@ -98,171 +98,171 @@ app.get('/api/get-collections', async (req, res) => {
  * of objects with values: "sim_name", "sim_date", "sim_id"
  */
 app.get("/api/get-directory", async (req, res) => {
-  try{
-  	var user_id = verifyToken(req).user_id;
-  } catch(exception){
-	return res.status(exception.status).send(exception.message);
-  }
+	try {
+		var user_id = verifyToken(req).user_id;
+	} catch (exception) {
+		return res.status(exception.status).send(exception.message);
+	}
 
-  try{
+	try {
 
-  	const [sims] = await promisePool.query("SELECT sim_name, sim_date, sim_id FROM simulations WHERE sim_owner = ?", [user_id]);
+		const [sims] = await promisePool.query("SELECT sim_name, sim_date, sim_id FROM simulations WHERE sim_owner = ?", [user_id]);
 
-  	return res.json(simNames);
+		return res.json(simNames);
 
-  } catch (err) {
-    console.error("Error getting collections:", err);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
+	} catch (err) {
+		console.error("Error getting collections:", err);
+		return res.status(500).json({ message: 'Internal server error' });
+	}
 });
 
 // Selects file names from a given collection_name and username from verified token
 app.get('/api/select-uploads', async (req, res) => {
 
-    // get the username
-    try{
-      var user_id = verifyToken(req).user_id;
-    } catch(exception) {
+	// get the username
+	try {
+		var user_id = verifyToken(req).user_id;
+	} catch (exception) {
 		return res.status(exception.status).send(exception.message);
-    }
+	}
 
-    // query database and stuff
-    try{
-     const sim_name = req.query.collection_name;
+	// query database and stuff
+	try {
+		const sim_name = req.query.collection_name;
 
-     if(!sim_name)
-		return res.status(400).send("Missing simulation name");
+		if (!sim_name)
+			return res.status(400).send("Missing simulation name");
 
-     // bad, but this entire thing is bad
-     const [[{sim_id}]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_owner = ? AND sim_name = ?", [user_id, sim_name]);
-     const [files] = await promisePool.query("SELECT file_type FROM text_files WHERE file_sim = ?", [sim_id, sim_id]);
+		// bad, but this entire thing is bad
+		const [[{ sim_id }]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_owner = ? AND sim_name = ?", [user_id, sim_name]);
+		const [files] = await promisePool.query("SELECT file_type FROM text_files WHERE file_sim = ?", [sim_id, sim_id]);
 
-     // convert returned object to strings
-     const fileNames = files.map((file) => (FileTypeToName(file.file_type)));
-     res.json(fileNames);
+		// convert returned object to strings
+		const fileNames = files.map((file) => (FileTypeToName(file.file_type)));
+		res.json(fileNames);
 
-    }catch(err){
-	  console.error(err);
-      res.status(500).send('Server Error');
-    }
+	} catch (err) {
+		console.error(err);
+		res.status(500).send('Server Error');
+	}
 });
 
 // Delete Collection query
 app.post('/api/delete-collection', async (req, res) => {
 
-  // get the username
-  try{
-    var user_id = verifyToken(req).user_id;
-  } catch(exception) {
-  	if(!exception.status)
-		exception.status = 500;
-	  return res.status(exception.status).send(exception.message);
-  }
+	// get the username
+	try {
+		var user_id = verifyToken(req).user_id;
+	} catch (exception) {
+		if (!exception.status)
+			exception.status = 500;
+		return res.status(exception.status).send(exception.message);
+	}
 
-  try {
-  	const {collection_name} = req.query;
+	try {
+		const { collection_name } = req.query;
 
-    // bad, but this entire thing is bad
-    const [[{sim_id}]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_owner = ? AND sim_name = ?", [user_id, collection_name]);
+		// bad, but this entire thing is bad
+		const [[{ sim_id }]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_owner = ? AND sim_name = ?", [user_id, collection_name]);
 
-    const deleteFileQuery = "DELETE FROM text_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
-	await promisePool.query(deleteFileQuery, [sim_id, sim_id, sim_id]);
-	res.send("File deletion successful");
-  } catch (err) {
-	console.error('Error deleting data:', err);
-	res.status(500).send('Error deleting data.');
-  }
+		const deleteFileQuery = "DELETE FROM text_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
+		await promisePool.query(deleteFileQuery, [sim_id, sim_id, sim_id]);
+		res.send("File deletion successful");
+	} catch (err) {
+		console.error('Error deleting data:', err);
+		res.status(500).send('Error deleting data.');
+	}
 });
 
 // Delete file query - Removed
 app.post('/api/delete-upload', async (req, res) => {
 
-  // get the username
-  try{
-    var user_id = verifyToken(req).user_id;
-  } catch(exception) {
-	return res.status(exception.status).send(exception.message);
-  }
+	// get the username
+	try {
+		var user_id = verifyToken(req).user_id;
+	} catch (exception) {
+		return res.status(exception.status).send(exception.message);
+	}
 
-  try{
-    // delete file
-    await promisePool.query("DELETE FROM text_files where file_name = ? AND file_owner = ?", [req.body.fileName, user_id])
+	try {
+		// delete file
+		await promisePool.query("DELETE FROM text_files where file_name = ? AND file_owner = ?", [req.body.fileName, user_id])
 
-  	res.send("File deletion successful");
-  }catch(err){
-  	console.error('Error deleting data:', err);
-    res.status(500).send('Error deleting data.');
-  }
+		res.send("File deletion successful");
+	} catch (err) {
+		console.error('Error deleting data:', err);
+		res.status(500).send('Error deleting data.');
+	}
 });
 
 // Upload file Query
 app.post('/api/upload', upload.single('file'), async (req, res) => {
 
-  // make sure a file was actually uploaded
-  if(!req.file)
-	return res.status(400).send('No file uploaded.');
+	// make sure a file was actually uploaded
+	if (!req.file)
+		return res.status(400).send('No file uploaded.');
 
-  // Check if the uploaded file is a zip file
-  const file = req.file;
-  if (file.mimetype !== 'application/zip' && file.mimetype !== 'application/x-zip-compressed')
-    return res.status(400).send('Please upload a valid zip file.');
+	// Check if the uploaded file is a zip file
+	const file = req.file;
+	if (file.mimetype !== 'application/zip' && file.mimetype !== 'application/x-zip-compressed')
+		return res.status(400).send('Please upload a valid zip file.');
 
-  // make sure its only simple strings
-  if(!IsValidUserInfo(req.body.collectionName))
-	return res.status(403).send("Invalid username or password");
+	// make sure its only simple strings
+	if (!IsValidUserInfo(req.body.collectionName))
+		return res.status(403).send("Invalid username or password");
 
-  // get the username
-  try{
-    var user_id = verifyToken(req).user_id;
-  } catch(exception) {
-	return res.status(exception.status).send(exception.message);
-  }
-
-  // try and create the simulation document
-  try {
-
-	const name = req.body.collectionName;
-	const date = (new Date()).toLocaleString();
-	// Check if its been uploaded
-	const result = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ?", [name]);
-	if (result[0] && result[0].length > 0 && result[0][0].sim_id) {
-		console.log('Collection ' + name + ' already exists');
-		return res.status(400).send('Collection ' + name + ' already exists');
+	// get the username
+	try {
+		var user_id = verifyToken(req).user_id;
+	} catch (exception) {
+		return res.status(exception.status).send(exception.message);
 	}
-	
-	const simInsert = "INSERT INTO simulations (sim_name, sim_date, sim_owner) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();";
-	var [[_,[sim_id]]] = await promisePool.query(simInsert, [name, date, user_id]);
-	//console.log(user_id);
-	sim_id = sim_id["LAST_INSERT_ID()"];
 
-	//console.log("Simulation: " + sim_id);
+	// try and create the simulation document
+	try {
 
-	//res.send('File data inserted successfully.');
-  } catch (error) {
-	console.error('Error inserting data:', error);
-	return res.status(500).send('Error inserting data.');
-  }
+		const name = req.body.collectionName;
+		const date = (new Date()).toLocaleString();
+		// Check if its been uploaded
+		const result = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ?", [name]);
+		if (result[0] && result[0].length > 0 && result[0][0].sim_id) {
+			console.log('Collection ' + name + ' already exists');
+			return res.status(400).send('Collection ' + name + ' already exists');
+		}
+
+		const simInsert = "INSERT INTO simulations (sim_name, sim_date, sim_owner) VALUES (?, ?, ?); SELECT LAST_INSERT_ID();";
+		var [[_, [sim_id]]] = await promisePool.query(simInsert, [name, date, user_id]);
+		//console.log(user_id);
+		sim_id = sim_id["LAST_INSERT_ID()"];
+
+		//console.log("Simulation: " + sim_id);
+
+		//res.send('File data inserted successfully.');
+	} catch (error) {
+		console.error('Error inserting data:', error);
+		return res.status(500).send('Error inserting data.');
+	}
 
 
-  // try and read the actual zip file
-  try{
-    const zip = new AdmZip(file.buffer);
-    const zipEntries = zip.getEntries();
+	// try and read the actual zip file
+	try {
+		const zip = new AdmZip(file.buffer);
+		const zipEntries = zip.getEntries();
 
-    for (const entry of zipEntries) {
-      if (!entry.isDirectory) {
-		try{
-          const fileContent = entry.getData().toString('ascii');
-		  await ReadFile(user_id, sim_id, fileContent, entry.name);
-		}catch(e){console.error("ERRORRR", e);/* not a text file? (ignore it)*/}
-      }
-    }
-  }catch(err){
-	console.error("Error reading zip file: ", err);
-	return res.status(500).send("Error reading data.");
-  }
+		for (const entry of zipEntries) {
+			if (!entry.isDirectory) {
+				try {
+					const fileContent = entry.getData().toString('ascii');
+					await ReadFile(user_id, sim_id, fileContent, entry.name);
+				} catch (e) { console.error("ERRORRR", e);/* not a text file? (ignore it)*/ }
+			}
+		}
+	} catch (err) {
+		console.error("Error reading zip file: ", err);
+		return res.status(500).send("Error reading data.");
+	}
 
-  res.send('File data inserted successfully.');
+	res.send('File data inserted successfully.');
 });
 
 
@@ -272,12 +272,12 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
  * The query value "sim" is specified to be the simulation
  *   id of the simulation being accessed
  */
-async function tryGetFile(req, res, fileType){
+async function tryGetFile(req, res, fileType) {
 
 	// get the username
-	try{
+	try {
 		var user_id = verifyToken(req).user_id;
-	} catch(exception) {
+	} catch (exception) {
 		var user_id = 1;
 		// TBD uncomment when ready for real use
 		return res.status(exception.status).send(exception.message);
@@ -288,29 +288,29 @@ async function tryGetFile(req, res, fileType){
 
 		// get the simulation id from query or by name
 		let sim_id;
-		try{
+		try {
 			sim_id = parseInt(req.query.sim); // to throw exception
-			if(isNaN(sim_id))
+			if (isNaN(sim_id))
 				throw "";
-		}catch(e){
+		} catch (e) {
 			[[sim_id]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?", [req.query.sim, user_id]);
-			if(sim_id)
+			if (sim_id)
 				sim_id = sim_id.sim_id;
 		}
 
-		if(!sim_id)
-		  return res.status(500).send("Simulation not found");
+		if (!sim_id)
+			return res.status(500).send("Simulation not found");
 
 		// get the actul
 		const query = "SELECT file_owner, file_content FROM text_files WHERE file_type = ? AND file_sim = ?";
 		const [[entry]] = await promisePool.query(query, [fileType, sim_id]);
 
 		// make sure the simulation exists
-		if(!entry)
-		  return res.status(500).send("File not found");
+		if (!entry)
+			return res.status(500).send("File not found");
 
 		// check whether or not they are allowed
-		if(entry.file_owner != user_id) // make this throw/return an error when done
+		if (entry.file_owner != user_id) // make this throw/return an error when done
 			console.log("tryGetFile: Wrong owner! (" + user_id + " != " + entry.file_owner + ")");
 
 		// ???
@@ -326,13 +326,13 @@ async function tryGetFile(req, res, fileType){
 /*
  * Gets the summary file
  */
-app.get('/api/file-summary', async (req, res) => await tryGetFile(req,res, FILE_SUMMARY));
+app.get('/api/file-summary', async (req, res) => await tryGetFile(req, res, FILE_SUMMARY));
 
 /*
  * Gets the Overview file
  */
 
-app.get('/api/file-overview', async (req, res) => await tryGetFile(req,res, FILE_OVERVIEW));
+app.get('/api/file-overview', async (req, res) => await tryGetFile(req, res, FILE_OVERVIEW));
 
 /*
  * Gets the node file (input file 1)
@@ -378,8 +378,8 @@ app.get('/api/file-edgeprobes', async (req, res) => await tryGetFile(req, res, F
 
 
 
-function IsValidUserInfo(str){
-	if(!str || !("" + str === str))
+function IsValidUserInfo(str) {
+	if (!str || !("" + str === str))
 		return 0;
 	const len = str.length;
 	const n0 = "0".charCodeAt(0);
@@ -389,9 +389,9 @@ function IsValidUserInfo(str){
 	const A0 = "A".charCodeAt(0);
 	const A1 = "Z".charCodeAt(0);
 	const sp = " ".charCodeAt(0);
-	for(let i = 0; i < len; i++){
+	for (let i = 0; i < len; i++) {
 		const c = str.charCodeAt(i);
-		if(!(c == sp || (c >= n0 && c <= n1) || (c >= a0 && c <= a1) || (c >= A0 && c <= A1)))
+		if (!(c == sp || (c >= n0 && c <= n1) || (c >= a0 && c <= a1) || (c >= A0 && c <= A1)))
 			return 0;
 	}
 	return 1;
@@ -399,73 +399,73 @@ function IsValidUserInfo(str){
 
 // Route to login and generate a JWT
 app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    console.log('Login Requested with:', username, password);
+	const { username, password } = req.body;
+	console.log('Login Requested with:', username, password);
 
-    // make sure its only simple strings
-    if(!IsValidUserInfo(username) || !IsValidUserInfo(password))
-	  return res.status(403).send("Invalid username or password");
+	// make sure its only simple strings
+	if (!IsValidUserInfo(username) || !IsValidUserInfo(password))
+		return res.status(403).send("Invalid username or password");
 
-    try{
-      const [[user]] = await promisePool.query("SELECT user_id FROM users WHERE username = ? AND password = ?", [username, password]);
+	try {
+		const [[user]] = await promisePool.query("SELECT user_id FROM users WHERE username = ? AND password = ?", [username, password]);
 
-      // username pair does not exist
-      if(!user){
-		console.log('Invalid username or password');
-        return res.status(401).json({ message: 'Invalid credentials' });
-      }
+		// username pair does not exist
+		if (!user) {
+			console.log('Invalid username or password');
+			return res.status(401).json({ message: 'Invalid credentials' });
+		}
 
-      // Sign the token with the secret key
-      const userInfo = { username: username, user_id: user.user_id}; // Payload data for the token
-      const token = jwt.sign(userInfo, process.env.SECRET_KEY, { expiresIn: '1h' });
+		// Sign the token with the secret key
+		const userInfo = { username: username, user_id: user.user_id }; // Payload data for the token
+		const token = jwt.sign(userInfo, process.env.SECRET_KEY, { expiresIn: '1h' });
 
-      return res.json({ token: token });
+		return res.json({ token: token });
 
-    }catch(err){
-      console.error('Error checking user login:', err);
-      return res.status(401).json({ message: 'Query Failed' });
-    }
+	} catch (err) {
+		console.error('Error checking user login:', err);
+		return res.status(401).json({ message: 'Query Failed' });
+	}
 });
 
 // Route to register a new user
 app.post('/register', async (req, res) => {
-  const { username, password } = req.body;
+	const { username, password } = req.body;
 
-  // make sure its only simple strings
-  if(!IsValidUserInfo(username) || !IsValidUserInfo(password))
-	return res.status(403).send("Invalid username or password");
+	// make sure its only simple strings
+	if (!IsValidUserInfo(username) || !IsValidUserInfo(password))
+		return res.status(403).send("Invalid username or password");
 
-  try {
-      // Check if the username already exists
-      const [[{existingUser}]] = await promisePool.query("SELECT EXISTS( SELECT * FROM users WHERE username = ?)", [username]);
+	try {
+		// Check if the username already exists
+		const [[{ existingUser }]] = await promisePool.query("SELECT EXISTS( SELECT * FROM users WHERE username = ?)", [username]);
 
-      if (existingUser) {
-          return res.status(409).json({ message: 'Username already exists' });
-      }
+		if (existingUser) {
+			return res.status(409).json({ message: 'Username already exists' });
+		}
 
-      // Insert new user
-      await promisePool.query('INSERT INTO users (username, password) VALUES (?, ?)', [username, password]);
-      return res.status(201).json({ message: 'User created successfully. Please log in.' });
-  } catch (error) {
-      console.error('Error registering user:', error);
-      return res.status(500).json({ message: 'Server error' });
-  }
+		// Insert new user
+		await promisePool.query('INSERT INTO users (username, password) VALUES (?, ?)', [username, password]);
+		return res.status(201).json({ message: 'User created successfully. Please log in.' });
+	} catch (error) {
+		console.error('Error registering user:', error);
+		return res.status(500).json({ message: 'Server error' });
+	}
 });
 
 app.listen(process.env.PORT, () => {
-    console.log('Server.js App is listening on port: '+ process.env.PORT);
+	console.log('Server.js App is listening on port: ' + process.env.PORT);
 });
 
 // Closes DB Connections on receiving end signals
 const shutdown = async () => {
-    try {
-        await pool.end();
-        console.log('Connection pool closed.');
-        process.exit(0);
-      } catch (err) {
-        console.error('Error closing connection pool:', err);
-        process.exit(1);
-      }
+	try {
+		await pool.end();
+		console.log('Connection pool closed.');
+		process.exit(0);
+	} catch (err) {
+		console.error('Error closing connection pool:', err);
+		process.exit(1);
+	}
 };
 
 process.on('SIGTERM', shutdown);
@@ -497,12 +497,12 @@ const FILE_SIGNALS = 9;		// file 3
  * @param off (int) The offset in the buffer to read from
  * @return (int) The resulting offset from all of the reads
  */
-function ReadFromBufFloats(obj, names, buf, off){
-  for(let i = 0; i < names.length; i++){
-  	obj[names[i]] = buf.readFloatLE(off);
-  	off += 4;
-  }
-  return off;
+function ReadFromBufFloats(obj, names, buf, off) {
+	for (let i = 0; i < names.length; i++) {
+		obj[names[i]] = buf.readFloatLE(off);
+		off += 4;
+	}
+	return off;
 }
 
 /*
@@ -514,12 +514,12 @@ function ReadFromBufFloats(obj, names, buf, off){
  * @param off (int) The offset in the buffer to read from
  * @return (int) The resulting offset from all of the reads
  */
-function ReadFromBufInts(obj, names, buf, off){
-  for(let i = 0; i < names.length; i++){
-  	obj[names[i]] = buf.readInt32LE(off);
-  	off += 4;
-  }
-  return off;
+function ReadFromBufInts(obj, names, buf, off) {
+	for (let i = 0; i < names.length; i++) {
+		obj[names[i]] = buf.readInt32LE(off);
+		off += 4;
+	}
+	return off;
 }
 
 /*
@@ -531,12 +531,12 @@ function ReadFromBufInts(obj, names, buf, off){
  * @param off (int) The offset in the buffer to read from
  * @return (int) The resulting offset from all of the reads
  */
-function ReadFromBufShorts(obj, names, buf, off){
-  for(let i = 0; i < names.length; i++){
-  	obj[names[i]] = buf.readInt16LE(off);
-  	off += 2;
-  }
-  return off;
+function ReadFromBufShorts(obj, names, buf, off) {
+	for (let i = 0; i < names.length; i++) {
+		obj[names[i]] = buf.readInt16LE(off);
+		off += 2;
+	}
+	return off;
 }
 
 /*
@@ -544,26 +544,26 @@ function ReadFromBufShorts(obj, names, buf, off){
  *   to choose the type with a letter at the start of the name of
  *   the table entry. b: byte, s: short, i: int, f: float
  */
-function ReadFromBufAny(obj, names, buf, off){
-  for(let i = 0; i < names.length; i++){
-	let size;
-	let v;
-	const mid = names[i].indexOf("_");
-	switch(names[i].charAt(0)){
-		case "b": v = buf.readInt8(off);    off += 1; break;
-		case "s": v = buf.readInt16LE(off); off += 2; break;
-		case "i": v = buf.readInt32LE(off); off += 4; break;
-		case "f": v = buf.readFloatLE(off); off += 4; break;
-		case "c": case "n":{
-			let vsize = (names[i].charAt(0) == "c") ? 2 : 3;
-			v = buf.readUIntLE(off, vsize);
-			off += vsize;
-			v /= Math.pow(10, names[i].charCodeAt(1) - 48);
-		}break;
+function ReadFromBufAny(obj, names, buf, off) {
+	for (let i = 0; i < names.length; i++) {
+		let size;
+		let v;
+		const mid = names[i].indexOf("_");
+		switch (names[i].charAt(0)) {
+			case "b": v = buf.readInt8(off); off += 1; break;
+			case "s": v = buf.readInt16LE(off); off += 2; break;
+			case "i": v = buf.readInt32LE(off); off += 4; break;
+			case "f": v = buf.readFloatLE(off); off += 4; break;
+			case "c": case "n": {
+				let vsize = (names[i].charAt(0) == "c") ? 2 : 3;
+				v = buf.readUIntLE(off, vsize);
+				off += vsize;
+				v /= Math.pow(10, names[i].charCodeAt(1) - 48);
+			} break;
+		}
+		obj[names[i].substring(mid + 1)] = v;
 	}
-  	obj[names[i].substring(mid + 1)]= v;
-  }
-  return off;
+	return off;
 }
 
 /*
@@ -575,10 +575,10 @@ function ReadFromBufAny(obj, names, buf, off){
  * @param off (int) The offset to read from
  * @return ([int, string]) The resulting offset and string
  */
-function ReadString(buf, off){
-  const len = buf.readInt8(off);
-  const tag = buf.toString("ascii", off + 1, off + 1 + len);
-  return [off + 1 + len, tag];
+function ReadString(buf, off) {
+	const len = buf.readInt8(off);
+	const tag = buf.toString("ascii", off + 1, off + 1 + len);
+	return [off + 1 + len, tag];
 }
 
 /*
@@ -589,9 +589,9 @@ function ReadString(buf, off){
  * @param off (int) The initial offset in "buf" to read from
  * @return ([int, int[]]) The resulting offset and array
  */
-function ReadFromBufShortArray(buf, len, off){
+function ReadFromBufShortArray(buf, len, off) {
 	let arr = new Array(len);
-	for(let i = 0; i < len; i++)
+	for (let i = 0; i < len; i++)
 		arr[i] = buf.readInt16LE(off + 2 * i);
 	return [off + 2 * len, arr];
 }
@@ -599,9 +599,9 @@ function ReadFromBufShortArray(buf, len, off){
 /*
  * Same as ReadFromBufShortArray(), but with floats
  */
-function ReadFromBufFloatArray(buf, len, off){
+function ReadFromBufFloatArray(buf, len, off) {
 	let arr = new Array(len);
-	for(let i = 0; i < len; i++)
+	for (let i = 0; i < len; i++)
 		arr[i] = buf.readFloatLE(off + 4 * i);
 	return [off + 4 * len, arr];
 }
@@ -613,7 +613,7 @@ function ReadFromBufFloatArray(buf, len, off){
  * @param buf (nodejs buffer) The nodejs buffer to read from
  * @return (table) The summary file as a table/object
  */
-function ReadFile_summary(buf){
+function ReadFile_summary(buf) {
 	const SUMMARY_TAGS = [
 		"vehicle trips", "person trips", "vehicle-km", "person-km", "vehicle-stops", "vehicle-secs",
 		"person-secs", "total delay", "stopped delay", "accel/decel delay", "accel-noise", "fuel (l)",
@@ -621,7 +621,7 @@ function ReadFile_summary(buf){
 		"injury crashes", "fatal crashes", "no damage", "minor damage", "moderate damage", "dollars of toll"
 	];
 
-	let out = {total:{}, average:{}};
+	let out = { total: {}, average: {} };
 	let off = 0;
 
 	const lenA = buf.readInt16LE(off + 0);
@@ -629,22 +629,22 @@ function ReadFile_summary(buf){
 	off += 4;
 
 	// read the total
-	for(let i = 0; i < lenA; i++){
-		let line = [1,2,3,4,5,6];
-		for(let ii = 0; ii < 6; ii++)
+	for (let i = 0; i < lenA; i++) {
+		let line = [1, 2, 3, 4, 5, 6];
+		for (let ii = 0; ii < 6; ii++)
 			line[ii] = buf.readFloatLE((off += 4) - 4);
 		let tag = "";
-		[off,tag] = ReadString(buf, off);
+		[off, tag] = ReadString(buf, off);
 		out.total[tag] = line;
 	}
 
 	// read the average
-	for(let i = 0; i < lenB; i++){
-		let line = [1,2,3,4,5,6];
-		for(let ii = 0; ii < 6; ii++)
+	for (let i = 0; i < lenB; i++) {
+		let line = [1, 2, 3, 4, 5, 6];
+		for (let ii = 0; ii < 6; ii++)
 			line[ii] = buf.readFloatLE((off += 4) - 4);
 		let tag = "";
-		[off,tag] = ReadString(buf, off);
+		[off, tag] = ReadString(buf, off);
 		out.average[tag] = line;
 	}
 
@@ -657,7 +657,7 @@ function ReadFile_summary(buf){
  * @param buf (nodejs buffer) The nodejs buffer to read from
  * @return (table) The summary file as a table/object
  */
-function ReadFile_nodes(buf){
+function ReadFile_nodes(buf) {
 	let out = {};
 
 	// define and read initial values
@@ -668,21 +668,21 @@ function ReadFile_nodes(buf){
 
 	// read each node
 	let off = 10;
-	for(let i = 0; i < out.count; i++){
-	  let node = {};
-	  node.id = buf.readInt16LE(off + 0);
-	  node.x = buf.readFloatLE(off + 2);
-	  node.y = buf.readFloatLE(off + 6);
-	  node.type = buf.readInt8(off + 10);
-	  node.zone = buf.readInt16LE(off + 11);
-	  const info = buf.readFloatLE(off + 13);
-	  if(info != 0) node.info
-	  const tagLen = buf.readInt8(off + 17);
-	  if(tagLen > 0){
-	  	node.tag = buf.toString("ascii", off + 18, off + 18 + tagLen);
-	  }
-	  off += 18 + tagLen;
-	  out.nodes[i] = node;
+	for (let i = 0; i < out.count; i++) {
+		let node = {};
+		node.id = buf.readInt16LE(off + 0);
+		node.x = buf.readFloatLE(off + 2);
+		node.y = buf.readFloatLE(off + 6);
+		node.type = buf.readInt8(off + 10);
+		node.zone = buf.readInt16LE(off + 11);
+		const info = buf.readFloatLE(off + 13);
+		if (info != 0) node.info
+		const tagLen = buf.readInt8(off + 17);
+		if (tagLen > 0) {
+			node.tag = buf.toString("ascii", off + 18, off + 18 + tagLen);
+		}
+		off += 18 + tagLen;
+		out.nodes[i] = node;
 	}
 
 	return out;
@@ -693,7 +693,7 @@ function ReadFile_nodes(buf){
  * @param buf (nodejs buffer) The nodejs buffer to read from
  * @return (table) The summary file as a table/object
  */
-function ReadFile_edges(buf){
+function ReadFile_edges(buf) {
 	let out = {};
 
 	// define and read initial values
@@ -707,15 +707,15 @@ function ReadFile_edges(buf){
 
 	// read each node
 	let off = 22;
-	for(let i = 0; i < out.count; i++){
-	  let node = {};
-	  off = ReadFromBufShorts(node, ["id", "start", "end"], buf, off);
-	  off = ReadFromBufFloats(node, ["length", "freeSpeed", "satFlowRate", "numOfLanes", "speedVar", "capSpeed", "jamDensity"], buf, off);
-	  off = ReadFromBufShorts(node, ["prohIndc"], buf, off);
-	  off = ReadFromBufInts(node, ["enableTime", "disableTime"], buf, off);
-	  off = ReadFromBufShorts(node, ["oppose1", "oppose2", "signal", "phase1", "phase2", "vehProhIndc", "survLevel"], buf, off);
-	  [off, node.tag] = ReadString(buf, off);
-	  out.edges[i] = node;
+	for (let i = 0; i < out.count; i++) {
+		let node = {};
+		off = ReadFromBufShorts(node, ["id", "start", "end"], buf, off);
+		off = ReadFromBufFloats(node, ["length", "freeSpeed", "satFlowRate", "numOfLanes", "speedVar", "capSpeed", "jamDensity"], buf, off);
+		off = ReadFromBufShorts(node, ["prohIndc"], buf, off);
+		off = ReadFromBufInts(node, ["enableTime", "disableTime"], buf, off);
+		off = ReadFromBufShorts(node, ["oppose1", "oppose2", "signal", "phase1", "phase2", "vehProhIndc", "survLevel"], buf, off);
+		[off, node.tag] = ReadString(buf, off);
+		out.edges[i] = node;
 	}
 
 	return out;
@@ -726,7 +726,7 @@ function ReadFile_edges(buf){
  * @param buf (nodejs buffer) The nodejs buffer to read from
  * @return (table) The summary file as a table/object
  */
-function ReadFile_signals(buf){
+function ReadFile_signals(buf) {
 	let out = {};
 
 	// define and read initial values
@@ -738,23 +738,23 @@ function ReadFile_signals(buf){
 
 	// read each node
 	let off = 8;
-	for(let i = 0; i < signalCount; i++){
-	  let node = {};
-	  node.signalNum = buf.readFloatLE(off + 0);
-	  node.baseTime = buf.readFloatLE(off + 4);
-	  node.minTime = buf.readFloatLE(off + 8);
-	  node.maxTime = buf.readFloatLE(off + 12);
-	  node.signalOff = buf.readInt16LE(off + 16);
-	  node.splitFreq = buf.readInt16LE(off + 18);
-	  const phaseCount = buf.readInt8(off + 20);
-	  node.phases = [];
-	  for(let ii = 0; ii < phaseCount; ii++){
-		node.phases[ii] = [];
-		node.phases[ii][0] = buf.readFloatLE(off + 21 + ii*8);
-		node.phases[ii][1] = buf.readFloatLE(off + 25 + ii*8);
-	  }
-	  out.signals[i] = node;
-	  off += 21 + 8 * phaseCount;
+	for (let i = 0; i < signalCount; i++) {
+		let node = {};
+		node.signalNum = buf.readFloatLE(off + 0);
+		node.baseTime = buf.readFloatLE(off + 4);
+		node.minTime = buf.readFloatLE(off + 8);
+		node.maxTime = buf.readFloatLE(off + 12);
+		node.signalOff = buf.readInt16LE(off + 16);
+		node.splitFreq = buf.readInt16LE(off + 18);
+		const phaseCount = buf.readInt8(off + 20);
+		node.phases = [];
+		for (let ii = 0; ii < phaseCount; ii++) {
+			node.phases[ii] = [];
+			node.phases[ii][0] = buf.readFloatLE(off + 21 + ii * 8);
+			node.phases[ii][1] = buf.readFloatLE(off + 25 + ii * 8);
+		}
+		out.signals[i] = node;
+		off += 21 + 8 * phaseCount;
 	}
 
 	return out;
@@ -763,7 +763,7 @@ function ReadFile_signals(buf){
 /*
  * File 10
  */
-function ReadFile_Overview(buf){
+function ReadFile_Overview(buf) {
 
 	let off = 0;
 	let obj = {};
@@ -774,13 +774,13 @@ function ReadFile_Overview(buf){
 	obj.signals = Array(buf.readInt32LE(off));
 	off += 4;
 
-	for(let i = 0; i < obj.signals.length; i++){
+	for (let i = 0; i < obj.signals.length; i++) {
 		let entry = {};
 		entry.time = buf.readInt16LE(off + 0);
 		entry.signal = buf.readInt16LE(off + 2);
 		entry.a = Array(buf.readInt32LE(off + 4));
 		off += 8;
-		for(let ii = 0; ii < entry.a.length; ii++){
+		for (let ii = 0; ii < entry.a.length; ii++) {
 			entry.a[ii] = {}
 			off = ReadFromBufAny(entry.a[ii], [
 				"b_ph", "b_ln", "s_link", "b_lane",
@@ -792,7 +792,7 @@ function ReadFile_Overview(buf){
 		}
 		entry.b = Array(buf.readInt32LE(off));
 		off += 4;
-		for(let ii = 0; ii < entry.b.length; ii++){
+		for (let ii = 0; ii < entry.b.length; ii++) {
 			entry.b[ii] = {};
 			off = ReadFromBufAny(entry.b[ii], [
 				"b_ph", "f_Offset Time (sec)", "f_Cycle Time (sec)", "f_Lost Time (sec)", "f_Green Time (sec)",
@@ -807,12 +807,12 @@ function ReadFile_Overview(buf){
 
 	// const lfformat = "sssssbfsbbifffsiss";
 
-	for(let i = 0; i < obj.linkFlow.length; i++){
+	for (let i = 0; i < obj.linkFlow.length; i++) {
 		let entry = {};
 		entry.time = buf.readInt32LE(off);
 		entry.links = Array(buf.readInt32LE(off + 4));
 		off += 8;
-		for(let ii = 0; ii < entry.links.length; ii++){
+		for (let ii = 0; ii < entry.links.length; ii++) {
 			entry.links[ii] = {};
 			[off, entry.links[ii].Name] = ReadString(buf, off);
 			off = ReadFromBufAny(entry.links[ii], [
@@ -845,7 +845,7 @@ function ReadFile_Overview(buf){
 	obj.avgOD1.stats = Array(avgOD1len);
 	off += 4;
 
-	for(let i = 0; i < avgOD1len; i++){
+	for (let i = 0; i < avgOD1len; i++) {
 		obj.avgOD1.stats[i] = {};
 		off = ReadFromBufAny(obj.avgOD1.stats[i], [
 			"b_Vehicle Type", "b_Origin Zone", "b_Destination Zone",
@@ -860,12 +860,12 @@ function ReadFile_Overview(buf){
 	obj.avgOD1.totals = [];
 	off += 4;
 
-	for(let i = 0; i < avgOD1len2; i++){
+	for (let i = 0; i < avgOD1len2; i++) {
 		let entry = {};
 		off = ReadFromBufAny(entry, [
 			"i_class"
 		], buf, off);
-		if(entry["class"] != -1){
+		if (entry["class"] != -1) {
 			off = ReadFromBufAny(entry, [
 				"f_Total Veh-Km", "f_Total Veh-Hrs"
 			], buf, off);
@@ -880,7 +880,7 @@ function ReadFile_Overview(buf){
 	obj.avgOD2.stats = Array(buf.readInt32LE(off));
 	off += 4;
 
-	for(let i = 0; i < obj.avgOD2.stats.length; i++){
+	for (let i = 0; i < obj.avgOD2.stats.length; i++) {
 		obj.avgOD2.stats[i] = {};
 		off = ReadFromBufAny(obj.avgOD2.stats[i], [
 			"b_Origin Zone", "b_Destination Zone",
@@ -911,7 +911,7 @@ function ReadFile_Overview(buf){
 	obj.incd = Array(buf.readInt32LE(off));
 	off += 4;
 
-	for(let i = 0; i < obj.incd.length; i++){
+	for (let i = 0; i < obj.incd.length; i++) {
 		obj.incd[i] = {};
 		off = ReadFromBufAny(obj.incd[i], [
 			"i_Link",
@@ -932,7 +932,7 @@ function ReadFile_Overview(buf){
  * @param buf (nodejs buffer) The nodejs buffer to read from
  * @return (table) The summary file as a table/object
  */
-function ReadFile_AvgConditions(buf){
+function ReadFile_AvgConditions(buf) {
 	let out = {};
 
 	let off = 0;
@@ -949,32 +949,32 @@ function ReadFile_AvgConditions(buf){
 	off += 8;
 
 	out.edgeCount = countA;
-	for(let i = 0; i < countA; i++){
+	for (let i = 0; i < countA; i++) {
 		let obj = {};
 		const index = buf.readInt16LE(off);
 		obj.edgeID = index;
 		obj.length = buf.readFloatLE(off + 2);
 		off = ReadFromBufShorts(obj, ["baseCapacity", "totalFlow"], buf, off + 6);
 		[off, obj["flow"]] = ReadFromBufShortArray(buf, 5, off);
-		off = ReadFromBufFloats(obj, ["freeSpeedTime", "totalAverageTime"],  buf, off);
+		off = ReadFromBufFloats(obj, ["freeSpeedTime", "totalAverageTime"], buf, off);
 		[off, obj["averageTime"]] = ReadFromBufFloatArray(buf, 5, off);
 		[off, obj["averageToll"]] = ReadFromBufFloatArray(buf, 5, off);
-		off = ReadFromBufFloats(obj, ["averageVehicles", "averageQueue", "averageStops"],  buf, off);
-		off = ReadFromBufFloats(obj, ["fuel", "HC", "CO", "NO", "CO2", "PM"],  buf, off);
-		off = ReadFromBufFloats(obj, ["expectedCrashes", "expectedTopInjurt", "fatelCrashes", "crashLowDamage", "crashMedDamage", "crashHighDamage"],  buf, off);
+		off = ReadFromBufFloats(obj, ["averageVehicles", "averageQueue", "averageStops"], buf, off);
+		off = ReadFromBufFloats(obj, ["fuel", "HC", "CO", "NO", "CO2", "PM"], buf, off);
+		off = ReadFromBufFloats(obj, ["expectedCrashes", "expectedTopInjurt", "fatelCrashes", "crashLowDamage", "crashMedDamage", "crashHighDamage"], buf, off);
 		out.conditions[index] = obj;
 	}
 
 	const countB = buf.readInt16LE(off);
 	off += 2;
 
-	for(let i = 0; i < countB; i++){
+	for (let i = 0; i < countB; i++) {
 		let obj = {};
 		const index = buf.readInt16LE(off);
 		obj.edgeId = index;
-		off+=2;
+		off += 2;
 		obj.direction = new Array(5).fill({});
-		for(let ii = 0; ii < 5; ii++){
+		for (let ii = 0; ii < 5; ii++) {
 			obj.direction[ii] = {};
 			off = ReadFromBufShorts(obj.direction[ii], ["leftTurn", "through", "rightTurn", "total"], buf, off);
 		}
@@ -987,7 +987,7 @@ function ReadFile_AvgConditions(buf){
 /*
  * file 12
  */
-function ReadFile_Conditions(buf){
+function ReadFile_Conditions(buf) {
 	let out = {};
 
 	let off = 0;
@@ -998,7 +998,7 @@ function ReadFile_Conditions(buf){
 	off += 10;
 
 	out.periods = new Array(out.periodCount);
-	for(let i = 0; i < out.periodCount; i++){
+	for (let i = 0; i < out.periodCount; i++) {
 		let periodObj = {};
 		periodObj.time = buf.readInt32LE(off + 0);
 		periodObj.index = buf.readInt16LE(off + 4);
@@ -1007,19 +1007,19 @@ function ReadFile_Conditions(buf){
 		// 8s9f8sssssss9fffffffCffffffffKffGffffffCfffffffCffffff
 
 		periodObj.edges = Array(out.edgeMaxID + 1).fill({});
-		for(let ii = 0; ii < out.edgeCount; ii++){
+		for (let ii = 0; ii < out.edgeCount; ii++) {
 			let obj = {};
 			const index = buf.readInt16LE(off);
 			obj.length = buf.readFloatLE(off + 2);
 			off = ReadFromBufShorts(obj, ["baseCapacity", "totalFlow"], buf, off + 6);
 			[off, obj["flow"]] = ReadFromBufShortArray(buf, 5, off);
-			off = ReadFromBufFloats(obj, ["freeSpeedTime", "totalAverageTime"],  buf, off);
+			off = ReadFromBufFloats(obj, ["freeSpeedTime", "totalAverageTime"], buf, off);
 			[off, obj["averageTime"]] = ReadFromBufFloatArray(buf, 5, off);
 			[off, obj["averageToll"]] = ReadFromBufFloatArray(buf, 5, off);
-			off = ReadFromBufFloats(obj, ["averageVehicles", "averageQueue", "averageStops"],  buf, off);
+			off = ReadFromBufFloats(obj, ["averageVehicles", "averageQueue", "averageStops"], buf, off);
 			[off, obj["modelParameters"]] = ReadFromBufFloatArray(buf, 8, off);
-			off = ReadFromBufFloats(obj, ["fuel", "HC", "CO", "NO", "CO2", "PM", "totalEnergy"],  buf, off);
-			off = ReadFromBufFloats(obj, ["expectedCrashes", "expectedTopInjurt", "fatelCrashes", "crashLowDamage", "crashMedDamage", "crashHighDamage"],  buf, off);
+			off = ReadFromBufFloats(obj, ["fuel", "HC", "CO", "NO", "CO2", "PM", "totalEnergy"], buf, off);
+			off = ReadFromBufFloats(obj, ["expectedCrashes", "expectedTopInjurt", "fatelCrashes", "crashLowDamage", "crashMedDamage", "crashHighDamage"], buf, off);
 			periodObj.edges[index] = obj;
 		}
 
@@ -1034,7 +1034,7 @@ function ReadFile_Conditions(buf){
  * @param buf (nodejs buffer) The nodejs buffer to read from
  * @return (table) The summary file as a table/object
  */
-function ReadFile_paths(buf){
+function ReadFile_paths(buf) {
 	let out = {};
 
 	// define and read initial values
@@ -1043,7 +1043,7 @@ function ReadFile_paths(buf){
 	let off = ReadFromBufShorts(out, ["maxOriginID", "originCount", "maxDestID", "edgeCount", "maxEdgeID"], buf, 6);
 
 	out.periods = new Array(out.periodCount);
-	for(let i = 0; i < out.periodCount; i++){
+	for (let i = 0; i < out.periodCount; i++) {
 		let periodObj = {};
 		periodObj.index = buf.readInt16LE(off + 0)
 		const periodVal2 = 1; // off + 2
@@ -1051,7 +1051,7 @@ function ReadFile_paths(buf){
 		off += 4;
 
 		periodObj.paths = new Array(periodObj.treeCount);
-		for(let ii = 0; ii < periodObj.treeCount; ii++){
+		for (let ii = 0; ii < periodObj.treeCount; ii++) {
 			let treeObj = {};
 			treeObj.treeVal1 = buf.readInt8(off + 0);
 			treeObj.proportion = buf.readFloatLE(off + 1);
@@ -1061,12 +1061,12 @@ function ReadFile_paths(buf){
 			treeObj.origins = new Array(out.maxOriginID).fill([]);
 			treeObj.edges = new Array(out.maxEdgeID).fill([]);
 
-			for(let Q = 0; Q < out.originCount; Q++){
+			for (let Q = 0; Q < out.originCount; Q++) {
 				const indx = buf.readInt16LE(off);
 				[off, treeObj.origins[Q]] = ReadFromBufShortArray(buf, out.maxDestID, off + 2);
 			}
 
-			for(let Q = 0; Q < out.edgeCount; Q++){
+			for (let Q = 0; Q < out.edgeCount; Q++) {
 				const indx = buf.readInt16LE(off);
 				[off, treeObj.edges[Q]] = ReadFromBufShortArray(buf, out.maxDestID, off + 2);
 			}
@@ -1091,7 +1091,7 @@ function ReadFile_paths(buf){
  * @param buf (nodejs buffer) The nodejs buffer to read from
  * @return (table) The summary file as a table/object
  */
-function ReadFile_TripProbes(buf, args){
+function ReadFile_TripProbes(buf, args) {
 
 	const len = buf.readInt32LE(0);
 	const pairC = buf.readInt32LE(4);
@@ -1105,37 +1105,37 @@ function ReadFile_TripProbes(buf, args){
 	let stride = 1;
 	let time0 = 0;
 	let time1 = 999999999;
-	if(args){
-		if(args.origin) // which origin node to filter by
+	if (args) {
+		if (args.origin) // which origin node to filter by
 			restBeg = args.origin;
-		if(args.dest) // which destination node to filter by
+		if (args.dest) // which destination node to filter by
 			restEnd = args.dest;
-		if(args.skip) // how many logs to skip
+		if (args.skip) // how many logs to skip
 			skip = args.skip;
-		if(args.max) // the max number of logs to collect
+		if (args.max) // the max number of logs to collect
 			max = args.max;
-		if(args.stride) // what percentage to collect (1/stride)
+		if (args.stride) // what percentage to collect (1/stride)
 			stride = args.stride;
-		if(args.time0) // the min time to collect
+		if (args.time0) // the min time to collect
 			time0 = args.time0;
-		if(args.time1) // the max time to collect, exclusive
+		if (args.time1) // the max time to collect, exclusive
 			time1 = args.time1;
 	}
 
 	// find out how many we want
 	let totalPairs = len;
-	if(restBeg != -1 || restEnd != -1){
+	if (restBeg != -1 || restEnd != -1) {
 		totalPairs = 0;
-		for(let i = 0; i < pairC; i++){
+		for (let i = 0; i < pairC; i++) {
 			const beg = buf.readInt16LE(off + 0);
 			const end = buf.readInt16LE(off + 2);
 			const quant = buf.readInt32LE(off + 4);
 			const time0 = buf.readFloatLE(off + 8);
 			const time1 = buf.readFloatLE(off + 12);
 
-			if((restBeg == -1 || beg == restBeg) && (restEnd == -1 || end == restEnd)){
+			if ((restBeg == -1 || beg == restBeg) && (restEnd == -1 || end == restEnd)) {
 				totalPairs += quant;
-				if(restBeg != -1 && restEnd != -1){
+				if (restBeg != -1 && restEnd != -1) {
 					off += (pairC - i) * 16;
 					break;
 				}
@@ -1143,11 +1143,11 @@ function ReadFile_TripProbes(buf, args){
 
 			off += 16;
 		}
-	}else if(!args || (!args.origin && !args.dest)){
-		let out = {time0: 999999999, time1:0, total:0};
+	} else if (!args || (!args.origin && !args.dest)) {
+		let out = { time0: 999999999, time1: 0, total: 0 };
 
 		out.pairs = Array(pairC).fill({});
-		for(let i = 0; i < pairC; i++){
+		for (let i = 0; i < pairC; i++) {
 			let obj = {};
 			obj.beg = buf.readInt16LE(off + 0);
 			obj.end = buf.readInt16LE(off + 2);
@@ -1165,17 +1165,17 @@ function ReadFile_TripProbes(buf, args){
 
 		return out;
 
-	}else
+	} else
 		off += 16 * pairC;
 
-	let totalMax = Math.max(0, Math.min(max, Math.floor((totalPairs-skip)/stride)));
+	let totalMax = Math.max(0, Math.min(max, Math.floor((totalPairs - skip) / stride)));
 	let out = Array(totalMax);
 
-	if(totalMax == 0)
+	if (totalMax == 0)
 		return out;
 
 	let totalCount = 0;
-	for(let i = 0; i < len; i++){
+	for (let i = 0; i < len; i++) {
 		let entry = {};
 		off = ReadFromBufAny(entry, [
 			"f_Time simulation produced record",
@@ -1193,24 +1193,24 @@ function ReadFile_TripProbes(buf, args){
 		], buf, off);
 
 		// make sure its what we are looking for
-		if(entry["Time simulation produced record"] >= time0
+		if (entry["Time simulation produced record"] >= time0
 			&& (restBeg == -1 || entry["Origin node"] == restBeg)
-			&& (restEnd == -1 || entry["Destination node"] == restEnd)){
+			&& (restEnd == -1 || entry["Destination node"] == restEnd)) {
 
 			// limit the time
-			if(entry["Time simulation produced record"] >= time1){
-				out = out.slice(0, Math.floor((totalCount-skip)/stride) + 1);
+			if (entry["Time simulation produced record"] >= time1) {
+				out = out.slice(0, Math.floor((totalCount - skip) / stride) + 1);
 				break;
 			}
 
 			// skip some number of elements
-			if(totalCount >= skip){
+			if (totalCount >= skip) {
 				const indx = totalCount - skip;
 				// only get a percentage
-				if(indx % stride == 0){
-					out[indx/stride] = entry;
+				if (indx % stride == 0) {
+					out[indx / stride] = entry;
 					// get only a limited amount
-					if(indx/stride + 1 >= max){
+					if (indx / stride + 1 >= max) {
 						break;
 					}
 				}
@@ -1235,7 +1235,7 @@ function ReadFile_TripProbes(buf, args){
  * @param buf (nodejs buffer) The nodejs buffer to read from
  * @return (table) The summary file as a table/object
  */
-function ReadFile_EdgeProbes(buf, args){
+function ReadFile_EdgeProbes(buf, args) {
 	let off = 0;
 
 	const lineC = buf.readInt32LE(off + 0);
@@ -1245,42 +1245,45 @@ function ReadFile_EdgeProbes(buf, args){
 	off += 10;
 
 	// find the parameters or defaults
-	let restEdge = -2;
+	let restEdge = -1;
 	let skip = 0;
 	let max = 500;
 	let stride = 1;
 	let time0 = 0;
 	let time1 = 999999999;
-	if(args){
-		if(args.edge) // which edge to look for
+
+	if (args) {
+		if (args.edge) // which edge to look for
 			restEdge = args.edge;
-		if(args.skip) // how many logs to skip
+		if (args.skip) // how many logs to skip
 			skip = args.skip;
-		if(args.max) // the max number of logs to collect
+		if (args.max) // the max number of logs to collect
 			max = args.max;
-		if(args.stride) // what percentage to collect (1/stride)
+		if (args.stride) // what percentage to collect (1/stride)
 			stride = args.stride;
-		if(args.time0) // the min time to collect
+		if (args.time0) // the min time to collect
 			time0 = args.time0;
-		if(args.time1) // the max time to collect, exclusive
+		if (args.time1) // the max time to collect, exclusive
 			time1 = args.time1;
 	}
 
 	// get the total number of edges for the targeted edge
 	let totalEdges = lineC;
-	if(restEdge == -2){
+
+
+	if (restEdge == -2) {
 		let out = {};
 		out.time0 = 999999999;
 		out.time1 = 0;
 		out.total = 0;
 		out.edges = Array(edgeC);
-		for(let i = 0; i < edgeC; i++){
+		for (let i = 0; i < edgeC; i++) {
 			const edgeID = buf.readInt16LE(off + 0);
 			const quant = buf.readInt32LE(off + 2);
 			const time0 = buf.readFloatLE(off + 6);
 			const time1 = buf.readFloatLE(off + 10);
 
-			out.edges[i] = {edgeID : edgeID, numOfLogs : quant, time0:time0, time1:time1};
+			out.edges[i] = { edgeID: edgeID, numOfLogs: quant, time0: time0, time1: time1 };
 			out.time0 = Math.min(out.time0, time0);
 			out.time1 = Math.max(out.time1, time1);
 			out.total += quant;
@@ -1289,13 +1292,13 @@ function ReadFile_EdgeProbes(buf, args){
 		}
 		return out;
 
-	}else if(restEdge != -1){
+	} else if (restEdge != -1) {
 		totalEdges = 0;
-		for(let i = 0; i < edgeC; i++){
+		for (let i = 0; i < edgeC; i++) {
 			const edgeID = buf.readInt16LE(off + 0);
 			const quant = buf.readInt32LE(off + 2);
 
-			if(edgeID == restEdge){
+			if (edgeID == restEdge) {
 				totalEdges = quant;
 				off += (edgeC - i) * 14;
 				break;
@@ -1303,80 +1306,93 @@ function ReadFile_EdgeProbes(buf, args){
 
 			off += 14;
 		}
-	}else
+	} else
 		off += edgeC * 14;
+
 
 	//const format11 = "bfibsbsbssffffffffffffffffffffffff";
 	//const format21 = "bfibbsbssfffffffffffffffffffffffff";
 
-	//console.log("" + lineC + " " + edgeC + " " + edgeMin + " " + edgeMax);
-
-	let totalMax = Math.max(0, Math.min(max, Math.floor((totalEdges-skip)/stride)));
+	let totalMax = Math.max(0, Math.min(max, Math.floor((totalEdges - skip) / stride)));
 	let out = Array(totalMax);
 
-	if(totalMax == 0)
+	if (totalMax == 0)
 		return out;
 
+
 	let totalCount = 0;
-	for(let i = 0; i < lineC; i++){
+	console.log(lineC);
+	let objs = {};
+	for (let i = 0; i < lineC; i++) {
 		let obj = {};
 		const type = buf.readInt8(off);
 		obj.type = type;
-		if(type == 11){
+		if (type == 11) {
 			off = ReadFromBufAny(obj,
-			[
-				"f_time", "i_vehicleID", "b_vehicleClass", "s_edge", "b_lane",
-				"s_nextEdge", "b_nextLane", "s_origin", "s_dest",
-				"f_schedDepart", "f_departTime", "f_edgeTime", "f_delay",
-				"f_stopDelay", "f_stops", "f_dist", "f_avgSpeed", "f_finalSpeed",
-				"f_fuel", "f_HC", "f_CO", "f_NO", "f_CO2", "f_PM", "f_energy",
-				"f_expectCrash", "f_expectHighInjury", "f_expectFatal",
-				"f_crashLow", "f_crashMed", "f_crashHigh", "f_toll", "f_noise"
-			],
-			buf, off + 1);
-		}else if(type == 21){
+				[
+					"f_time", "i_vehicleID", "b_vehicleClass", "s_edge", "b_lane",
+					"s_nextEdge", "b_nextLane", "s_origin", "s_dest",
+					"f_schedDepart", "f_departTime", "f_edgeTime", "f_delay",
+					"f_stopDelay", "f_stops", "f_dist", "f_avgSpeed", "f_finalSpeed",
+					"f_fuel", "f_HC", "f_CO", "f_NO", "f_CO2", "f_PM", "f_energy",
+					"f_expectCrash", "f_expectHighInjury", "f_expectFatal",
+					"f_crashLow", "f_crashMed", "f_crashHigh", "f_toll", "f_noise"
+				],
+				buf, off + 1);
+		} else if (type == 21) {
 			off = ReadFromBufAny(obj,
-			[
-				"f_time", "i_vehicleID", "b_vehicleClass", "b_vehicleType",
-				"s_edge", "b_lane", "s_origin", "s_dest", "n1_departSched",
-				"n1_departTime", "n1_edgeTime", "n3_delay", "n3_stopDelay",
-				"n3_stops", "n3_dist", "n1space", "n1_speed", "f_accel",
-				"n5_fuel", "n5_energyRate", "n5_HC", "n5_CO", "n5_NO", "n5_CO2", "n5_PM",
-				"c1_expectCrash", "c1_expectHighInjury", "c1_expectFatal",
-				"c1_crashLow", "c1_crashMed", "c1_crashHigh", "n2_toll", "n2_noise"
-			],
-			buf, off + 1);
-		}else{
+				[
+					"f_time", "i_vehicleID", "b_vehicleClass", "b_vehicleType",
+					"s_edge", "b_lane", "s_origin", "s_dest", "n1_departSched",
+					"n1_departTime", "n1_edgeTime", "n3_delay", "n3_stopDelay",
+					"n3_stops", "n3_dist", "n1space", "n1_speed", "f_accel",
+					"n5_fuel", "n5_energyRate", "n5_HC", "n5_CO", "n5_NO", "n5_CO2", "n5_PM",
+					"c1_expectCrash", "c1_expectHighInjury", "c1_expectFatal",
+					"c1_crashLow", "c1_crashMed", "c1_crashHigh", "n2_toll", "n2_noise"
+				],
+				buf, off + 1);
+		} else {
 			console.log("" + type + " at " + off + ", " + i);
 			return out;
 		}
 
-		// make sure its what we are looking for
-		if((restEdge == -1 || obj.edge == restEdge) && obj.time >= time0){
+		// Convert `f_time` to an integer second
+		let second = Math.floor(obj.time);
 
-			// limit the time
-			if(obj.time >= time1){
-				out = out.slice(0, Math.floor((totalCount-skip)/stride) + 1);
-				break;
-			}
-
-			// skip some number of elements
-			if(totalCount >= skip){
-				const indx = totalCount - skip;
-				// only get a percentage
-				if(indx % stride == 0){
-					out[indx/stride] = obj;
-					// get only a limited amount
-					if(indx/stride + 1 >= max){
-						break;
-					}
-				}
-			}
-
-			totalCount++;
+		// Group objects by second
+		if (!objs[second]) {
+			objs[second] = [];
 		}
-	}
+		objs[second].push(obj);
+		
 
+		// make sure its what we are looking for
+		// if((restEdge == -1 || obj.edge == restEdge) && obj.time >= time0){
+
+		// 	// limit the time
+		// 	if(obj.time >= time1){
+		// 		out = out.slice(0, Math.floor((totalCount-skip)/stride) + 1);
+		// 		break;
+		// 	}
+
+		// 	// skip some number of elements
+		// 	if(totalCount >= skip){
+		// 		const indx = totalCount - skip;
+		// 		// only get a percentage
+		// 		if(indx % stride == 0){
+		// 			out[indx/stride] = obj;
+		// 			// get only a limited amount
+		// 			if(indx/stride + 1 >= max){
+		// 				break;
+		// 			}
+		// 		}
+		// 	}
+
+		// 	totalCount++;
+		// }
+	}
+	console.log(objs[21]);
+	// console.log(objs);
 	return out;
 }
 
@@ -1389,8 +1405,8 @@ function ReadFile_EdgeProbes(buf, args){
  * @return (table) The interpretation of the file from the buffer
  * @throws Probably something if you use this wrong
  */
-function ReadFile_Any(buf, fileType, args){
-	switch(fileType){
+function ReadFile_Any(buf, fileType, args) {
+	switch (fileType) {
 		case FILE_OVERVIEW: return ReadFile_Overview(buf);
 		case FILE_NODES: return ReadFile_nodes(buf);
 		case FILE_EDGES: return ReadFile_edges(buf);
@@ -1412,7 +1428,7 @@ function ReadFile_Any(buf, fileType, args){
  * @param line (string) The line to split into arguments
  * @return (string[]) The input split by its whitespaces
  */
-function ReadLineArgs(line){
+function ReadLineArgs(line) {
 	return line.split(/\s+/);
 }
 
@@ -1427,8 +1443,8 @@ function ReadLineArgs(line){
  * @param off (int) The starting offset in the buff to write to
  * @return (int) The resulting offset in the buffer after all writes
  */
-function CopyToBufFloats(args, indx, count, buf, off){
-	for(let i = indx; i < indx + count; i++)
+function CopyToBufFloats(args, indx, count, buf, off) {
+	for (let i = indx; i < indx + count; i++)
 		off = buf.writeFloatLE(parseFloat(args[i]), off);
 	return off;
 }
@@ -1444,8 +1460,8 @@ function CopyToBufFloats(args, indx, count, buf, off){
  * @param off (int) The starting offset in the buff to write to
  * @return (int) The resulting offset in the buffer after all writes
  */
-function CopyToBufInts(args, indx, count, buf, off){
-	for(let i = indx; i < indx + count; i++)
+function CopyToBufInts(args, indx, count, buf, off) {
+	for (let i = indx; i < indx + count; i++)
 		off = buf.writeInt32LE(parseInt(args[i]), off);
 	return off;
 }
@@ -1461,8 +1477,8 @@ function CopyToBufInts(args, indx, count, buf, off){
  * @param off (int) The starting offset in the buff to write to
  * @return (int) The resulting offset in the buffer after all writes
  */
-function CopyToBufShorts(args, indx, count, buf, off){
-	for(let i = indx; i < indx + count; i++)
+function CopyToBufShorts(args, indx, count, buf, off) {
+	for (let i = indx; i < indx + count; i++)
 		off = buf.writeInt16LE(parseInt(args[i]), off);
 	return off;
 }
@@ -1475,72 +1491,72 @@ function CopyToBufShorts(args, indx, count, buf, off){
  * @param off (int) The offset in the buffer to write to
  * @return (int) The resulting offset in the buffer
  */
-function WriteString(buf, str, off){
-  buf.writeInt8(str.length, off);
-  buf.write(str, off + 1, str.length + 1, "ascii");
-  return off + str.length + 1;
+function WriteString(buf, str, off) {
+	buf.writeInt8(str.length, off);
+	buf.write(str, off + 1, str.length + 1, "ascii");
+	return off + str.length + 1;
 }
 
 /*
  *
  * a bunch of nonsense
  */
-function CopyToBufLine(line, buf, off, format){
+function CopyToBufLine(line, buf, off, format) {
 	let curOff = 0;
 	let curLen = 1;
 	let lastCh = "b";
 	let lastNum = 0;
-	for(let i = 0; i < format.length; i++){
+	for (let i = 0; i < format.length; i++) {
 		let c = format.charCodeAt(i);
-		if(c <= "9".charCodeAt(0)){ // set length from [0, 9]
+		if (c <= "9".charCodeAt(0)) { // set length from [0, 9]
 			curLen = c - "0".charCodeAt(0);
-		}else if(c <= "Z".charCodeAt(0)){ // set length from [10, ...]
+		} else if (c <= "Z".charCodeAt(0)) { // set length from [10, ...]
 			curLen = 10 + c - "A".charCodeAt(0);
-		}else{ // read value
+		} else { // read value
 			let val = line.substring(curOff, curOff + curLen);
 			let ch = format.charAt(i);
-			if(ch != "_"){ // "_" means ignore a value
+			if (ch != "_") { // "_" means ignore a value
 				let num;
-				if(ch == "*"){
+				if (ch == "*") {
 					ch = lastCh;
 					num = lastNum;
-				}else if(val.charAt(0) == "*") // invalid value
+				} else if (val.charAt(0) == "*") // invalid value
 					num = -1;
-				else if(ch == "c" || ch == "n"){
+				else if (ch == "c" || ch == "n") {
 					const parts = val.split(".");
-					const deci = format.charCodeAt(i+1) - 48;
+					const deci = format.charCodeAt(i + 1) - 48;
 					const pow = Math.pow(10, deci);
 					num = parseInt(parts[0]) * pow + parseInt(parts[1].split(0, deci));
 					i++;
-				}else if(ch == "s" || ch == "i" || ch == "b") // short
+				} else if (ch == "s" || ch == "i" || ch == "b") // short
 					num = parseInt(val);
-				else if(ch == "f") // float
+				else if (ch == "f") // float
 					num = parseFloat(val);
 
-				switch(ch){
+				switch (ch) {
 					case "s": // short
 						off = buf.writeInt16LE(num, off);
-					break;
+						break;
 					case "i": // int
 						off = buf.writeInt32LE(num, off);
-					break;
+						break;
 					case "b": // byte
 						off = buf.writeInt8(num, off);
-					break;
+						break;
 					case "f": // float
 						off = buf.writeFloatLE(num, off);
-					break;
+						break;
 					case "c":
 						off = buf.writeUIntLE(num, off, 2);
-					break;
+						break;
 					case "n":
 						off = buf.writeUIntLE(num, off, 3);
-					break;
+						break;
 				}
 				lastCh = ch;
 				lastNum = num;
 			}
-			if(c != "*".charCodeAt(0))
+			if (c != "*".charCodeAt(0))
 				curOff += curLen;
 		}
 	}
@@ -1554,85 +1570,85 @@ function CopyToBufLine(line, buf, off, format){
  * @param off (int) The current/starting offset of the buffer to write to
  * @param format (string) The format to use
  */
-function CopyToBufArgs(args, buf, off, format){
+function CopyToBufArgs(args, buf, off, format) {
 	let curArg = 0;
 	let lastCh = "b";
 	let lastNum = 0;
-	for(let i = 0; i < format.length; i++){
+	for (let i = 0; i < format.length; i++) {
 		let c = format.charCodeAt(i);
 		let ch = format.charAt(i);
-		if(c >= "a".charCodeAt(0) || ch == "_" || ch == "*"){ // read value
-			if(curArg >= args.length)
+		if (c >= "a".charCodeAt(0) || ch == "_" || ch == "*") { // read value
+			if (curArg >= args.length)
 				return off;
 			let val = args[curArg];
-			if(ch != "_"){ // "_" means ignore a value
+			if (ch != "_") { // "_" means ignore a value
 				let num;
-				if(ch == "*"){
+				if (ch == "*") {
 					ch = lastCh;
 					num = lastNum;
-				}else if(val.charAt(0) == "*") // invalid value
+				} else if (val.charAt(0) == "*") // invalid value
 					num = -1;
-				else if(ch == "c" || ch == "n"){
+				else if (ch == "c" || ch == "n") {
 					const parts = val.split(".");
-					const deci = format.charCodeAt(i+1) - 48;
+					const deci = format.charCodeAt(i + 1) - 48;
 					const pow = Math.pow(10, deci);
 					num = parseInt(parts[0]) * pow + parseInt(parts[1].split(0, deci));
 					i++;
-				}else if(ch == "s" || ch == "i" || ch == "b") // short
+				} else if (ch == "s" || ch == "i" || ch == "b") // short
 					num = parseInt(val);
-				else if(ch == "f") // float
+				else if (ch == "f") // float
 					num = parseFloat(val);
 
-				switch(ch){
+				switch (ch) {
 					case "s": // short
 						off = buf.writeInt16LE(num, off);
-					break;
+						break;
 					case "i": // int
 						off = buf.writeInt32LE(num, off);
-					break;
+						break;
 					case "b": // byte
 						off = buf.writeInt8(num, off);
-					break;
+						break;
 					case "f": // float
 						off = buf.writeFloatLE(num, off);
-					break;
+						break;
 					case "c":
 						off = buf.writeUIntLE(num, off, 2);
-					break;
+						break;
 					case "n":
 						off = buf.writeUIntLE(num, off, 3);
-					break;
+						break;
 				}
 				lastNum = num;
 				lastCh = ch;
 			}
-			if(c != "*".charCodeAt(0))
+			if (c != "*".charCodeAt(0))
 				curArg++;
 		}
 	}
 	return off;
 }
 
-function GetLineFormatSize(format){
+function GetLineFormatSize(format) {
 	let size = 0;
 	let lastCh = "b";
-	for(let i = 0; i < format.length; i++){
+	for (let i = 0; i < format.length; i++) {
 		let ch = format.charAt(i);
-		if(ch == "*")
+		if (ch == "*")
 			ch = lastCh;
-		switch(ch){
+		switch (ch) {
 			case "b":
 				size += 1;
-			break;
+				break;
 			case "s": case "c":
 				size += 2;
-			break;
+				break;
 			case "n":
 				size += 3;
-			break;
+				break;
 			case "i": case "f":
 				size += 4;
-			break;
+				break;
 		}
 		lastCh = ch;
 	}
@@ -1647,23 +1663,23 @@ function GetLineFormatSize(format){
  * @param sim_id (int) The simulation ID to look in
  * @return (int) Whether or not there exist a file
  */
-async function FileExists(fileType, sim_id){
-	try{
+async function FileExists(fileType, sim_id) {
+	try {
 		const [ret] = await promisePool.query("SELECT file_index FROM text_files WHERE file_type = ? AND file_sim = ?", [fileType, sim_id]);
-		if(ret.length != 0)
+		if (ret.length != 0)
 			return 1;
-	}catch(e){
+	} catch (e) {
 		console.error(e);
 		return 1;
 	}
 	return 0;
 }
 
-async function FileAdd(fileType, buf, user_id, sim_id){
-	try{
+async function FileAdd(fileType, buf, user_id, sim_id) {
+	try {
 		const query = "INSERT INTO text_files (file_type, file_content, file_owner, file_sim) VALUES (?, ?, ?, ?)";
 		await promisePool.query(query, [fileType, buf, user_id, sim_id]);
-	}catch(e){
+	} catch (e) {
 		console.error("Couldnt add file: ", e);
 	}
 }
@@ -1676,33 +1692,33 @@ async function FileAdd(fileType, buf, user_id, sim_id){
  * @param sim_id (int) The id of the simulation this file is a part of
  * @param lines (string[]) The file as an array of lines
  */
-async function WriteFile_summary(user_id, sim_id, lines){
+async function WriteFile_summary(user_id, sim_id, lines) {
 
 	// make sure doesn't already exist
-	if(await FileExists(FILE_SUMMARY, sim_id))
+	if (await FileExists(FILE_SUMMARY, sim_id))
 		return;
 
 
 	let bonusLen = 0;
 	let lineA0 = -1, lineA1 = -1, lineB0 = -1, lineB1 = -1;
-	for(let i = 0; i < lines.length; i++){
-		if(lineA0 == -1){
-			if(lines[i].includes("Total Statistics:"))
+	for (let i = 0; i < lines.length; i++) {
+		if (lineA0 == -1) {
+			if (lines[i].includes("Total Statistics:"))
 				lineA0 = i + 1;
-		}else if(lineA1 == -1){
-			if(lines[i].trim().length == 0){
+		} else if (lineA1 == -1) {
+			if (lines[i].trim().length == 0) {
 				lineA1 = i;
-			}else{
+			} else {
 				bonusLen += lines[i].split("-")[1].trim().length + 1;
 			}
-		}else if(lineB0 == -1){
-			if(lines[i].includes("Average Statistics:"))
+		} else if (lineB0 == -1) {
+			if (lines[i].includes("Average Statistics:"))
 				lineB0 = i + 1;
-		}else if(lineB1 == -1){
-			if(lines[i].trim().length == 0){
+		} else if (lineB1 == -1) {
+			if (lines[i].trim().length == 0) {
 				lineB1 = i;
 				break;
-			}else{
+			} else {
 				bonusLen += lines[i].split("-")[1].trim().length + 1;
 			}
 		}
@@ -1717,11 +1733,11 @@ async function WriteFile_summary(user_id, sim_id, lines){
 	off = buf.writeInt16LE(lenA, off);
 	off = buf.writeInt16LE(lenB, off);
 
-	for(let i = lineA0; i < lineA1; i++){
+	for (let i = lineA0; i < lineA1; i++) {
 		const line = lines[i];
 		const nums = line.substring(3, 87).trim();
 		const args = ReadLineArgs(nums);
-		for(let ii = 0; ii < 6; ii++)
+		for (let ii = 0; ii < 6; ii++)
 			off = buf.writeFloatLE(parseFloat(args[ii]), off);
 
 		const tag = line.split("-")[1].trim();
@@ -1729,11 +1745,11 @@ async function WriteFile_summary(user_id, sim_id, lines){
 	}
 
 	// write average stats
-	for(let i = lineB0; i < lineB1; i++){
+	for (let i = lineB0; i < lineB1; i++) {
 		const line = lines[i];
 		const nums = line.substring(3, 87).trim();
 		const args = ReadLineArgs(nums);
-		for(let ii = 0; ii < 6; ii++)
+		for (let ii = 0; ii < 6; ii++)
 			off = buf.writeFloatLE(parseFloat(args[ii]), off);
 
 		const tag = line.split("-")[1].trim();
@@ -1752,10 +1768,10 @@ async function WriteFile_summary(user_id, sim_id, lines){
  * @param sim_id (int) The id of the simulation this file is a part of
  * @param lines (string[]) The file as an array of lines
  */
-async function WriteFile_Input1(user_id, sim_id, lines){
+async function WriteFile_Input1(user_id, sim_id, lines) {
 
 	// make sure doesn't already exist
-	if(await FileExists(FILE_NODES, sim_id))
+	if (await FileExists(FILE_NODES, sim_id))
 		return;
 
 
@@ -1765,19 +1781,19 @@ async function WriteFile_Input1(user_id, sim_id, lines){
 	const yScale = parseFloat(initArgs[2]);
 
 	// make sure this is the correct file type
-	if(lines.length != nodeC + 3)
+	if (lines.length != nodeC + 3)
 		return;
 
 	// a line has a base size of 17 + 1
 
 	// count the extra size
 	let bonusSize = 0;
-	for(let i = 0; i < nodeC; i++){
-	  lines[2 + i] = lines[2 + i].trim();
-	  const args = ReadLineArgs(lines[2 + i]);
-	  if(args.length > 5){
-	    bonusSize += args.slice(5).reduce((hoard, next) => (hoard + next.length + 1), 0);
-	  }
+	for (let i = 0; i < nodeC; i++) {
+		lines[2 + i] = lines[2 + i].trim();
+		const args = ReadLineArgs(lines[2 + i]);
+		if (args.length > 5) {
+			bonusSize += args.slice(5).reduce((hoard, next) => (hoard + next.length + 1), 0);
+		}
 	}
 
 	// create the buffer
@@ -1788,7 +1804,7 @@ async function WriteFile_Input1(user_id, sim_id, lines){
 
 	// read the lines
 	let off = 10;
-	for(let i = 0; i < nodeC; i++){
+	for (let i = 0; i < nodeC; i++) {
 		let args = ReadLineArgs(lines[2 + i]);
 		off = buf.writeInt16LE(parseInt(args[0]), off);
 		off = buf.writeFloatLE(parseFloat(args[1]), off);
@@ -1812,10 +1828,10 @@ async function WriteFile_Input1(user_id, sim_id, lines){
  * @param sim_id (int) The id of the simulation this file is a part of
  * @param lines (string[]) The file as an array of lines
  */
-async function WriteFile_Input2(user_id, sim_id, lines){
+async function WriteFile_Input2(user_id, sim_id, lines) {
 
 	// make sure doesn't already exist
-	if(await FileExists(FILE_EDGES, sim_id))
+	if (await FileExists(FILE_EDGES, sim_id))
 		return;
 
 	const initArgs = ReadLineArgs(lines[1]);
@@ -1823,12 +1839,12 @@ async function WriteFile_Input2(user_id, sim_id, lines){
 
 	// count the extra size
 	let bonusSize = 0;
-	for(let i = 0; i < edgeC; i++){
-	  lines[2 + i] = lines[2 + i].trim();
-	  const args = ReadLineArgs(lines[2 + i]);
-	  if(args.length > 20){
-	    bonusSize += args.slice(20).reduce((hoard, next) => (hoard + next.length + 1), 0);
-	  }
+	for (let i = 0; i < edgeC; i++) {
+		lines[2 + i] = lines[2 + i].trim();
+		const args = ReadLineArgs(lines[2 + i]);
+		if (args.length > 20) {
+			bonusSize += args.slice(20).reduce((hoard, next) => (hoard + next.length + 1), 0);
+		}
 	}
 
 	// create the buffer
@@ -1839,7 +1855,7 @@ async function WriteFile_Input2(user_id, sim_id, lines){
 
 	// read the lines
 	let off = 22;
-	for(let i = 0; i < edgeC; i++){
+	for (let i = 0; i < edgeC; i++) {
 		let args = ReadLineArgs(lines[2 + i]);
 
 		off = CopyToBufShorts(args, 0, 3, buf, off);
@@ -1863,10 +1879,10 @@ async function WriteFile_Input2(user_id, sim_id, lines){
  * @param sim_id (int) The id of the simulation this file is a part of
  * @param lines (string[]) The file as an array of lines
  */
-async function WriteFile_Input3(user_id, sim_id, lines){
+async function WriteFile_Input3(user_id, sim_id, lines) {
 
 	// make sure doesn't already exist
-	if(await FileExists(FILE_SIGNALS, sim_id))
+	if (await FileExists(FILE_SIGNALS, sim_id))
 		return;
 
 	const initArgs = ReadLineArgs(lines[1]);
@@ -1877,14 +1893,14 @@ async function WriteFile_Input3(user_id, sim_id, lines){
 
 	// make sure this is the correct file. This is bad due to lack
 	//   of documentation
-	if(lines.length != signalC + 4)
+	if (lines.length != signalC + 4)
 		return;
 
 	// calculate entry variable size
 	let varSize = 0;
-	for(let i = 0; i < signalC; i++){
-	  const args = ReadLineArgs(lines[3 + i].trim());
-	  varSize += 8 * parseInt(args[5]);
+	for (let i = 0; i < signalC; i++) {
+		const args = ReadLineArgs(lines[3 + i].trim());
+		varSize += 8 * parseInt(args[5]);
 	}
 
 	// create the buffer
@@ -1898,7 +1914,7 @@ async function WriteFile_Input3(user_id, sim_id, lines){
 
 	// read the lines
 	let off = 8;
-	for(let i = 0; i < signalC; i++){
+	for (let i = 0; i < signalC; i++) {
 		let args = ReadLineArgs(lines[3 + i]);
 		off = buf.writeFloatLE(parseFloat(args[0]), off);
 		off = buf.writeFloatLE(parseFloat(args[1]), off);
@@ -1908,9 +1924,9 @@ async function WriteFile_Input3(user_id, sim_id, lines){
 		off = buf.writeInt16LE(parseFloat(args[-1]), off);
 		const phaseC = parseFloat(args[5]);
 		off = buf.writeInt8(phaseC, off);
-		for(let ii = 0; ii < phaseC; ii++){
-		  off = buf.writeFloatLE(parseFloat(args[6 + ii*2]), off);
-		  off = buf.writeFloatLE(parseFloat(args[7 + ii*2]), off);
+		for (let ii = 0; ii < phaseC; ii++) {
+			off = buf.writeFloatLE(parseFloat(args[6 + ii * 2]), off);
+			off = buf.writeFloatLE(parseFloat(args[7 + ii * 2]), off);
 		}
 	}
 
@@ -1921,9 +1937,9 @@ async function WriteFile_Input3(user_id, sim_id, lines){
 /*
  * File 10
  */
-async function WriteFile_Overview(user_id, sim_id, lines){
+async function WriteFile_Overview(user_id, sim_id, lines) {
 
-	if(await FileExists(FILE_OVERVIEW, sim_id))
+	if (await FileExists(FILE_OVERVIEW, sim_id))
 		return;
 
 	// formats for the "Signal Timing Plan Summary" section
@@ -1947,9 +1963,9 @@ async function WriteFile_Overview(user_id, sim_id, lines){
 	totalSize += 4;
 	obj.linkFlow = [];
 	totalSize += 4;
-	obj.avgOD1 = {stats:[],totals:[]};
+	obj.avgOD1 = { stats: [], totals: [] };
 	totalSize += 4;
-	obj.avgOD2 = {stats:[],totals:[]};
+	obj.avgOD2 = { stats: [], totals: [] };
 	totalSize += 4;
 	totalSize += 8;
 	obj.garbage = Array(9).fill(0);
@@ -1957,16 +1973,16 @@ async function WriteFile_Overview(user_id, sim_id, lines){
 	obj.incd = [];
 	totalSize += 4;
 
-	for(let i = 0; i < lines.length; i++){
+	for (let i = 0; i < lines.length; i++) {
 		//console.log(lines[i]);
-		if(lines[i].startsWith(" Timing Optimization at")){
-			if(i + 5 >= lines.length) return;
+		if (lines[i].startsWith(" Timing Optimization at")) {
+			if (i + 5 >= lines.length) return;
 			let entry = {};
 			let dotPos = lines[i].indexOf(".");
-			if(dotPos == -1) return;
+			if (dotPos == -1) return;
 			let time = parseInt(lines[i].substring(23, dotPos));
 			let id = parseInt(ReadLineArgs(lines[i].trim())[7]);
-			if(time == NaN || id == NaN) return;
+			if (time == NaN || id == NaN) return;
 			entry.time = time;
 			entry.signal = id;
 			totalSize += 8;
@@ -1974,45 +1990,45 @@ async function WriteFile_Overview(user_id, sim_id, lines){
 			i += 5;
 			totalSize += 4;
 			entry.a = [];
-			while(lines[i].trim().length > 0){
+			while (lines[i].trim().length > 0) {
 				let lineArgs = ReadLineArgs(lines[i].trim());
-				if(lineArgs.length != 17) return;
+				if (lineArgs.length != 17) return;
 				entry.a.push(lineArgs);
 				totalSize += sformat1Size;
 				i++;
 			}
 			// read the second section of stuff
-			i+=4;
-			if(i >= lines.length) return;
+			i += 4;
+			if (i >= lines.length) return;
 			totalSize += 4;
 			entry.b = [];
-			while(lines[i].trim().length > 0){
+			while (lines[i].trim().length > 0) {
 				let lineArgs = ReadLineArgs(lines[i].trim());
-				if(lineArgs.length != 9) return;
+				if (lineArgs.length != 9) return;
 				entry.b.push(lineArgs);
 				totalSize += sformat2Size;
 				i++;
 			}
 			obj.signals.push(entry);
-		}else if(lines[i].startsWith(" LINK FLOW SUMMARIES AT TIME:")){
+		} else if (lines[i].startsWith(" LINK FLOW SUMMARIES AT TIME:")) {
 			let dotPos = lines[i].indexOf(".");
 			let time = parseInt(lines[i].substring(29), dotPos);
-			if(time == NaN) return;
+			if (time == NaN) return;
 			let entry = {};
 			entry.time = time;
 			totalSize += 4;
 			i += 6;
-			if(i >= lines.length) return;
+			if (i >= lines.length) return;
 			entry.edges = [];
 			totalSize += 4;
-			while(lines[i].trim().length > 0){
+			while (lines[i].trim().length > 0) {
 				let name = lines[i].substring(19, 19 + 19).trim();
 				let notName = lines[i].substring(0, 19) + lines[i].substring(19 + 19);
 				let lineArgs = ReadLineArgs(notName.trim());
-				if(lineArgs.length != 18) return;
+				if (lineArgs.length != 18) return;
 				entry.edges.push({
-					name : name,
-					a : lineArgs
+					name: name,
+					a: lineArgs
 				});
 				totalSize += lfformatSize + name.length + 1; // name is 19 bytes
 				i++;
@@ -2021,76 +2037,76 @@ async function WriteFile_Overview(user_id, sim_id, lines){
 			i++;
 			totalSize += 4;
 			entry.b = Array(10);
-			for(let q = 0; q < 10; q++, i++){
+			for (let q = 0; q < 10; q++, i++) {
 				entry.b[q] = parseFloat(lines[i].substring(27, 40).trim());
-				if(entry.b[q] == NaN) return;
-				if(q == 3) i++; // skip the random empty line
+				if (entry.b[q] == NaN) return;
+				if (q == 3) i++; // skip the random empty line
 				totalSize += 4;
 			}
 			obj.linkFlow.push(entry);
 
-		}else if(lines[i].startsWith(" AVERAGE/TOTAL O-D TRIP TIMES/DISTANCES BY VEHICLE TYPE")){
+		} else if (lines[i].startsWith(" AVERAGE/TOTAL O-D TRIP TIMES/DISTANCES BY VEHICLE TYPE")) {
 			i += 6;
-			if(i >= lines.length) return;
+			if (i >= lines.length) return;
 			totalSize += 4;
-			while(lines[i].trim().length > 0){
+			while (lines[i].trim().length > 0) {
 				let lineArgs = ReadLineArgs(lines[i].trim());
-				if(lineArgs.length != 16) return;
+				if (lineArgs.length != 16) return;
 				obj.avgOD1.stats.push(lineArgs);
 				totalSize += avgODformat1Size;
 				i++;
 			}
 			i++;
 			totalSize += 4;
-			while(lines[i].trim().length > 0){
-				if(!lines[i].startsWith(" - Vehicle class :"))
+			while (lines[i].trim().length > 0) {
+				if (!lines[i].startsWith(" - Vehicle class :"))
 					break;
 
 				const clas = parseInt(lines[i].substring(18, 28));
-				const name = lines[i].substring(29, 29+13).trim();
+				const name = lines[i].substring(29, 29 + 13).trim();
 				const val = lines[i].substring(43);
 
-				if(!obj.avgOD1.totals[clas]){
-					obj.avgOD1.totals[clas] = {"class": clas, "Total Veh-Km":0, "Total Veh-Hrs":0};
+				if (!obj.avgOD1.totals[clas]) {
+					obj.avgOD1.totals[clas] = { "class": clas, "Total Veh-Km": 0, "Total Veh-Hrs": 0 };
 					totalSize += 12;
 				}
 
 				obj.avgOD1.totals[clas][name] = val;
 				i++;
 			}
-		}else if(lines[i].startsWith(" AVERAGE/TOTAL O-D TRIP TIMES/DISTANCES FOR ALL VEHICLE CLASSES")){
+		} else if (lines[i].startsWith(" AVERAGE/TOTAL O-D TRIP TIMES/DISTANCES FOR ALL VEHICLE CLASSES")) {
 			i += 5;
-			if(i >= lines.length) return;
+			if (i >= lines.length) return;
 			totalSize += 4;
-			while(lines[i+2].trim().length > 0){
+			while (lines[i + 2].trim().length > 0) {
 				let lineArgs = ReadLineArgs(lines[i].trim());
-				if(lineArgs.length != avgODformat2.length) return;
+				if (lineArgs.length != avgODformat2.length) return;
 				obj.avgOD2.stats.push(lineArgs);
 				totalSize += avgODformat2Size;
 				i++;
 			}
-			obj.avgOD2.totals[0] = parseFloat(lines[i+0].substring(44).trim());
-			obj.avgOD2.totals[1] = parseFloat(lines[i+1].substring(44).trim());
-		}else if(lines[i].startsWith(" Sum of the total trip time     =")){
+			obj.avgOD2.totals[0] = parseFloat(lines[i + 0].substring(44).trim());
+			obj.avgOD2.totals[1] = parseFloat(lines[i + 1].substring(44).trim());
+		} else if (lines[i].startsWith(" Sum of the total trip time     =")) {
 			const lineArgs = ReadLineArgs(lines[i].substring(33).trim());
 			obj.garbage[0] = parseFloat(lineArgs[0]);
 			obj.garbage[1] = parseFloat(lineArgs[2]);
-		}else if(lines[i].startsWith(" Average          trip time     =")){
+		} else if (lines[i].startsWith(" Average          trip time     =")) {
 			const lineArgs = ReadLineArgs(lines[i].substring(33).trim());
 			obj.garbage[2] = parseFloat(lineArgs[0]);
 			obj.garbage[3] = parseFloat(lineArgs[2]);
-		}else if(lines[i].startsWith("  Total demand to enter network =")){
+		} else if (lines[i].startsWith("  Total demand to enter network =")) {
 			obj.garbage[4] = parseInt(lines[i].substring(33).trim());
-		}else if(lines[i].startsWith("  Vehicles eligible to enter    =")){
+		} else if (lines[i].startsWith("  Vehicles eligible to enter    =")) {
 			obj.garbage[5] = parseInt(lines[i].substring(33).trim());
-		}else if(lines[i].startsWith("  Vehicles in their driveways   =")){
+		} else if (lines[i].startsWith("  Vehicles in their driveways   =")) {
 			obj.garbage[6] = parseInt(lines[i].substring(33).trim());
-		}else if(lines[i].startsWith("  Vehicles left on network      =")){
+		} else if (lines[i].startsWith("  Vehicles left on network      =")) {
 			obj.garbage[7] = parseInt(lines[i].substring(33).trim());
-		}else if(lines[i].startsWith("  Vehicles that completed trip  =")){
+		} else if (lines[i].startsWith("  Vehicles that completed trip  =")) {
 			obj.garbage[8] = parseInt(lines[i].substring(33).trim());
-		}else if(lines[i].startsWith(" INCIDENT")){
-			if(i + 2 >= lines.length) return;
+		} else if (lines[i].startsWith(" INCIDENT")) {
+			if (i + 2 >= lines.length) return;
 			const splits = ReadLineArgs(lines[i].trim());
 			let entry = {};
 			entry.id = parseInt(splits[1]);
@@ -2114,41 +2130,41 @@ async function WriteFile_Overview(user_id, sim_id, lines){
 
 	// write the traffic signal stuff
 	off = buf.writeInt32LE(obj.signals.length, off);
-	for(let i = 0; i < obj.signals.length; i++){
+	for (let i = 0; i < obj.signals.length; i++) {
 		off = buf.writeInt16LE(obj.signals[i].time, off);
 		off = buf.writeInt16LE(obj.signals[i].signal, off);
 		off = buf.writeInt32LE(obj.signals[i].a.length, off);
-		for(let ii = 0; ii < obj.signals[i].a.length; ii++)
+		for (let ii = 0; ii < obj.signals[i].a.length; ii++)
 			off = CopyToBufArgs(obj.signals[i].a[ii], buf, off, sformat1);
 		off = buf.writeInt32LE(obj.signals[i].b.length, off);
-		for(let ii = 0; ii < obj.signals[i].b.length; ii++)
+		for (let ii = 0; ii < obj.signals[i].b.length; ii++)
 			off = CopyToBufArgs(obj.signals[i].b[ii], buf, off, sformat2);
 	}
 
 	// link flow summaries
 	off = buf.writeInt32LE(obj.linkFlow.length, off);
-	for(let ii = 0; ii < obj.linkFlow.length; ii++){
+	for (let ii = 0; ii < obj.linkFlow.length; ii++) {
 		off = buf.writeInt32LE(obj.linkFlow[ii].time, off);
 		off = buf.writeInt32LE(obj.linkFlow[ii].edges.length, off);
-		for(let i = 0; i < obj.linkFlow[ii].edges.length; i++){
+		for (let i = 0; i < obj.linkFlow[ii].edges.length; i++) {
 			off = WriteString(buf, obj.linkFlow[ii].edges[i].name, off);
 			off = CopyToBufArgs(obj.linkFlow[ii].edges[i].a, buf, off, lfformat);
 		}
 		off = buf.writeInt32LE(obj.linkFlow[ii].b.length, off);
-		for(let i = 0; i < obj.linkFlow[ii].b.length; i++){
+		for (let i = 0; i < obj.linkFlow[ii].b.length; i++) {
 			off = buf.writeFloatLE(obj.linkFlow[ii].b[i], off);
 		}
 	}
 
 	// average OD by type
 	off = buf.writeInt32LE(obj.avgOD1.stats.length, off);
-	for(let i = 0; i < obj.avgOD1.stats.length; i++)
+	for (let i = 0; i < obj.avgOD1.stats.length; i++)
 		off = CopyToBufArgs(obj.avgOD1.stats[i], buf, off, avgODformat1);
 	off = buf.writeInt32LE(obj.avgOD1.totals.length, off);
-	for(const entry of obj.avgOD1.totals){
-		if(!entry){
+	for (const entry of obj.avgOD1.totals) {
+		if (!entry) {
 			off = buf.writeInt32LE(-1, off);
-		}else{
+		} else {
 			off = buf.writeInt32LE(entry["class"], off);
 			off = buf.writeFloatLE(entry["Total Veh-Km"], off);
 			off = buf.writeFloatLE(entry["Total Veh-Hrs"], off);
@@ -2157,20 +2173,20 @@ async function WriteFile_Overview(user_id, sim_id, lines){
 
 	// average OD overal
 	off = buf.writeInt32LE(obj.avgOD2.stats.length, off);
-	for(let i = 0; i < obj.avgOD2.stats.length; i++)
+	for (let i = 0; i < obj.avgOD2.stats.length; i++)
 		off = CopyToBufArgs(obj.avgOD2.stats[i], buf, off, avgODformat2);
 	off = buf.writeFloatLE(obj.avgOD2.totals[0], off);
 	off = buf.writeFloatLE(obj.avgOD2.totals[1], off);
 
 	// write garbage at the end
-	for(let i = 0; i < 4; i++)
+	for (let i = 0; i < 4; i++)
 		off = buf.writeFloatLE(obj.garbage[i], off);
-	for(let i = 4; i < 9; i++)
+	for (let i = 4; i < 9; i++)
 		off = buf.writeInt32LE(obj.garbage[i], off);
 
 
 	off = buf.writeInt32LE(obj.incd.length, off);
-	for(let i = 0; i < obj.incd.length; i++){
+	for (let i = 0; i < obj.incd.length; i++) {
 		off = buf.writeInt32LE(obj.incd[i].edge, off);
 		off = buf.writeInt32LE(obj.incd[i].node0, off);
 		off = buf.writeInt32LE(obj.incd[i].node1, off);
@@ -2188,9 +2204,9 @@ async function WriteFile_Overview(user_id, sim_id, lines){
 /*
  * File 11
  */
-async function WriteFile_AvgConditions(user_id, sim_id, lines){
+async function WriteFile_AvgConditions(user_id, sim_id, lines) {
 
-	if(await FileExists(FILE_AVGCONDS, sim_id))
+	if (await FileExists(FILE_AVGCONDS, sim_id))
 		return;
 
 
@@ -2198,18 +2214,18 @@ async function WriteFile_AvgConditions(user_id, sim_id, lines){
 	let lineA0 = -1, lineA1 = -1; // start and of the first section
 	let lineB0, lineB1; // start and end of the second secction
 	let targLen;
-	for(let i = 0; i < lines.length; i++){
-		if(lineA0 == -1){
-			if(lines[i].length == 269 || lines[i].length == 312){
+	for (let i = 0; i < lines.length; i++) {
+		if (lineA0 == -1) {
+			if (lines[i].length == 269 || lines[i].length == 312) {
 				lineA0 = i;
 				formatType = (lines[i].length == 270) ? 1 : 0;
 				targLen = lines[i].length;
 			}
-		}else{
-			if(lines[i].trim() === "Turning movements by dir and veh class"){
+		} else {
+			if (lines[i].trim() === "Turning movements by dir and veh class") {
 				lineA1 = i;
 				break;
-			}else if(lines[i].length != targLen)
+			} else if (lines[i].length != targLen)
 				return;
 		}
 	}
@@ -2235,11 +2251,11 @@ async function WriteFile_AvgConditions(user_id, sim_id, lines){
 	off = buf.writeInt16LE(parseInt(initArgs[1]), off); // max edge ID
 
 	off = buf.writeInt16LE(lineCA, off);
-	for(let i = 0; i < lineCA; i++)
+	for (let i = 0; i < lineCA; i++)
 		off = CopyToBufLine(lines[lineA0 + i], buf, off, formatA);
 
 	off = buf.writeInt16LE(lineCB, off);
-	for(let i = 0; i < lineCB; i++)
+	for (let i = 0; i < lineCB; i++)
 		off = CopyToBufLine(lines[lineB0 + i], buf, off, formatB);
 
 
@@ -2249,9 +2265,9 @@ async function WriteFile_AvgConditions(user_id, sim_id, lines){
 /*
  * File 12
  */
-async function WriteFile_Conditions(user_id, sim_id, lines){
+async function WriteFile_Conditions(user_id, sim_id, lines) {
 
-	if(await FileExists(FILE_CONDS, sim_id))
+	if (await FileExists(FILE_CONDS, sim_id))
 		return;
 
 	let initArgs = ReadLineArgs(lines[1].trim());
@@ -2273,11 +2289,11 @@ async function WriteFile_Conditions(user_id, sim_id, lines){
 	off = buf.writeInt16LE(parseInt(initArgs[3]), off); // max edge ID
 
 	let curLine = 2;
-	for(let i = 0; i < periodC; i++){
+	for (let i = 0; i < periodC; i++) {
 		const lineArgs = ReadLineArgs(lines[curLine].trim());
 		off = buf.writeInt32LE(parseInt(lineArgs[0]), off);
 		off = buf.writeInt16LE(parseInt(lineArgs[1]), off);
-		for(let ii = 0; ii < edgeC; ii++)
+		for (let ii = 0; ii < edgeC; ii++)
 			off = CopyToBufLine(lines[curLine + 1 + ii], buf, off, format);
 		curLine += edgeC + 1;
 	}
@@ -2288,37 +2304,37 @@ async function WriteFile_Conditions(user_id, sim_id, lines){
 /*
  * file 15
  */
-async function WriteFile_TripProbes(user_id, sim_id, lines){
+async function WriteFile_TripProbes(user_id, sim_id, lines) {
 
-	if(await FileExists(FILE_TRIPPROBES, sim_id))
+	if (await FileExists(FILE_TRIPPROBES, sim_id))
 		return;
 
 
 	//const format = "3_8fi2b"; //9
-	const preLine = ((lines[0].charAt(2) == "1") && Math.abs(lines[0].split(/\s+/).length-29.5) == 0.5) ? 0 : 1;
+	const preLine = ((lines[0].charAt(2) == "1") && Math.abs(lines[0].split(/\s+/).length - 29.5) == 0.5) ? 0 : 1;
 	const lineC = lines.length - 1;
 	const formatA = "_fibsssffffffffffffff*ffffffff";
 	const formatB = "_fibsssfffffffffffffffffffffff";
 
 	// count the number
 	let pairs = [];
-	for(let i = preLine; i < lineC; i++){
-		if(lines[i].length != 278 && lines[i].length != 266)
+	for (let i = preLine; i < lineC; i++) {
+		if (lines[i].length != 278 && lines[i].length != 266)
 			return;
 		const beg = parseInt(lines[i].substring(27, 32));
 		const end = parseInt(lines[i].substring(32, 37));
 		const time = parseFloat(lines[i].substring(3, 11));
 		let found = pairs.find((element) => element.beg == beg && element.end == end);
-		if(!found){
+		if (!found) {
 			let obj = {
-				beg:beg,
-				end:end,
-				quant:1,
-				time1:time,
-				time0:time
+				beg: beg,
+				end: end,
+				quant: 1,
+				time1: time,
+				time0: time
 			};
 			pairs.push(obj);
-		}else{
+		} else {
 			found.quant++;
 			found.time1 = time;
 		}
@@ -2334,7 +2350,7 @@ async function WriteFile_TripProbes(user_id, sim_id, lines){
 	off = buf.writeInt32LE(lineC - preLine, off); // number of lines
 	off = buf.writeInt32LE(pairs.length, off);
 
-	for(let i = 0; i < pairs.length; i++){
+	for (let i = 0; i < pairs.length; i++) {
 		off = buf.writeInt16LE(pairs[i].beg, off);
 		off = buf.writeInt16LE(pairs[i].end, off);
 		off = buf.writeInt32LE(pairs[i].quant, off);
@@ -2342,13 +2358,13 @@ async function WriteFile_TripProbes(user_id, sim_id, lines){
 		off = buf.writeFloatLE(pairs[i].time1, off);
 	}
 
-	for(let i = preLine; i < lineC; i++){
+	for (let i = preLine; i < lineC; i++) {
 		const lineArgs = ReadLineArgs(lines[i].trim());
-		if(lineArgs.length == 29)
+		if (lineArgs.length == 29)
 			off = CopyToBufArgs(lineArgs, buf, off, formatA);
-		else if(lineArgs.length == 30)
+		else if (lineArgs.length == 30)
 			off = CopyToBufArgs(lineArgs, buf, off, formatB);
-		else{
+		else {
 			//console.log(i, lineArgs.length);
 			return;
 		}
@@ -2362,42 +2378,42 @@ async function WriteFile_TripProbes(user_id, sim_id, lines){
 /*
  * file 16
  */
-async function WriteFile_EdgeProbes(user_id, sim_id, lines){
+async function WriteFile_EdgeProbes(user_id, sim_id, lines) {
 
-	if(await FileExists(FILE_EDGEPROBES, sim_id))
+	if (await FileExists(FILE_EDGEPROBES, sim_id))
 		return;
 
 	const preLine = ((lines[0].startsWith(" 11") || lines[0].startsWith(" 21")) && Math.abs(lines[0].trim().split(/\s+/).length - 33.5) == 0.5) ? 0 : 1;
 	const lineC = lines.length - 1;
 	const format11A = "bfibsbsbssffffffffffffffffffffffff";
 	const format11B = "bfibsbsbssfffffffffffffff*ffffffff";
-	const format21 = "bfibbsbs"+
-					 "sn1n1n1n3n3n3n3"+
-					 "n1n1fn5n5n5n5n5"+
-					 "n5n5c1c1c1c1c1c1"+
-					 "n2n2";
+	const format21 = "bfibbsbs" +
+		"sn1n1n1n3n3n3n3" +
+		"n1n1fn5n5n5n5n5" +
+		"n5n5c1c1c1c1c1c1" +
+		"n2n2";
 
 	let format11C = 0, format21C = 0;
 	let links = [];
 	let minLink = 9999;
 	let maxLink = 0;
-	for(let i = preLine; i < lineC; i++){
-		const kind = lines[i].substring(1,3);
+	for (let i = preLine; i < lineC; i++) {
+		const kind = lines[i].substring(1, 3);
 		let edge;
-		if(kind === "11"){
+		if (kind === "11") {
 			edge = parseInt(lines[i].substring(22, 28));
 			format11C++;
-		}else if(kind === "21"){
+		} else if (kind === "21") {
 			edge = parseInt(lines[i].substring(21, 27));
 			format21C++;
-		}else if(i < lineC - 1)
+		} else if (i < lineC - 1)
 			return;
 
-		if(!links.some((element) => element.edge == edge)){
-			links.push({edge:edge, quant:0, time1:0, time0:999999999});
-			if(edge < minLink)
+		if (!links.some((element) => element.edge == edge)) {
+			links.push({ edge: edge, quant: 0, time1: 0, time0: 999999999 });
+			if (edge < minLink)
 				minLink = edge;
-			if(edge > maxLink)
+			if (edge > maxLink)
 				maxLink = edge;
 		}
 	}
@@ -2421,21 +2437,21 @@ async function WriteFile_EdgeProbes(user_id, sim_id, lines){
 
 	let linkMap = Array(maxLink - minLink + 1).fill(0);
 
-	for(let i = 0; i < links.length; i++)
+	for (let i = 0; i < links.length; i++)
 		linkMap[links[i].edge - minLink] = i;
 
-	for(let i = preLine; i < lineC; i++){
+	for (let i = preLine; i < lineC; i++) {
 		const lineArgs = ReadLineArgs(lines[i].trim());
 		let edge;
-		if(lineArgs[0] == "11"){
+		if (lineArgs[0] == "11") {
 			off = CopyToBufArgs(lineArgs, buf, off, lineArgs.length == 33 ? format11B : format11A);
 			edge = parseInt(lineArgs[4]);
-		}else{
+		} else {
 			off = CopyToBufArgs(lineArgs, buf, off, format21);
 			edge = parseInt(lineArgs[5]);
 		}
-		let indx = linkMap[edge-minLink];
-		if(!links[indx].time0)
+		let indx = linkMap[edge - minLink];
+		if (!links[indx].time0)
 			links[indx].time0 = parseFloat(lineArgs[1]);
 		else
 			links[indx].time1 = parseFloat(lineArgs[1]);
@@ -2445,7 +2461,7 @@ async function WriteFile_EdgeProbes(user_id, sim_id, lines){
 	//console.log("" + off + "/" + totalSize);
 
 	off = 10;
-	for(let i = 0; i < links.length; i++){
+	for (let i = 0; i < links.length; i++) {
 		off = buf.writeInt16LE(links[i].edge, off);
 		off = buf.writeInt32LE(links[i].quant, off);
 		off = buf.writeFloatLE(links[i].time0, off);
@@ -2464,10 +2480,10 @@ async function WriteFile_EdgeProbes(user_id, sim_id, lines){
  * @param sim_id (int) The id of the simulation this file is a part of
  * @param lines (string[]) The file as an array of lines
  */
-async function WriteFile_MinTree(user_id, sim_id, lines){
+async function WriteFile_MinTree(user_id, sim_id, lines) {
 
 	// make sure doesn't already exist
-	if(await FileExists(FILE_PATHS, sim_id))
+	if (await FileExists(FILE_PATHS, sim_id))
 		return;
 
 	// 0 numberOfPeriods
@@ -2500,14 +2516,14 @@ async function WriteFile_MinTree(user_id, sim_id, lines){
 	// size of base line
 	let varSize = (2 + 4 + 2 + 2 + 2 + 2 + 2);
 	let curLine = 2;
-	for(let i = 0; i < periodC; i++){
+	for (let i = 0; i < periodC; i++) {
 		const args = ReadLineArgs(lines[curLine].trim());
-		if(args.length != 3) return;
+		if (args.length != 3) return;
 		const treeC = parseInt(args[2]);
 		// size of period info + size of trees
 		varSize += (2 + 1 + 1) + bytesPerTree * treeC;
 		curLine += linesPerTree * treeC + 1;
-		if(curLine > lines.length) return;
+		if (curLine > lines.length) return;
 	}
 
 	let off = 0;
@@ -2517,12 +2533,12 @@ async function WriteFile_MinTree(user_id, sim_id, lines){
 	off = CopyToBufShorts(initArgs, 2, 5, buf, off);
 
 	curLine = 2;
-	for(let i = 0; i < periodC; i++){
+	for (let i = 0; i < periodC; i++) {
 		const periodArgs = ReadLineArgs(lines[curLine].trim());
 		const periodIndx = parseInt(periodArgs[0]);
 		const treeC = parseInt(periodArgs[2]);
 
-		if(periodIndx != i + 1){
+		if (periodIndx != i + 1) {
 			console.log("Bad file13: period " + periodIndx + " != " + (i + 1));
 			throw "bad file13: period indx";
 		}
@@ -2532,15 +2548,15 @@ async function WriteFile_MinTree(user_id, sim_id, lines){
 		off = buf.writeInt8(treeC, off);
 		curLine++;
 
-		for(let ii = 0; ii < treeC; ii++){
+		for (let ii = 0; ii < treeC; ii++) {
 			const treeArgs = ReadLineArgs(lines[curLine].trim());
 			off = buf.writeInt8(parseInt(treeArgs[0]), off);
 			off = buf.writeFloatLE(parseFloat(treeArgs[1]), off);
 			off = buf.writeInt8(parseInt(treeArgs[2]), off);
 			curLine++;
 
-			for(let Q = 0; Q < entriesPerTree; Q++){
-				for(let QQ = 0; QQ < linesPerEntry; QQ++){
+			for (let Q = 0; Q < entriesPerTree; Q++) {
+				for (let QQ = 0; QQ < linesPerEntry; QQ++) {
 					const entryArgs = ReadLineArgs(lines[curLine].trim());
 					off = CopyToBufShorts(entryArgs, 0, entryArgs.length, buf, off);
 					curLine++;
@@ -2562,15 +2578,15 @@ async function WriteFile_MinTree(user_id, sim_id, lines){
  * @param sim_id (int) The id of the simulation this file is a part of
  * @param str (string) The file as a string
  */
-async function ReadFile(user_id, sim_id, str, fileName){
-	try{
-		if(!fileName) {
+async function ReadFile(user_id, sim_id, str, fileName) {
+	try {
+		if (!fileName) {
 			fileName = "";
 			console.log("No file name");
 		}
 		//console.log("Reading in file name: "+fileName);
 		const lines = str.split(/\r?\n/); // end of line, but can work with only \n
-		
+
 		const summaryFileRegex = /.*summary.*\.out$/i;
 		const nodesRegex = /.*1.*\.dat$/i;
 		const edgesRegex = /.*2.*\.dat$/i;
@@ -2583,32 +2599,32 @@ async function ReadFile(user_id, sim_id, str, fileName){
 		const overviewRegex = /.*10.*\.out$/i;
 
 		// this is bad, but good enough
-		if(lines.length < 4)
+		if (lines.length < 4)
 			return;
-		
+
 		// Check if it's a summary file 
 		if (summaryFileRegex.test(fileName))
 			return await WriteFile_summary(user_id, sim_id, lines); // output file summary
-		else if(signalsRegex.test(fileName))
+		else if (signalsRegex.test(fileName))
 			return await WriteFile_Input3(user_id, sim_id, lines); // input file 3 signals
-		else if(nodesRegex.test(fileName))
+		else if (nodesRegex.test(fileName))
 			return await WriteFile_Input1(user_id, sim_id, lines); // input file 1 nodes
-		else if(edgesRegex.test(fileName))
+		else if (edgesRegex.test(fileName))
 			return await WriteFile_Input2(user_id, sim_id, lines); // input file 2 edges
-		else if(pathsRegex.test(fileName))
+		else if (pathsRegex.test(fileName))
 			return await WriteFile_MinTree(user_id, sim_id, lines); // output file 13
-		else if(averageTrafficConditionsRegex.test(fileName))
+		else if (averageTrafficConditionsRegex.test(fileName))
 			return await WriteFile_AvgConditions(user_id, sim_id, lines); // output file 11
-		else if(trafficConditionsRegex.test(fileName))
+		else if (trafficConditionsRegex.test(fileName))
 			return await WriteFile_Conditions(user_id, sim_id, lines); // output file 12
-		else if(tripProbesRegex.test(fileName))
+		else if (tripProbesRegex.test(fileName))
 			return await WriteFile_TripProbes(user_id, sim_id, lines); // output file 15
-		else if(roadProbesRegex.test(fileName))
+		else if (roadProbesRegex.test(fileName))
 			return await WriteFile_EdgeProbes(user_id, sim_id, lines); // output file 16
-		else if(overviewRegex.test(fileName))
+		else if (overviewRegex.test(fileName))
 			return await WriteFile_Overview(user_id, sim_id, lines); // output file 10
 
-	}catch(error){
+	} catch (error) {
 		console.error("Couldnt read file: (" + fileName + ") ", error);
 	}
 	// 4 -> file 11, 12
@@ -2622,8 +2638,8 @@ async function ReadFile(user_id, sim_id, str, fileName){
 }
 
 
-function FileTypeToName(fileType){
-  const FILE_NAMES = [
+function FileTypeToName(fileType) {
+	const FILE_NAMES = [
 	/*0*/"Simulation Details",
 	/*1*/"Average Traffic Conditions",
 	/*2*/"Traffic Conditions",
@@ -2634,21 +2650,21 @@ function FileTypeToName(fileType){
 	/*7*/"Nodes",
 	/*8*/"Edges",
 	/*9*/"Signals"
-  ];
-  return FILE_NAMES[fileType];
+	];
+	return FILE_NAMES[fileType];
 }
 
-function FileNumToFileType(fileNum){
-  switch(fileNum){
-  	case 10: return 0;
-  	case 11: return 1;
-  	case 12: return 2;
-  	case 13: return 3;
-  	case 1:  return 4;
-  	case 15: return 5;
-  	case 16: return 6;
+function FileNumToFileType(fileNum) {
+	switch (fileNum) {
+		case 10: return 0;
+		case 11: return 1;
+		case 12: return 2;
+		case 13: return 3;
+		case 1: return 4;
+		case 15: return 5;
+		case 16: return 6;
 
-  }
+	}
 }
 
 
