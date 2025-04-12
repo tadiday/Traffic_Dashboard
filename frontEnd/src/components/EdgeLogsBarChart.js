@@ -32,6 +32,7 @@ function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
             },
           }
         );
+        console.log('Fetched edge data:', response.data.edges);
         setEdgeData(response.data.edges || []);
       } catch (error) {
         console.error('Error fetching edge data:', error);
