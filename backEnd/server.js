@@ -273,66 +273,66 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
  *   id of the simulation being accessed
  */
 async function tryGetFile(req, res, fileType) {
-    // Step 1: Verify the user's token and extract the user ID
-    try {
-        var user_id = verifyToken(req).user_id; // Extract user ID from the token
-    } catch (exception) {
-        var user_id = 1; // Default to user ID 1 (for testing or fallback)
-        // Uncomment the return statement below when ready for production use
-        return res.status(exception.status).send(exception.message); // Return error if token verification fails
-    }
+	// Step 1: Verify the user's token and extract the user ID
+	try {
+		var user_id = verifyToken(req).user_id; // Extract user ID from the token
+	} catch (exception) {
+		var user_id = 1; // Default to user ID 1 (for testing or fallback)
+		// Uncomment the return statement below when ready for production use
+		return res.status(exception.status).send(exception.message); // Return error if token verification fails
+	}
 
-    try {
-        // Step 2: Retrieve the simulation ID
-        let sim_id;
-        try {
-            // Attempt to parse the simulation ID from the query parameter
-            sim_id = parseInt(req.query.sim);
-            if (isNaN(sim_id)) throw ""; // Throw an error if the simulation ID is invalid
-        } catch (e) {
-            // If the simulation ID is not provided, retrieve it by simulation name and user ID
-            [[sim_id]] = await promisePool.query(
-                "SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?",
-                [req.query.sim, user_id]
-            );
-            if (sim_id) sim_id = sim_id.sim_id; // Extract the simulation ID from the query result
-        }
+	try {
+		// Step 2: Retrieve the simulation ID
+		let sim_id;
+		try {
+			// Attempt to parse the simulation ID from the query parameter
+			sim_id = parseInt(req.query.sim);
+			if (isNaN(sim_id)) throw ""; // Throw an error if the simulation ID is invalid
+		} catch (e) {
+			// If the simulation ID is not provided, retrieve it by simulation name and user ID
+			[[sim_id]] = await promisePool.query(
+				"SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?",
+				[req.query.sim, user_id]
+			);
+			if (sim_id) sim_id = sim_id.sim_id; // Extract the simulation ID from the query result
+		}
 
-        // If no simulation ID is found, return an error
-        if (!sim_id) return res.status(500).send("Simulation not found");
+		// If no simulation ID is found, return an error
+		if (!sim_id) return res.status(500).send("Simulation not found");
 
-        // Step 3: Query the database for the requested file
-        const query =
-            "SELECT file_owner, file_content FROM text_files WHERE file_type = ? AND file_sim = ?";
-        const [[entry]] = await promisePool.query(query, [fileType, sim_id]);
+		// Step 3: Query the database for the requested file
+		const query =
+			"SELECT file_owner, file_content FROM text_files WHERE file_type = ? AND file_sim = ?";
+		const [[entry]] = await promisePool.query(query, [fileType, sim_id]);
 
-        // If the file does not exist, return an error
-        if (!entry) return res.status(500).send("File not found");
+		// If the file does not exist, return an error
+		if (!entry) return res.status(500).send("File not found");
 
-        // Step 4: Verify that the user owns the file
-        if (entry.file_owner != user_id) {
-            // Log a warning if the user does not own the file
-            console.log(
-                "tryGetFile: Wrong owner! (" +
-                    user_id +
-                    " != " +
-                    entry.file_owner +
-                    ")"
-            );
-            // Note: Consider throwing an error or returning a response here in production
-        }
+		// Step 4: Verify that the user owns the file
+		if (entry.file_owner != user_id) {
+			// Log a warning if the user does not own the file
+			console.log(
+				"tryGetFile: Wrong owner! (" +
+				user_id +
+				" != " +
+				entry.file_owner +
+				")"
+			);
+			// Note: Consider throwing an error or returning a response here in production
+		}
 
-        // Step 5: Read and process the file content
-        let buf = Buffer.from(entry.file_content); // Convert the file content to a buffer
-        let obj = ReadFile_Any(buf, fileType, req.query); // Parse the file content based on its type
-        return res.json(obj); // Return the parsed file content as a JSON response
-    } catch (err) {
-        // Step 6: Handle any errors that occur during the process
-        console.error(err); // Log the error for debugging
-        return res
-            .status(500)
-            .send("Server Error: Couldn't retrieve directory"); // Return a generic server error
-    }
+		// Step 5: Read and process the file content
+		let buf = Buffer.from(entry.file_content); // Convert the file content to a buffer
+		let obj = ReadFile_Any(buf, fileType, req.query); // Parse the file content based on its type
+		return res.json(obj); // Return the parsed file content as a JSON response
+	} catch (err) {
+		// Step 6: Handle any errors that occur during the process
+		console.error(err); // Log the error for debugging
+		return res
+			.status(500)
+			.send("Server Error: Couldn't retrieve directory"); // Return a generic server error
+	}
 }
 
 /*
@@ -646,8 +646,8 @@ function ReadFile_summary(buf) {
 		for (let ii = 0; ii < 6; ii++)
 			line[ii] = buf.readFloatLE((off += 4) - 4);
 		let tag = "";
-		[off,tag] = ReadString(buf, off);
-		
+		[off, tag] = ReadString(buf, off);
+
 		out.total[tag] = line;
 	}
 
@@ -1254,149 +1254,149 @@ function ReadFile_TripProbes(buf, args) {
  * @returns {Object|Array} - Returns either metadata about edges or an array of filtered logs.
  */
 function ReadFile_EdgeProbes(buf, args) {
-    let off = 0;
+	let off = 0;
 
-    // Read header information from the buffer
-    const lineC = buf.readInt32LE(off + 0); // Total number of logs (lines)
-    const edgeC = buf.readInt16LE(off + 4); // Total number of edges
-    const edgeMin = buf.readInt16LE(off + 6); // Minimum edge ID
-    const edgeMax = buf.readInt16LE(off + 8); // Maximum edge ID
-    off += 10;
+	// Read header information from the buffer
+	const lineC = buf.readInt32LE(off + 0); // Total number of logs (lines)
+	const edgeC = buf.readInt16LE(off + 4); // Total number of edges
+	const edgeMin = buf.readInt16LE(off + 6); // Minimum edge ID
+	const edgeMax = buf.readInt16LE(off + 8); // Maximum edge ID
+	off += 10;
 
-    // Initialize filtering parameters with defaults
-    let restEdge = -2; // Default: metadata only
-    let skip = 0; // Default: no logs skipped
-    let max = 500; // Default: maximum 500 logs
-    let stride = 1; // Default: collect every log
-    let time0 = 0; // Default: no minimum time filter
-    let time1 = 999999999; // Default: no maximum time filter
+	// Initialize filtering parameters with defaults
+	let restEdge = -2; // Default: metadata only
+	let skip = 0; // Default: no logs skipped
+	let max = 500; // Default: maximum 500 logs
+	let stride = 1; // Default: collect every log
+	let time0 = 0; // Default: no minimum time filter
+	let time1 = 999999999; // Default: no maximum time filter
 
-    // Override defaults with provided arguments
-    if (args) {
-        if (args.edge) restEdge = args.edge; // Target edge ID
-        if (args.skip) skip = args.skip; // Number of logs to skip
-        if (args.max) max = args.max; // Maximum logs to collect
-        if (args.stride) stride = args.stride; // Sampling stride
-        if (args.time0) time0 = args.time0; // Minimum time filter
-        if (args.time1) time1 = args.time1; // Maximum time filter
-    }
+	// Override defaults with provided arguments
+	if (args) {
+		if (args.edge) restEdge = args.edge; // Target edge ID
+		if (args.skip) skip = args.skip; // Number of logs to skip
+		if (args.max) max = args.max; // Maximum logs to collect
+		if (args.stride) stride = args.stride; // Sampling stride
+		if (args.time0) time0 = args.time0; // Minimum time filter
+		if (args.time1) time1 = args.time1; // Maximum time filter
+	}
 
-    // Handle metadata-only request (restEdge == -2)
-    if (restEdge == -2) {
-        let out = {
-            time0: 999999999, // Earliest log time
-            time1: 0, // Latest log time
-            total: 0, // Total number of logs
-            edges: Array(edgeC) // Array to store edge metadata
-        };
+	// Handle metadata-only request (restEdge == -2)
+	if (restEdge == -2) {
+		let out = {
+			time0: 999999999, // Earliest log time
+			time1: 0, // Latest log time
+			total: 0, // Total number of logs
+			edges: Array(edgeC) // Array to store edge metadata
+		};
 
-        // Iterate through all edges and extract metadata
-        for (let i = 0; i < edgeC; i++) {
-            const edgeID = buf.readInt16LE(off + 0); // Edge ID
-            const quant = buf.readInt32LE(off + 2); // Number of logs for this edge
-            const time0 = buf.readFloatLE(off + 6); // Earliest log time for this edge
-            const time1 = buf.readFloatLE(off + 10); // Latest log time for this edge
+		// Iterate through all edges and extract metadata
+		for (let i = 0; i < edgeC; i++) {
+			const edgeID = buf.readInt16LE(off + 0); // Edge ID
+			const quant = buf.readInt32LE(off + 2); // Number of logs for this edge
+			const time0 = buf.readFloatLE(off + 6); // Earliest log time for this edge
+			const time1 = buf.readFloatLE(off + 10); // Latest log time for this edge
 
-            // Store metadata for this edge
-            out.edges[i] = { edgeID, numOfLogs: quant, time0, time1 };
-            out.time0 = Math.min(out.time0, time0); // Update global earliest time
-            out.time1 = Math.max(out.time1, time1); // Update global latest time
-            out.total += quant; // Increment total log count
+			// Store metadata for this edge
+			out.edges[i] = { edgeID, numOfLogs: quant, time0, time1 };
+			out.time0 = Math.min(out.time0, time0); // Update global earliest time
+			out.time1 = Math.max(out.time1, time1); // Update global latest time
+			out.total += quant; // Increment total log count
 
-            off += 14; // Move to the next edge metadata
-        }
-        return out; // Return metadata
-    }
+			off += 14; // Move to the next edge metadata
+		}
+		return out; // Return metadata
+	}
 
-    // Handle specific edge filtering (restEdge != -1)
-    let totalEdges = lineC; // Default: total logs for all edges
-    if (restEdge != -1) {
-        totalEdges = 0; // Reset total logs for specific edge
-        for (let i = 0; i < edgeC; i++) {
-            const edgeID = buf.readInt16LE(off + 0); // Edge ID
-            const quant = buf.readInt32LE(off + 2); // Number of logs for this edge
+	// Handle specific edge filtering (restEdge != -1)
+	let totalEdges = lineC; // Default: total logs for all edges
+	if (restEdge != -1) {
+		totalEdges = 0; // Reset total logs for specific edge
+		for (let i = 0; i < edgeC; i++) {
+			const edgeID = buf.readInt16LE(off + 0); // Edge ID
+			const quant = buf.readInt32LE(off + 2); // Number of logs for this edge
 
-            if (edgeID == restEdge) {
-                totalEdges = quant; // Set total logs for the target edge
-                off += (edgeC - i) * 14; // Skip remaining edge metadata
-                break;
-            }
+			if (edgeID == restEdge) {
+				totalEdges = quant; // Set total logs for the target edge
+				off += (edgeC - i) * 14; // Skip remaining edge metadata
+				break;
+			}
 
-            off += 14; // Move to the next edge metadata
-        }
-    } else {
-        off += edgeC * 14; // Skip all edge metadata
-    }
+			off += 14; // Move to the next edge metadata
+		}
+	} else {
+		off += edgeC * 14; // Skip all edge metadata
+	}
 
-    // Calculate the maximum number of logs to extract
-    let totalMax = Math.max(0, Math.min(max, Math.floor((totalEdges - skip) / stride)));
-    let out = Array(totalMax); // Initialize output array
+	// Calculate the maximum number of logs to extract
+	let totalMax = Math.max(0, Math.min(max, Math.floor((totalEdges - skip) / stride)));
+	let out = Array(totalMax); // Initialize output array
 
-    // If no logs are to be extracted, return an empty array
-    if (totalMax == 0) return out;
+	// If no logs are to be extracted, return an empty array
+	if (totalMax == 0) return out;
 
-    let totalCount = 0; // Counter for total logs processed
-    for (let i = 0; i < lineC; i++) {
-        let obj = {}; // Object to store log data
-        const type = buf.readInt8(off); // Log type (e.g., 11 or 21)
-        obj.type = type;
+	let totalCount = 0; // Counter for total logs processed
+	for (let i = 0; i < lineC; i++) {
+		let obj = {}; // Object to store log data
+		const type = buf.readInt8(off); // Log type (e.g., 11 or 21)
+		obj.type = type;
 
-        // Parse log data based on its type
-        if (type == 11) {
-            off = ReadFromBufAny(obj,
-                [
-                    "f_time", "i_vehicleID", "b_vehicleClass", "s_edge", "b_lane",
-                    "s_nextEdge", "b_nextLane", "s_origin", "s_dest",
-                    "f_schedDepart", "f_departTime", "f_edgeTime", "f_delay",
-                    "f_stopDelay", "f_stops", "f_dist", "f_avgSpeed", "f_finalSpeed",
-                    "f_fuel", "f_HC", "f_CO", "f_NO", "f_CO2", "f_PM", "f_energy",
-                    "f_expectCrash", "f_expectHighInjury", "f_expectFatal",
-                    "f_crashLow", "f_crashMed", "f_crashHigh", "f_toll", "f_noise"
-                ],
-                buf, off + 1);
-        } else if (type == 21) {
-            off = ReadFromBufAny(obj,
-                [
-                    "f_time", "i_vehicleID", "b_vehicleClass", "b_vehicleType",
-                    "s_edge", "b_lane", "s_origin", "s_dest", "n1_departSched",
-                    "n1_departTime", "n1_edgeTime", "n3_delay", "n3_stopDelay",
-                    "n3_stops", "n3_dist", "n1space", "n1_speed", "f_accel",
-                    "n5_fuel", "n5_energyRate", "n5_HC", "n5_CO", "n5_NO", "n5_CO2", "n5_PM",
-                    "c1_expectCrash", "c1_expectHighInjury", "c1_expectFatal",
-                    "c1_crashLow", "c1_crashMed", "c1_crashHigh", "n2_toll", "n2_noise"
-                ],
-                buf, off + 1);
-        } else {
-            console.log(`${type} at ${off}, ${i}`); // Log unexpected type
-            return out; // Return collected logs so far
-        }
+		// Parse log data based on its type
+		if (type == 11) {
+			off = ReadFromBufAny(obj,
+				[
+					"f_time", "i_vehicleID", "b_vehicleClass", "s_edge", "b_lane",
+					"s_nextEdge", "b_nextLane", "s_origin", "s_dest",
+					"f_schedDepart", "f_departTime", "f_edgeTime", "f_delay",
+					"f_stopDelay", "f_stops", "f_dist", "f_avgSpeed", "f_finalSpeed",
+					"f_fuel", "f_HC", "f_CO", "f_NO", "f_CO2", "f_PM", "f_energy",
+					"f_expectCrash", "f_expectHighInjury", "f_expectFatal",
+					"f_crashLow", "f_crashMed", "f_crashHigh", "f_toll", "f_noise"
+				],
+				buf, off + 1);
+		} else if (type == 21) {
+			off = ReadFromBufAny(obj,
+				[
+					"f_time", "i_vehicleID", "b_vehicleClass", "b_vehicleType",
+					"s_edge", "b_lane", "s_origin", "s_dest", "n1_departSched",
+					"n1_departTime", "n1_edgeTime", "n3_delay", "n3_stopDelay",
+					"n3_stops", "n3_dist", "n1space", "n1_speed", "f_accel",
+					"n5_fuel", "n5_energyRate", "n5_HC", "n5_CO", "n5_NO", "n5_CO2", "n5_PM",
+					"c1_expectCrash", "c1_expectHighInjury", "c1_expectFatal",
+					"c1_crashLow", "c1_crashMed", "c1_crashHigh", "n2_toll", "n2_noise"
+				],
+				buf, off + 1);
+		} else {
+			console.log(`${type} at ${off}, ${i}`); // Log unexpected type
+			return out; // Return collected logs so far
+		}
 
-        // Apply filtering criteria
-        if ((restEdge == -1 || obj.edge == restEdge) && obj.time >= time0) {
-            // Stop if the log time exceeds the maximum time
-            if (obj.time >= time1) {
-                out = out.slice(0, Math.floor((totalCount - skip) / stride) + 1);
-                break;
-            }
+		// Apply filtering criteria
+		// if ((restEdge == -1 || obj.edge == restEdge) && obj.time >= time0) {
+		//     // Stop if the log time exceeds the maximum time
+		//     if (obj.time >= time1) {
+		//         out = out.slice(0, Math.floor((totalCount - skip) / stride) + 1);
+		//         break;
+		//     }
 
-            // Skip logs based on the skip parameter
-            if (totalCount >= skip) {
-                const indx = totalCount - skip;
-                // Collect logs based on the stride parameter
-                if (indx % stride == 0) {
-                    out[indx / stride] = obj;
-                    // Stop if the maximum number of logs is reached
-                    if (indx / stride + 1 >= max) {
-                        break;
-                    }
-                }
-            }
+		//     // Skip logs based on the skip parameter
+		//     if (totalCount >= skip) {
+		//         const indx = totalCount - skip;
+		//         // Collect logs based on the stride parameter
+		//         if (indx % stride == 0) {
+		//             out[indx / stride] = obj;
+		//             // Stop if the maximum number of logs is reached
+		//             if (indx / stride + 1 >= max) {
+		//                 break;
+		//             }
+		//         }
+		//     }
 
-            totalCount++; // Increment the total log count
-        }
-    }
+		//     totalCount++; // Increment the total log count
+		// }
+	}
 
-    return out; // Return the filtered logs
+	return out; // Return the filtered logs
 }
 
 /*
@@ -1411,7 +1411,7 @@ function ReadFile_EdgeProbes(buf, args) {
  * @param buf (nodejs buffer) The nodejs buffer to read from
  * @return (table) The summary file as a table/object
  */
-function ReadFile_EdgeProbes(buf, args) {
+async function ReadFile_EdgeProbes(buf, args) {
 	let off = 0;
 
 	const lineC = buf.readInt32LE(off + 0);
@@ -1540,7 +1540,63 @@ function ReadFile_EdgeProbes(buf, args) {
 			objs[second] = [];
 		}
 		objs[second].push(obj);
-		
+		// console.log(obj);
+		try {
+			await promisePool.query(
+				`REPLACE INTO file16 (
+				 	report_type, simulation_time_sec, vehicle_id, vehicle_class,
+					current_link, current_lane, next_link, next_lane, vehicle_origin_zone, vehicle_destination_zone,
+					scheduled_departure_time_sec, actual_departure_time_sec, elapsed_time_sec, total_delay_sec,
+					stopped_delay_sec, cumulative_stops, distance_covered_km, average_speed_kmh, exit_speed_kmh,
+					fuel_used_liters, hydrocarbon_grams, carbon_monoxide_grams, nitrous_oxide_grams,
+					co2_grams, particulate_matter_grams, energy_used_kw, expected_crashes, expected_injury_crashes,
+					expected_fatal_crashes, low_damage_crashes, moderate_damage_crashes, high_damage_crashes,
+					toll_paid_dollars, acceleration_noise
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				[
+					obj.type,
+					obj.time,
+					obj.vehicleID,
+					obj.vehicleClass,
+					obj.edge,
+					obj.lane,
+					obj.nextEdge,
+					obj.nextLane,
+					obj.origin,
+					obj.dest,
+					obj.schedDepart,
+					obj.departTime,
+					obj.edgeTime,
+					obj.delay,
+					obj.stopDelay,
+					obj.stops,
+					obj.dist,
+					obj.avgSpeed,
+					obj.finalSpeed,
+					obj.fuel,
+					obj.HC,
+					obj.CO,
+					obj.NO,
+					obj.CO2,
+					obj.PM,
+					obj.energy,
+					obj.expectCrash,
+					obj.expectHighInjury,
+					obj.expectFatal,
+					obj.crashLow,
+					obj.crashMed,
+					obj.crashHigh,
+					obj.toll,
+					obj.noise
+				]
+			);
+		} catch (err) {
+			console.error(`Insert failed at iteration ${i}:`, err);
+		}
+		// if (i == 2)
+		// 	break;
+
+
 
 		// make sure its what we are looking for
 		// if((restEdge == -1 || obj.edge == restEdge) && obj.time >= time0){
@@ -1571,6 +1627,8 @@ function ReadFile_EdgeProbes(buf, args) {
 	// console.log(objs);
 	return out;
 }
+
+
 
 /*
  * Reads a file from a nodejs buffer based on type.
