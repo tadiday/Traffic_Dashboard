@@ -16,6 +16,54 @@ function Main(props) {
     const [collectionName, setCollectionName] = useState('');
     const [items, setItems] = useState([]);
     const [selectedGraph, setSelectedGraph] = useState('node'); // Add selectedGraph state
+
+    // Help information for different tabs
+    const helpInformation = {
+        timeOptimizations: (
+            <>
+                <p>
+                    The <strong>Time Optimizations Tab</strong> provides insights into how traffic flow can be optimized by adjusting signal timings, lane priorities, and other time-based parameters.
+                </p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>When you hover over any of the Nodes, you can see information like "Node ID", "Node X", "Node Y", "Source of Edge", and "Target of Edge".</li>
+                    <li>When you hover over any of the Edges, you can see information like "Edge ID", "Edge Length", "Edge Source", and "Edge Target".</li>
+                    <li>When you click on any of the Edges, you can see an automated traffic flow path from the source to the target node. This view can also show you the "Total Flow" and "CO2 Emissions".</li>
+                </ul>
+                <h4>Relative Edges Information:</h4>
+                <p>
+                    When you scroll down on the Simulation Details page, you can see a slider where you can slide to whichever 5-minute interval you want to see the traffic flow for. As you move the slider, you can see the values changing at the bottom of the page under the "Relative Edges Information" section. Currently, for the three edges that are shown, you can see a variety of information like PH level, Saturation Flow, Offset time, etc.
+                </p>
+            </>
+        ),
+        trafficMap: (
+            <>
+                <p>
+                    The <strong>Traffic Map Tab</strong> provides a visual representation of average traffic conditions across the selected area. This tab is designed to help users analyze traffic density, flow, and congestion patterns over time.
+                </p>
+                <h4>Features:</h4>
+                <ul>
+                    <li><strong>Interactive Map:</strong> Displays a map with nodes (intersections) and edges (roads) representing the traffic network.</li>
+                    <li><strong>Traffic Density Visualization:</strong> Roads are color-coded based on average traffic density, with colors ranging from green (low traffic) to red (high traffic).</li>
+                    <li><strong>Node and Edge Details:</strong> Hover over nodes or edges to view detailed information such as Node ID, coordinates, Edge ID, length, and average traffic flow.</li>
+                    <li><strong>Time Slider:</strong> Use the time slider to view traffic conditions for specific time intervals.</li>
+                </ul>
+                <h4>How to Use:</h4>
+                <ul>
+                    <li>Hover over nodes or edges to view detailed traffic information.</li>
+                    <li>Use the time slider at the bottom of the page to explore traffic conditions for different time intervals.</li>
+                    <li>Click on a specific edge to highlight it and view additional metrics such as average speed and congestion levels.</li>
+                </ul>
+                <h4>Insights You Can Gain:</h4>
+                <ul>
+                    <li>Identify high-traffic areas and potential congestion points.</li>
+                    <li>Analyze traffic patterns over time to understand peak hours and low-traffic periods.</li>
+                    <li>Use the data to plan traffic management strategies or optimize signal timings.</li>
+                </ul>
+            </>
+        ),
+    };
+
     const navigate = useNavigate();
     const [files, setFiles] = useState([]); // Store files for the expanded collection
     const [file_type, setFile_Type] = useState(null);
@@ -157,7 +205,25 @@ function Main(props) {
                     setExpandedCollection={setExpandedCollection}
                 />
                 <div className="main-content">
+<<<<<<< Updated upstream
                     <h2>Welcome, {username}!</h2>
+=======
+                    <div className="header-container">
+                        <h2>Welcome, {username}!</h2>
+                        <button className="help-button" onClick={() => setIsHelpOpen(true)}>Help</button>
+                    </div>
+
+                    {isHelpOpen && (
+                        <div className="help-overlay">
+                            <div className="help-box">
+                                <h3>Need Help?</h3>
+                                <p>{helpInformation[selectedGraph]}</p> {/* Display help information dynamically */}
+                                <button onClick={() => setIsHelpOpen(false)}>Close</button>
+                            </div>
+                        </div>
+                    )}
+
+>>>>>>> Stashed changes
                     <Charts
                         expandedCollection={expandedCollection}
                         selectedGraph={selectedGraph} // Pass selectedGraph to Charts

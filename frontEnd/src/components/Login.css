@@ -1,42 +1,115 @@
-/* frontEnd/src/components/Login.css */
-
+/* Login Container */
 .login-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-  }
-  
-  .login-container h2 {
-    color: #660000;
-    margin-bottom: 20px;
-  }
-  
-  .login-container form {
-    display: flex;
-    flex-direction: column;
-    width: 300px;
-  }
-  
-  .login-container input {
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  .login-container button {
-    background-color: #660000;
-    color: #fff;
-    border: none;
-    padding: 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-  }
-  
-  .login-container button:hover {
-    background-color: #8b0000;
-  }
-  
+  background-image: url('/public/background.png'); /* Replace with the actual path to your image */
+  opacity: 0.8;
+  background-size: cover; /* Ensures the image covers the entire container */
+  background-position: center; /* Centers the image */
+  background-repeat: no-repeat; /* Prevents the image from repeating */
+  min-height: 100vh; /* Ensures the container takes up the full viewport height */  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.login-container h2 {
+  color: #660000;
+  margin-bottom: 20px;
+}
+
+.login-container form {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+}
+
+.login-container input {
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.login-container button {
+  background-color: #660000;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.login-container button:hover {
+  background-color: #8b0000;
+}
+
+.signUp {
+  color: #fff; /* Makes the text white */
+}
+
+.signUp p {
+  color: inherit; /* Inherits the color from the parent element */
+}
+
+.signUp a {
+  color: #fff; /* Makes the link white */
+  text-decoration: underline; /* Optional: Keeps the link underlined */
+}
+
+.signUp a:hover {
+  color: #ccc; /* Optional: Changes the link color on hover */
+}
+
+/* Navigation Bar */
+.navbar {
+  width: 100%;
+  background-color: #660000; /* Matches the theme */
+  padding: 20px 20px;
+  display: flex; /* Use flexbox to align items horizontally */
+  justify-content: flex-start; /* Align items to the left */
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  height: 50px;
+  opacity: 0.5; /* Default opacity */
+  overflow: hidden;
+  transition: opacity 0.3s ease; /* Smooth transition effect */
+}
+
+.navbar-logo {
+  height: 100%; /* Match the height of the navbar */
+  width: auto; /* Maintain the aspect ratio */
+}
+
+.navbar:hover {
+  opacity: 1; /* Fully opaque on hover */
+  background-color: #8b0000; /* Darker red background on hover */
+}
+
+/* Shared styles for all links */
+.nav-link {
+  color: #fff; /* White text for links */
+  text-decoration: none; /* Remove underline */
+  font-size: 20px; /* Adjust font size */
+  font-weight: bold; /* Make the text bold */
+  margin-right: 55px; /* Reset margins to avoid conflicts */
+}
+
+/* Specific styling for the Home link */
+.home-link {
+  margin-left: 1300px; /* Adjust this value to move only the Home link */
+}
+
+/* Specific styling for the About link */
+.about-link {
+  margin-left: 20px; /* Adjust this value to move only the About link */
+}
+
+/* Hover effect for all links */
+.nav-link:hover {
+  color: #ccc; /* Light gray on hover */
+}
