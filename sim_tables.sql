@@ -34,7 +34,6 @@ CREATE TABLE IF NOT EXISTS text_files (
 
 CREATE TABLE IF NOT EXISTS file16 (
 	id INT PRIMARY KEY AUTO_INCREMENT,
-    master_file_name VARCHAR(255),
     report_type INT,
     simulation_time_sec FLOAT,
     vehicle_id INT,
