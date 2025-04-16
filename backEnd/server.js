@@ -385,7 +385,7 @@ app.get('/api/file-tripprobes', async (req, res) => await tryGetFile(req, res, F
 /*
  * Gets the edge probes file (output file 16)
  */
-app.get('/api/file-edgeprobes', async (req, res) => await tryGetFile(req, res, FILE_EDGEPROBES));
+app.get('/api/file-edgeprobes', async (req, res) => await tryGetFile(req, res, FILE_EDGEPROBES)); // here ??? can we update to parse only once???
 
 
 
@@ -1237,167 +1237,167 @@ function ReadFile_TripProbes(buf, args) {
 	return out;
 }
 
-/**
- * Reads an input buffer as an edge probes file and extracts relevant data.
- * 
- * Edge probes are logs of vehicle activity on specific road segments (edges).
- * This function supports filtering based on edge ID, time range, and sampling stride.
- * 
- * @param {Buffer} buf - The Node.js buffer containing the binary data.
- * @param {Object} args - Query parameters for filtering the data.
- *   - edge: (number) The edge ID to filter by. -1 means all edges, -2 means metadata only.
- *   - skip: (number) The number of logs to skip. Defaults to 0.
- *   - max: (number) The maximum number of logs to retrieve. Defaults to 500.
- *   - stride: (number) Collect every nth log. Defaults to 1.
- *   - time0: (number) The start time for filtering logs. Defaults to 0.
- *   - time1: (number) The end time (exclusive) for filtering logs. Defaults to 999999999.
- * @returns {Object|Array} - Returns either metadata about edges or an array of filtered logs.
- */
-function ReadFile_EdgeProbes(buf, args) {
-	let off = 0;
+// /**
+//  * Reads an input buffer as an edge probes file and extracts relevant data.
+//  * 
+//  * Edge probes are logs of vehicle activity on specific road segments (edges).
+//  * This function supports filtering based on edge ID, time range, and sampling stride.
+//  * 
+//  * @param {Buffer} buf - The Node.js buffer containing the binary data.
+//  * @param {Object} args - Query parameters for filtering the data.
+//  *   - edge: (number) The edge ID to filter by. -1 means all edges, -2 means metadata only.
+//  *   - skip: (number) The number of logs to skip. Defaults to 0.
+//  *   - max: (number) The maximum number of logs to retrieve. Defaults to 500.
+//  *   - stride: (number) Collect every nth log. Defaults to 1.
+//  *   - time0: (number) The start time for filtering logs. Defaults to 0.
+//  *   - time1: (number) The end time (exclusive) for filtering logs. Defaults to 999999999.
+//  * @returns {Object|Array} - Returns either metadata about edges or an array of filtered logs.
+//  */
+// function ReadFile_EdgeProbes(buf, args) {
+// 	let off = 0;
 
-	// Read header information from the buffer
-	const lineC = buf.readInt32LE(off + 0); // Total number of logs (lines)
-	const edgeC = buf.readInt16LE(off + 4); // Total number of edges
-	const edgeMin = buf.readInt16LE(off + 6); // Minimum edge ID
-	const edgeMax = buf.readInt16LE(off + 8); // Maximum edge ID
-	off += 10;
+// 	// Read header information from the buffer
+// 	const lineC = buf.readInt32LE(off + 0); // Total number of logs (lines)
+// 	const edgeC = buf.readInt16LE(off + 4); // Total number of edges
+// 	const edgeMin = buf.readInt16LE(off + 6); // Minimum edge ID
+// 	const edgeMax = buf.readInt16LE(off + 8); // Maximum edge ID
+// 	off += 10;
 
-	// Initialize filtering parameters with defaults
-	let restEdge = -2; // Default: metadata only
-	let skip = 0; // Default: no logs skipped
-	let max = 500; // Default: maximum 500 logs
-	let stride = 1; // Default: collect every log
-	let time0 = 0; // Default: no minimum time filter
-	let time1 = 999999999; // Default: no maximum time filter
+// 	// Initialize filtering parameters with defaults
+// 	let restEdge = -2; // Default: metadata only
+// 	let skip = 0; // Default: no logs skipped
+// 	let max = 500; // Default: maximum 500 logs
+// 	let stride = 1; // Default: collect every log
+// 	let time0 = 0; // Default: no minimum time filter
+// 	let time1 = 999999999; // Default: no maximum time filter
 
-	// Override defaults with provided arguments
-	if (args) {
-		if (args.edge) restEdge = args.edge; // Target edge ID
-		if (args.skip) skip = args.skip; // Number of logs to skip
-		if (args.max) max = args.max; // Maximum logs to collect
-		if (args.stride) stride = args.stride; // Sampling stride
-		if (args.time0) time0 = args.time0; // Minimum time filter
-		if (args.time1) time1 = args.time1; // Maximum time filter
-	}
+// 	// Override defaults with provided arguments
+// 	if (args) {
+// 		if (args.edge) restEdge = args.edge; // Target edge ID
+// 		if (args.skip) skip = args.skip; // Number of logs to skip
+// 		if (args.max) max = args.max; // Maximum logs to collect
+// 		if (args.stride) stride = args.stride; // Sampling stride
+// 		if (args.time0) time0 = args.time0; // Minimum time filter
+// 		if (args.time1) time1 = args.time1; // Maximum time filter
+// 	}
 
-	// Handle metadata-only request (restEdge == -2)
-	if (restEdge == -2) {
-		let out = {
-			time0: 999999999, // Earliest log time
-			time1: 0, // Latest log time
-			total: 0, // Total number of logs
-			edges: Array(edgeC) // Array to store edge metadata
-		};
+// 	// Handle metadata-only request (restEdge == -2)
+// 	if (restEdge == -2) {
+// 		let out = {
+// 			time0: 999999999, // Earliest log time
+// 			time1: 0, // Latest log time
+// 			total: 0, // Total number of logs
+// 			edges: Array(edgeC) // Array to store edge metadata
+// 		};
 
-		// Iterate through all edges and extract metadata
-		for (let i = 0; i < edgeC; i++) {
-			const edgeID = buf.readInt16LE(off + 0); // Edge ID
-			const quant = buf.readInt32LE(off + 2); // Number of logs for this edge
-			const time0 = buf.readFloatLE(off + 6); // Earliest log time for this edge
-			const time1 = buf.readFloatLE(off + 10); // Latest log time for this edge
+// 		// Iterate through all edges and extract metadata
+// 		for (let i = 0; i < edgeC; i++) {
+// 			const edgeID = buf.readInt16LE(off + 0); // Edge ID
+// 			const quant = buf.readInt32LE(off + 2); // Number of logs for this edge
+// 			const time0 = buf.readFloatLE(off + 6); // Earliest log time for this edge
+// 			const time1 = buf.readFloatLE(off + 10); // Latest log time for this edge
 
-			// Store metadata for this edge
-			out.edges[i] = { edgeID, numOfLogs: quant, time0, time1 };
-			out.time0 = Math.min(out.time0, time0); // Update global earliest time
-			out.time1 = Math.max(out.time1, time1); // Update global latest time
-			out.total += quant; // Increment total log count
+// 			// Store metadata for this edge
+// 			out.edges[i] = { edgeID, numOfLogs: quant, time0, time1 };
+// 			out.time0 = Math.min(out.time0, time0); // Update global earliest time
+// 			out.time1 = Math.max(out.time1, time1); // Update global latest time
+// 			out.total += quant; // Increment total log count
 
-			off += 14; // Move to the next edge metadata
-		}
-		return out; // Return metadata
-	}
+// 			off += 14; // Move to the next edge metadata
+// 		}
+// 		return out; // Return metadata
+// 	}
 
-	// Handle specific edge filtering (restEdge != -1)
-	let totalEdges = lineC; // Default: total logs for all edges
-	if (restEdge != -1) {
-		totalEdges = 0; // Reset total logs for specific edge
-		for (let i = 0; i < edgeC; i++) {
-			const edgeID = buf.readInt16LE(off + 0); // Edge ID
-			const quant = buf.readInt32LE(off + 2); // Number of logs for this edge
+// 	// Handle specific edge filtering (restEdge != -1)
+// 	let totalEdges = lineC; // Default: total logs for all edges
+// 	if (restEdge != -1) {
+// 		totalEdges = 0; // Reset total logs for specific edge
+// 		for (let i = 0; i < edgeC; i++) {
+// 			const edgeID = buf.readInt16LE(off + 0); // Edge ID
+// 			const quant = buf.readInt32LE(off + 2); // Number of logs for this edge
 
-			if (edgeID == restEdge) {
-				totalEdges = quant; // Set total logs for the target edge
-				off += (edgeC - i) * 14; // Skip remaining edge metadata
-				break;
-			}
+// 			if (edgeID == restEdge) {
+// 				totalEdges = quant; // Set total logs for the target edge
+// 				off += (edgeC - i) * 14; // Skip remaining edge metadata
+// 				break;
+// 			}
 
-			off += 14; // Move to the next edge metadata
-		}
-	} else {
-		off += edgeC * 14; // Skip all edge metadata
-	}
+// 			off += 14; // Move to the next edge metadata
+// 		}
+// 	} else {
+// 		off += edgeC * 14; // Skip all edge metadata
+// 	}
 
-	// Calculate the maximum number of logs to extract
-	let totalMax = Math.max(0, Math.min(max, Math.floor((totalEdges - skip) / stride)));
-	let out = Array(totalMax); // Initialize output array
+// 	// Calculate the maximum number of logs to extract
+// 	let totalMax = Math.max(0, Math.min(max, Math.floor((totalEdges - skip) / stride)));
+// 	let out = Array(totalMax); // Initialize output array
 
-	// If no logs are to be extracted, return an empty array
-	if (totalMax == 0) return out;
+// 	// If no logs are to be extracted, return an empty array
+// 	if (totalMax == 0) return out;
 
-	let totalCount = 0; // Counter for total logs processed
-	for (let i = 0; i < lineC; i++) {
-		let obj = {}; // Object to store log data
-		const type = buf.readInt8(off); // Log type (e.g., 11 or 21)
-		obj.type = type;
+// 	let totalCount = 0; // Counter for total logs processed
+// 	for (let i = 0; i < lineC; i++) {
+// 		let obj = {}; // Object to store log data
+// 		const type = buf.readInt8(off); // Log type (e.g., 11 or 21)
+// 		obj.type = type;
 
-		// Parse log data based on its type
-		if (type == 11) {
-			off = ReadFromBufAny(obj,
-				[
-					"f_time", "i_vehicleID", "b_vehicleClass", "s_edge", "b_lane",
-					"s_nextEdge", "b_nextLane", "s_origin", "s_dest",
-					"f_schedDepart", "f_departTime", "f_edgeTime", "f_delay",
-					"f_stopDelay", "f_stops", "f_dist", "f_avgSpeed", "f_finalSpeed",
-					"f_fuel", "f_HC", "f_CO", "f_NO", "f_CO2", "f_PM", "f_energy",
-					"f_expectCrash", "f_expectHighInjury", "f_expectFatal",
-					"f_crashLow", "f_crashMed", "f_crashHigh", "f_toll", "f_noise"
-				],
-				buf, off + 1);
-		} else if (type == 21) {
-			off = ReadFromBufAny(obj,
-				[
-					"f_time", "i_vehicleID", "b_vehicleClass", "b_vehicleType",
-					"s_edge", "b_lane", "s_origin", "s_dest", "n1_departSched",
-					"n1_departTime", "n1_edgeTime", "n3_delay", "n3_stopDelay",
-					"n3_stops", "n3_dist", "n1space", "n1_speed", "f_accel",
-					"n5_fuel", "n5_energyRate", "n5_HC", "n5_CO", "n5_NO", "n5_CO2", "n5_PM",
-					"c1_expectCrash", "c1_expectHighInjury", "c1_expectFatal",
-					"c1_crashLow", "c1_crashMed", "c1_crashHigh", "n2_toll", "n2_noise"
-				],
-				buf, off + 1);
-		} else {
-			console.log(`${type} at ${off}, ${i}`); // Log unexpected type
-			return out; // Return collected logs so far
-		}
+// 		// Parse log data based on its type
+// 		if (type == 11) {
+// 			off = ReadFromBufAny(obj,
+// 				[
+// 					"f_time", "i_vehicleID", "b_vehicleClass", "s_edge", "b_lane",
+// 					"s_nextEdge", "b_nextLane", "s_origin", "s_dest",
+// 					"f_schedDepart", "f_departTime", "f_edgeTime", "f_delay",
+// 					"f_stopDelay", "f_stops", "f_dist", "f_avgSpeed", "f_finalSpeed",
+// 					"f_fuel", "f_HC", "f_CO", "f_NO", "f_CO2", "f_PM", "f_energy",
+// 					"f_expectCrash", "f_expectHighInjury", "f_expectFatal",
+// 					"f_crashLow", "f_crashMed", "f_crashHigh", "f_toll", "f_noise"
+// 				],
+// 				buf, off + 1);
+// 		} else if (type == 21) {
+// 			off = ReadFromBufAny(obj,
+// 				[
+// 					"f_time", "i_vehicleID", "b_vehicleClass", "b_vehicleType",
+// 					"s_edge", "b_lane", "s_origin", "s_dest", "n1_departSched",
+// 					"n1_departTime", "n1_edgeTime", "n3_delay", "n3_stopDelay",
+// 					"n3_stops", "n3_dist", "n1space", "n1_speed", "f_accel",
+// 					"n5_fuel", "n5_energyRate", "n5_HC", "n5_CO", "n5_NO", "n5_CO2", "n5_PM",
+// 					"c1_expectCrash", "c1_expectHighInjury", "c1_expectFatal",
+// 					"c1_crashLow", "c1_crashMed", "c1_crashHigh", "n2_toll", "n2_noise"
+// 				],
+// 				buf, off + 1);
+// 		} else {
+// 			console.log(`${type} at ${off}, ${i}`); // Log unexpected type
+// 			return out; // Return collected logs so far
+// 		}
 
-		// Apply filtering criteria
-		// if ((restEdge == -1 || obj.edge == restEdge) && obj.time >= time0) {
-		//     // Stop if the log time exceeds the maximum time
-		//     if (obj.time >= time1) {
-		//         out = out.slice(0, Math.floor((totalCount - skip) / stride) + 1);
-		//         break;
-		//     }
+// 		// Apply filtering criteria
+// 		// if ((restEdge == -1 || obj.edge == restEdge) && obj.time >= time0) {
+// 		//     // Stop if the log time exceeds the maximum time
+// 		//     if (obj.time >= time1) {
+// 		//         out = out.slice(0, Math.floor((totalCount - skip) / stride) + 1);
+// 		//         break;
+// 		//     }
 
-		//     // Skip logs based on the skip parameter
-		//     if (totalCount >= skip) {
-		//         const indx = totalCount - skip;
-		//         // Collect logs based on the stride parameter
-		//         if (indx % stride == 0) {
-		//             out[indx / stride] = obj;
-		//             // Stop if the maximum number of logs is reached
-		//             if (indx / stride + 1 >= max) {
-		//                 break;
-		//             }
-		//         }
-		//     }
+// 		//     // Skip logs based on the skip parameter
+// 		//     if (totalCount >= skip) {
+// 		//         const indx = totalCount - skip;
+// 		//         // Collect logs based on the stride parameter
+// 		//         if (indx % stride == 0) {
+// 		//             out[indx / stride] = obj;
+// 		//             // Stop if the maximum number of logs is reached
+// 		//             if (indx / stride + 1 >= max) {
+// 		//                 break;
+// 		//             }
+// 		//         }
+// 		//     }
 
-		//     totalCount++; // Increment the total log count
-		// }
-	}
+// 		//     totalCount++; // Increment the total log count
+// 		// }
+// 	}
 
-	return out; // Return the filtered logs
-}
+// 	return out; // Return the filtered logs
+// }
 
 /*
  * Reads an input as output file 16 (edge probes?)
@@ -1543,16 +1543,51 @@ async function ReadFile_EdgeProbes(buf, args) {
 		// console.log(obj);
 		try {
 			await promisePool.query(
-				`REPLACE INTO file16 (
-				 	report_type, simulation_time_sec, vehicle_id, vehicle_class,
-					current_link, current_lane, next_link, next_lane, vehicle_origin_zone, vehicle_destination_zone,
-					scheduled_departure_time_sec, actual_departure_time_sec, elapsed_time_sec, total_delay_sec,
-					stopped_delay_sec, cumulative_stops, distance_covered_km, average_speed_kmh, exit_speed_kmh,
-					fuel_used_liters, hydrocarbon_grams, carbon_monoxide_grams, nitrous_oxide_grams,
-					co2_grams, particulate_matter_grams, energy_used_kw, expected_crashes, expected_injury_crashes,
-					expected_fatal_crashes, low_damage_crashes, moderate_damage_crashes, high_damage_crashes,
-					toll_paid_dollars, acceleration_noise
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				`INSERT INTO file16 (
+				  report_type, simulation_time_sec, vehicle_id, vehicle_class,
+				  current_link, current_lane, next_link, next_lane, vehicle_origin_zone, vehicle_destination_zone,
+				  scheduled_departure_time_sec, actual_departure_time_sec, elapsed_time_sec, total_delay_sec,
+				  stopped_delay_sec, cumulative_stops, distance_covered_km, average_speed_kmh, exit_speed_kmh,
+				  fuel_used_liters, hydrocarbon_grams, carbon_monoxide_grams, nitrous_oxide_grams,
+				  co2_grams, particulate_matter_grams, energy_used_kw, expected_crashes, expected_injury_crashes,
+				  expected_fatal_crashes, low_damage_crashes, moderate_damage_crashes, high_damage_crashes,
+				  toll_paid_dollars, acceleration_noise
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				ON DUPLICATE KEY UPDATE
+				  report_type = VALUES(report_type),
+				  simulation_time_sec = VALUES(simulation_time_sec),
+				  vehicle_id = VALUES(vehicle_id),
+				  vehicle_class = VALUES(vehicle_class),
+				  current_link = VALUES(current_link),
+				  current_lane = VALUES(current_lane),
+				  next_link = VALUES(next_link),
+				  next_lane = VALUES(next_lane),
+				  vehicle_origin_zone = VALUES(vehicle_origin_zone),
+				  vehicle_destination_zone = VALUES(vehicle_destination_zone),
+				  scheduled_departure_time_sec = VALUES(scheduled_departure_time_sec),
+				  actual_departure_time_sec = VALUES(actual_departure_time_sec),
+				  elapsed_time_sec = VALUES(elapsed_time_sec),
+				  total_delay_sec = VALUES(total_delay_sec),
+				  stopped_delay_sec = VALUES(stopped_delay_sec),
+				  cumulative_stops = VALUES(cumulative_stops),
+				  distance_covered_km = VALUES(distance_covered_km),
+				  average_speed_kmh = VALUES(average_speed_kmh),
+				  exit_speed_kmh = VALUES(exit_speed_kmh),
+				  fuel_used_liters = VALUES(fuel_used_liters),
+				  hydrocarbon_grams = VALUES(hydrocarbon_grams),
+				  carbon_monoxide_grams = VALUES(carbon_monoxide_grams),
+				  nitrous_oxide_grams = VALUES(nitrous_oxide_grams),
+				  co2_grams = VALUES(co2_grams),
+				  particulate_matter_grams = VALUES(particulate_matter_grams),
+				  energy_used_kw = VALUES(energy_used_kw),
+				  expected_crashes = VALUES(expected_crashes),
+				  expected_injury_crashes = VALUES(expected_injury_crashes),
+				  expected_fatal_crashes = VALUES(expected_fatal_crashes),
+				  low_damage_crashes = VALUES(low_damage_crashes),
+				  moderate_damage_crashes = VALUES(moderate_damage_crashes),
+				  high_damage_crashes = VALUES(high_damage_crashes),
+				  toll_paid_dollars = VALUES(toll_paid_dollars),
+				  acceleration_noise = VALUES(acceleration_noise);`,
 				[
 					obj.type,
 					obj.time,
@@ -1623,8 +1658,7 @@ async function ReadFile_EdgeProbes(buf, args) {
 		// 	totalCount++;
 		// }
 	}
-	console.log(objs[21]);
-	// console.log(objs);
+	console.log("done parsing file 16");
 	return out;
 }
 
