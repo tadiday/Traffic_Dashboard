@@ -324,7 +324,7 @@ async function tryGetFile(req, res, fileType) {
 
 		// Step 5: Read and process the file content
 		let buf = Buffer.from(entry.file_content); // Convert the file content to a buffer
-		let obj = ReadFile_Any(buf, fileType, req.query); // Parse the file content based on its type
+		let obj = ReadFile_Any(buf, fileType, req.query, sim_id); // Parse the file content based on its type
 		return res.json(obj); // Return the parsed file content as a JSON response
 	} catch (err) {
 		// Step 6: Handle any errors that occur during the process
@@ -1411,7 +1411,7 @@ function ReadFile_TripProbes(buf, args) {
  * @param buf (nodejs buffer) The nodejs buffer to read from
  * @return (table) The summary file as a table/object
  */
-async function ReadFile_EdgeProbes(buf, args) {
+async function ReadFile_EdgeProbes(buf, args, sim_id) {
 	let off = 0;
 
 	const lineC = buf.readInt32LE(off + 0);
@@ -1542,53 +1542,56 @@ async function ReadFile_EdgeProbes(buf, args) {
 		objs[second].push(obj);
 		// console.log(obj);
 		try {
+			console.log(sim_id)
 			await promisePool.query(
 				`INSERT INTO file16 (
-				  report_type, simulation_time_sec, vehicle_id, vehicle_class,
-				  current_link, current_lane, next_link, next_lane, vehicle_origin_zone, vehicle_destination_zone,
-				  scheduled_departure_time_sec, actual_departure_time_sec, elapsed_time_sec, total_delay_sec,
-				  stopped_delay_sec, cumulative_stops, distance_covered_km, average_speed_kmh, exit_speed_kmh,
-				  fuel_used_liters, hydrocarbon_grams, carbon_monoxide_grams, nitrous_oxide_grams,
-				  co2_grams, particulate_matter_grams, energy_used_kw, expected_crashes, expected_injury_crashes,
-				  expected_fatal_crashes, low_damage_crashes, moderate_damage_crashes, high_damage_crashes,
-				  toll_paid_dollars, acceleration_noise
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				sim_id, report_type, simulation_time_sec, vehicle_id, vehicle_class,
+				current_link, current_lane, next_link, next_lane, vehicle_origin_zone, vehicle_destination_zone,
+				scheduled_departure_time_sec, actual_departure_time_sec, elapsed_time_sec, total_delay_sec,
+				stopped_delay_sec, cumulative_stops, distance_covered_km, average_speed_kmh, exit_speed_kmh,
+				fuel_used_liters, hydrocarbon_grams, carbon_monoxide_grams, nitrous_oxide_grams,
+				co2_grams, particulate_matter_grams, energy_used_kw, expected_crashes, expected_injury_crashes,
+				expected_fatal_crashes, low_damage_crashes, moderate_damage_crashes, high_damage_crashes,
+				toll_paid_dollars, acceleration_noise
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				ON DUPLICATE KEY UPDATE
-				  report_type = VALUES(report_type),
-				  simulation_time_sec = VALUES(simulation_time_sec),
-				  vehicle_id = VALUES(vehicle_id),
-				  vehicle_class = VALUES(vehicle_class),
-				  current_link = VALUES(current_link),
-				  current_lane = VALUES(current_lane),
-				  next_link = VALUES(next_link),
-				  next_lane = VALUES(next_lane),
-				  vehicle_origin_zone = VALUES(vehicle_origin_zone),
-				  vehicle_destination_zone = VALUES(vehicle_destination_zone),
-				  scheduled_departure_time_sec = VALUES(scheduled_departure_time_sec),
-				  actual_departure_time_sec = VALUES(actual_departure_time_sec),
-				  elapsed_time_sec = VALUES(elapsed_time_sec),
-				  total_delay_sec = VALUES(total_delay_sec),
-				  stopped_delay_sec = VALUES(stopped_delay_sec),
-				  cumulative_stops = VALUES(cumulative_stops),
-				  distance_covered_km = VALUES(distance_covered_km),
-				  average_speed_kmh = VALUES(average_speed_kmh),
-				  exit_speed_kmh = VALUES(exit_speed_kmh),
-				  fuel_used_liters = VALUES(fuel_used_liters),
-				  hydrocarbon_grams = VALUES(hydrocarbon_grams),
-				  carbon_monoxide_grams = VALUES(carbon_monoxide_grams),
-				  nitrous_oxide_grams = VALUES(nitrous_oxide_grams),
-				  co2_grams = VALUES(co2_grams),
-				  particulate_matter_grams = VALUES(particulate_matter_grams),
-				  energy_used_kw = VALUES(energy_used_kw),
-				  expected_crashes = VALUES(expected_crashes),
-				  expected_injury_crashes = VALUES(expected_injury_crashes),
-				  expected_fatal_crashes = VALUES(expected_fatal_crashes),
-				  low_damage_crashes = VALUES(low_damage_crashes),
-				  moderate_damage_crashes = VALUES(moderate_damage_crashes),
-				  high_damage_crashes = VALUES(high_damage_crashes),
-				  toll_paid_dollars = VALUES(toll_paid_dollars),
-				  acceleration_noise = VALUES(acceleration_noise);`,
+				sim_id = VALUES(sim_id),
+				report_type = VALUES(report_type),
+				simulation_time_sec = VALUES(simulation_time_sec),
+				vehicle_id = VALUES(vehicle_id),
+				vehicle_class = VALUES(vehicle_class),
+				current_link = VALUES(current_link),
+				current_lane = VALUES(current_lane),
+				next_link = VALUES(next_link),
+				next_lane = VALUES(next_lane),
+				vehicle_origin_zone = VALUES(vehicle_origin_zone),
+				vehicle_destination_zone = VALUES(vehicle_destination_zone),
+				scheduled_departure_time_sec = VALUES(scheduled_departure_time_sec),
+				actual_departure_time_sec = VALUES(actual_departure_time_sec),
+				elapsed_time_sec = VALUES(elapsed_time_sec),
+				total_delay_sec = VALUES(total_delay_sec),
+				stopped_delay_sec = VALUES(stopped_delay_sec),
+				cumulative_stops = VALUES(cumulative_stops),
+				distance_covered_km = VALUES(distance_covered_km),
+				average_speed_kmh = VALUES(average_speed_kmh),
+				exit_speed_kmh = VALUES(exit_speed_kmh),
+				fuel_used_liters = VALUES(fuel_used_liters),
+				hydrocarbon_grams = VALUES(hydrocarbon_grams),
+				carbon_monoxide_grams = VALUES(carbon_monoxide_grams),
+				nitrous_oxide_grams = VALUES(nitrous_oxide_grams),
+				co2_grams = VALUES(co2_grams),
+				particulate_matter_grams = VALUES(particulate_matter_grams),
+				energy_used_kw = VALUES(energy_used_kw),
+				expected_crashes = VALUES(expected_crashes),
+				expected_injury_crashes = VALUES(expected_injury_crashes),
+				expected_fatal_crashes = VALUES(expected_fatal_crashes),
+				low_damage_crashes = VALUES(low_damage_crashes),
+				moderate_damage_crashes = VALUES(moderate_damage_crashes),
+				high_damage_crashes = VALUES(high_damage_crashes),
+				toll_paid_dollars = VALUES(toll_paid_dollars),
+				acceleration_noise = VALUES(acceleration_noise);`,
 				[
+					sim_id, // Added sim_id as the first value
 					obj.type,
 					obj.time,
 					obj.vehicleID,
@@ -1673,7 +1676,7 @@ async function ReadFile_EdgeProbes(buf, args) {
  * @return (table) The interpretation of the file from the buffer
  * @throws Probably something if you use this wrong
  */
-function ReadFile_Any(buf, fileType, args) {
+function ReadFile_Any(buf, fileType, args, sim_id) {
 	switch (fileType) {
 		case FILE_OVERVIEW: return ReadFile_Overview(buf);
 		case FILE_NODES: return ReadFile_nodes(buf);
@@ -1684,7 +1687,7 @@ function ReadFile_Any(buf, fileType, args) {
 		case FILE_CONDS: return ReadFile_Conditions(buf);
 		case FILE_PATHS: return ReadFile_paths(buf);
 		case FILE_TRIPPROBES: return ReadFile_TripProbes(buf, args);
-		case FILE_EDGEPROBES: return ReadFile_EdgeProbes(buf, args);
+		case FILE_EDGEPROBES: return ReadFile_EdgeProbes(buf, args, sim_id);
 	}
 }
 
