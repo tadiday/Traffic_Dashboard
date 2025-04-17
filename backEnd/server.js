@@ -21,7 +21,7 @@ const pool = mysql.createPool({
   host: process.env.SQL_HOST, // 'localhost' for us but 'traffic_visual-mysqlserver' for docker,
   port: process.env.DATABASE_PORT,
   user: 'root',
-  password: 'P@ssw0rd1234!',
+  password: process.env.ROOT_PASSWORD,
   database: 'traffic_visual',
   waitForConnections: true,
   connectionLimit: 10,
