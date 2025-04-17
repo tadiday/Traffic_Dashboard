@@ -21,6 +21,7 @@ function EdgeLogsTreemap({ dimensions, selectedGraph, expandedCollection }) {
             },
           }
         );
+        console.log('Fetched file 16 data:', response);
         setEdgeData(response.data.edges || []);
       } catch (error) {
         console.error('Error fetching edge data:', error);
