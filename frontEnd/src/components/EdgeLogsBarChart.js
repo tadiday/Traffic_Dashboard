@@ -12,32 +12,48 @@ import {
   Legend,
 } from 'chart.js';
 import axios from 'axios';
+import Select from 'react-select';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
   const [edgeData, setEdgeData] = useState([]);
+  const [dropdownData, setDropDownData] = useState([]);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
+
   useEffect(() => {
     const fetchEdgeData = async () => {
       if (!expandedCollection) return;
       const token = sessionStorage.getItem('token');
       try {
         const response = await axios.get(
+          `${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-vehicle-dropdown`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { sim: expandedCollection },
+          }
+        );
+        console.log('Fetched Distinct Vehicle IDs:', response.data);
+        setDropDownData(response.data || []);
+      } catch (error) {
+        console.error('Error fetching dropdown data:', error);
+      }
+
+      try {
+        const response = await axios.get(
           `${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file-edgeprobes`,
           {
             headers: { Authorization: `Bearer ${token}` },
-            params: {
-              sim: expandedCollection,
-            },
+            params: { sim: expandedCollection },
           }
         );
-        // console.log('Fetched edge data:', response.data.edges);
         console.log('Fetched file 16 data:', response.data);
         setEdgeData(response.data || []);
       } catch (error) {
         console.error('Error fetching edge data:', error);
       }
     };
+
     fetchEdgeData();
   }, [expandedCollection]);
 
@@ -45,53 +61,34 @@ function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
     return <div>Loading Edge Data...</div>;
   }
 
-  // Prepare data for the chart
-  // const sortedEdges = edgeData.sort((a, b) => b.numOfLogs - a.numOfLogs);
-  // const topEdges = sortedEdges.slice(0, 20); // Display top 20 edges
-
-  // const data = {
-  //   labels: topEdges.map((edge) => `Edge ${edge.edgeID}`),
-  //   datasets: [
-  //     {
-  //       label: 'Number of Logs',
-  //       data: topEdges.map((edge) => edge.numOfLogs),
-  //       backgroundColor: 'rgba(75,192,192,0.6)',
-  //       borderColor: 'rgba(75,192,192,1)',
-  //       borderWidth: 1,
-  //     },
-  //   ],
-  // };
-
-  // const options = {
-  //   indexAxis: 'y',
-  //   scales: {
-  //     x: {
-  //       beginAtZero: true,
-  //       title: {
-  //         display: true,
-  //         text: 'Number of Logs',
-  //       },
-  //     },
-  //     y: {
-  //       title: {
-  //         display: true,
-  //         text: 'Edge ID',
-  //       },
-  //     },
-  //   },
-  //   plugins: {
-  //     legend: {
-  //       display: false,
-  //     },
-  //   },
-  //   maintainAspectRatio: false,
-  // };
+  const vehicleOptions =
+    dropdownData?.data?.map((item) => ({
+      value: item.vehicle_id,
+      label: item.vehicle_id.toString(),
+    })) || [];
 
   return (
     <div style={{ width: dimensions.graphWidth, height: dimensions.graphHeight }}>
       <h3>Top 20 Edges by Number of Logs</h3>
+      <Select
+        options={vehicleOptions}
+        onChange={(selectedOption) => {
+          console.log('Selected Vehicle ID:', selectedOption.value);
+          setSelectedVehicle(selectedOption.value);
+        }}
+        placeholder="Search vehicle ID..."
+        isSearchable
+        styles={{
+          container: (provided) => ({
+            ...provided,
+            marginBottom: '10px',
+            width: '300px',
+          }),
+        }}
+      />
+      <div>Selected Vehicle ID: {selectedVehicle || 'None'}</div>
       <div>{JSON.stringify(edgeData.data[0])}</div>
-      <div>hi</div>
+      {/* You can enable this once you want to plot the graph */}
       {/* <Bar data={data} options={options} /> */}
     </div>
   );

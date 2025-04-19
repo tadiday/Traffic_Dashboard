@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS file16 (
     high_damage_crashes FLOAT,
     toll_paid_dollars FLOAT,
     acceleration_noise FLOAT,
-    UNIQUE (vehicle_id, simulation_time_sec),
+    UNIQUE (vehicle_id, simulation_time_sec, sim_id),
     FOREIGN KEY (sim_id) REFERENCES simulations(sim_id)
 );
 
