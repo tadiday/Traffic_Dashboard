@@ -165,8 +165,11 @@ app.post('/api/delete-collection', async (req, res) => {
 		// bad, but this entire thing is bad
 		const [[{ sim_id }]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_owner = ? AND sim_name = ?", [user_id, collection_name]);
 
-		const deleteFileQuery = "DELETE FROM text_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
-		await promisePool.query(deleteFileQuery, [sim_id, sim_id, sim_id]);
+		const deleteDataFile16Query = "DELETE FROM file16 WHERE sim_id = ?; DELETE FROM text_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
+		await promisePool.query(deleteDataFile16Query, [sim_id, sim_id, sim_id]);
+
+		// const deleteFileQuery = "DELETE FROM text_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
+		// await promisePool.query(deleteFileQuery, [sim_id, sim_id, sim_id]);
 		res.send("File deletion successful");
 	} catch (err) {
 		console.error('Error deleting data:', err);
@@ -174,26 +177,26 @@ app.post('/api/delete-collection', async (req, res) => {
 	}
 });
 
-// Delete file query - Removed
-app.post('/api/delete-upload', async (req, res) => {
+// // Delete file query - Removed
+// app.post('/api/delete-upload', async (req, res) => {
 
-	// get the username
-	try {
-		var user_id = verifyToken(req).user_id;
-	} catch (exception) {
-		return res.status(exception.status).send(exception.message);
-	}
+// 	// get the username
+// 	try {
+// 		var user_id = verifyToken(req).user_id;
+// 	} catch (exception) {
+// 		return res.status(exception.status).send(exception.message);
+// 	}
 
-	try {
-		// delete file
-		await promisePool.query("DELETE FROM text_files where file_name = ? AND file_owner = ?", [req.body.fileName, user_id])
+// 	try {
+// 		// delete file
+// 		await promisePool.query("DELETE FROM text_files where file_name = ? AND file_owner = ?", [req.body.fileName, user_id])
 
-		res.send("File deletion successful");
-	} catch (err) {
-		console.error('Error deleting data:', err);
-		res.status(500).send('Error deleting data.');
-	}
-});
+// 		res.send("File deletion successful");
+// 	} catch (err) {
+// 		console.error('Error deleting data:', err);
+// 		res.status(500).send('Error deleting data.');
+// 	}
+// });
 
 // Upload file Query
 app.post('/api/upload', upload.single('file'), async (req, res) => {
