@@ -1,6 +1,6 @@
 /* frontEnd/src/components/Navbar.css */
 
-.navbar {
+.navbar-inside {
     background-color: #660000; /* Virginia Tech Maroon */
     color: #fff;
     padding: 10px 20px;
@@ -29,6 +29,7 @@
     color: #fff;
     cursor: pointer;
     font-size: 16px;
+    margin-right: 0px;
   }
   
   .logout-button:hover {

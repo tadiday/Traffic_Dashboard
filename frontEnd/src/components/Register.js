@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link} from 'react-router-dom';
 import axios from 'axios';
 import './Login.css'; // Reuse the login styles
+
 
 function Register() {
   const [username, setUsername] = useState('');
@@ -36,26 +37,35 @@ function Register() {
 
   return (
     <div className="login-container">
+
+      <nav className="navbar">
+        <img src="/vt-logo.png" alt="Logo" className="navbar-logo" />
+        <div className="nav-link">
+          <Link to="/" className="home-link">Home</Link>
+          <Link to="/about" className="about-link">About</Link>
+        </div>
+      </nav>
+
       <h2>Create Account</h2>
       <form onSubmit={handleSubmit}>
-        <input 
-          type="text" 
-          placeholder="Username" 
+        <input
+          type="text"
+          placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          required 
+          required
         />
-        <input 
-          type="password" 
-          placeholder="Password" 
+        <input
+          type="password"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required 
+          required
         />
         <button type="submit">Register</button>
       </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {success && <p style={{ color: 'green' }}>{success}</p>}
+      {error && <p style={{ color: 'white' }} >{error}</p>}
+      {success && <p style={{ color: 'white' }} >{success}</p>}
     </div>
   );
 }

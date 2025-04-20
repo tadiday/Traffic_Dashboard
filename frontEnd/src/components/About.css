@@ -1,0 +1,47 @@
+.about-container {
+  background-image: url('/public/about-container-background.jpg');
+  display: flex; /* Use flexbox to create a two-column layout */
+  justify-content: space-between; /* Space between the text box and the image */
+  align-items: center; /* Align items vertically in the center */
+  min-height: 100vh; /* Full viewport height */
+  background-color: black; /* Background color for the page */
+  padding: 20px; /* Add padding around the container */
+}
+
+.about-box {
+  background-color: #fff; /* White background for the text box */
+  padding: 30px;
+  border-radius: 8px; /* Rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+  max-width: 600px; /* Limit the width of the text box */
+  text-align: center; /* Center the text inside the box */
+  flex: 1; /* Allow the text box to take up one part of the space */
+  margin-right: 20px; /* Add spacing between the text box and the image */
+}
+
+.about-box h1 {
+  color: #660000; /* Matches the theme */
+  margin-bottom: 20px;
+}
+
+.about-box p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #333; /* Dark gray text for readability */
+  margin-bottom: 15px;
+}
+
+.about-image {
+  flex: 1; /* Allow the image to take up one part of the space */
+  display: flex;
+  justify-content: center; /* Center the image horizontally */
+  align-items: center; /* Center the image vertically */
+}
+
+.about-image img {
+  max-width: 93%; /* Ensure the image scales properly */
+  margin-left: -20px; /* Add spacing between the image and the text box */
+  height: auto; /* Maintain the aspect ratio */
+  border-radius: 8px; /* Optional: Add rounded corners to the image */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+}
