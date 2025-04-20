@@ -29,9 +29,11 @@ function Login() {
     <div className="login-container">
       {/* Navigation Bar */}
       <nav className="navbar">
-        <img src ="/vt-logo.png" alt="Logo" className="navbar-logo" />
-        <Link to="/" className="nav-link home-link">Home</Link>
-        <Link to="/about" className="nav-link about-link">About</Link>
+        <img src="/vt-logo.png" alt="Logo" className="navbar-logo" />
+        <div className="nav-link">
+          <Link to="/" className="home-link">Home</Link>
+          <Link to="/about" className="about-link">About</Link>
+        </div>
       </nav>
 
       <h2>Login</h2>

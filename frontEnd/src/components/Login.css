@@ -1,7 +1,7 @@
 /* Login Container */
 .login-container {
   background-image: url('/public/background.png'); /* Replace with the actual path to your image */
-  opacity: 0.8;
+  opacity: 1;
   background-size: cover; /* Ensures the image covers the entire container */
   background-position: center; /* Centers the image */
   background-repeat: no-repeat; /* Prevents the image from repeating */
@@ -15,6 +15,7 @@
 
 .login-container h2 {
   color: #660000;
+  font-size: 40px;
   margin-bottom: 20px;
 }
 
@@ -65,7 +66,7 @@
 /* Navigation Bar */
 .navbar {
   width: 100%;
-  background-color: #660000; /* Matches the theme */
+  background-color: #8b0000; /* Matches the theme */
   padding: 20px 20px;
   display: flex; /* Use flexbox to align items horizontally */
   justify-content: flex-start; /* Align items to the left */
@@ -75,39 +76,43 @@
   left: 0;
   z-index: 1000;
   height: 50px;
-  opacity: 0.5; /* Default opacity */
+  opacity: 1; /* Default opacity */
   overflow: hidden;
   transition: opacity 0.3s ease; /* Smooth transition effect */
 }
 
+
 .navbar-logo {
   height: 100%; /* Match the height of the navbar */
   width: auto; /* Maintain the aspect ratio */
-}
-
-.navbar:hover {
-  opacity: 1; /* Fully opaque on hover */
-  background-color: #8b0000; /* Darker red background on hover */
+  margin-right: 20px; /* Space between logo and links */
 }
 
 /* Shared styles for all links */
 .nav-link {
+  display: flex;
+  width: 80%;
+  gap: 50px; /* Space between Home and About */
+  justify-content: flex-end; 
+
+}
+
+/* Specific styling for the Home and About link */
+.home-link, .about-link{ 
   color: #fff; /* White text for links */
   text-decoration: none; /* Remove underline */
   font-size: 20px; /* Adjust font size */
   font-weight: bold; /* Make the text bold */
-  margin-right: 55px; /* Reset margins to avoid conflicts */
 }
 
-/* Specific styling for the Home link */
-.home-link {
-  margin-left: 1300px; /* Adjust this value to move only the Home link */
+/* Hover effect */
+.home-link:hover,
+.about-link:hover {
+  color: #ccc; /* Slightly lighter on hover */
+  transform: translateY(-2px); /* Lift effect */
 }
 
-/* Specific styling for the About link */
-.about-link {
-  margin-left: 20px; /* Adjust this value to move only the About link */
-}
+
 
 /* Hover effect for all links */
 .nav-link:hover {

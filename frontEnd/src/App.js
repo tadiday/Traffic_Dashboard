@@ -14,14 +14,6 @@ function App() {
   
   return (
     <>
-      {/* Conditionally render the navigation bar only on routes not in hideNavbarRoutes */}
-      {!hideNavbarRoutes.includes(location.pathname) && (
-        <nav className="navbar">
-          <a href="/" className="nav-link home-link">Home</a>
-          <a href="/about" className="nav-link about-link">About</a>
-        </nav>
-      )}
-
       <Routes>
         <Route path="/home" element={<ProtectedRoute><Main /></ProtectedRoute>} />
         <Route path="/" element={<Login />} />
