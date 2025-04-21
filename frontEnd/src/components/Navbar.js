@@ -5,7 +5,7 @@ import './Navbar.css';
 
 function Navbar(props) {
   return (
-    <div className="navbar">
+    <div className="navbar-inside">
       <div className="navbar-title">Traffic Visualizer</div>
       <div className="navbar-user">
         {props.username} | <button onClick={props.onLogout} className="logout-button">Logout</button>

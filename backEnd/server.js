@@ -18,15 +18,15 @@ app.use(express.json());
 
 // Create a sql connection pool, using mysql 2 its already promise based
 const pool = mysql.createPool({
-	host: process.env.SQL_HOST, // 'localhost' for us but 'traffic_visual-mysqlserver' for docker,
-	port: process.env.DATABASE_PORT,
-	user: 'root',
-	password: 'P@ssw0rd1234!',
-	database: 'traffic_visual',
-	waitForConnections: true,
-	connectionLimit: 10,
-	queueLimit: 0,
-	multipleStatements: true
+  host: process.env.SQL_HOST, // 'localhost' for us but 'traffic_visual-mysqlserver' for docker,
+  port: process.env.DATABASE_PORT,
+  user: 'root',
+  password: process.env.ROOT_PASSWORD,
+  database: 'traffic_visual',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  multipleStatements: true
 });
 
 const promisePool = pool.promise() // Makes the query commands return a promise
