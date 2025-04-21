@@ -131,32 +131,41 @@ function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
             Showing data for simulation second: <strong>{currentSecond}</strong>
           </p>
 
-          <table border="1" cellPadding="8" style={{ width: '100%' }}>
-            <thead>
+          <table 
+            border="1" 
+            cellPadding="8" 
+            style={{ 
+              width: '100%',
+              borderCollapse: 'collapse'
+            }}
+          >
+            <thead style={{ backgroundColor: '#4a90e2', color: 'white' }}>
               <tr>
-                <th>Time</th>
-                <th>Link</th>
-                <th>Lane</th>
-                <th>Speed</th>
-                <th>Distance</th>
-                <th>Fuel</th>
+                <th style={{ padding: '12px 8px' }}>Time</th>
+                <th style={{ padding: '12px 8px' }}>Link</th>
+                <th style={{ padding: '12px 8px' }}>Lane</th>
+                <th style={{ padding: '12px 8px' }}>Speed</th>
+                <th style={{ padding: '12px 8px' }}>Distance</th>
+                <th style={{ padding: '12px 8px' }}>Fuel</th>
+                <th style={{ padding: '12px 8px' }}>CO2 (g)</th>
               </tr>
             </thead>
             <tbody>
               {currentData.length > 0 ? (
                 currentData.map((row, idx) => (
-                  <tr key={idx}>
-                    <td>{row.simulation_time_sec}</td>
-                    <td>{row.current_link}</td>
-                    <td>{row.current_lane}</td>
-                    <td>{row.average_speed_kmh ?? 'N/A'}</td>
-                    <td>{row.distance_covered_km}</td>
-                    <td>{row.fuel_used_liters}</td>
+                  <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#f8f9fa' : 'white' }}>
+                    <td style={{ padding: '8px' }}>{row.simulation_time_sec}</td>
+                    <td style={{ padding: '8px' }}>{row.current_link}</td>
+                    <td style={{ padding: '8px' }}>{row.current_lane}</td>
+                    <td style={{ padding: '8px' }}>{row.average_speed_kmh ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.distance_covered_km}</td>
+                    <td style={{ padding: '8px' }}>{row.fuel_used_liters}</td>
+                    <td style={{ padding: '8px' }}>{row.co2_grams ?? 'N/A'}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6">No data for this second</td>
+                  <td colSpan="7" style={{ padding: '8px', textAlign: 'center' }}>No data for this second</td>
                 </tr>
               )}
             </tbody>
