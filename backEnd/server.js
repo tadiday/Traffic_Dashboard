@@ -937,7 +937,7 @@ function ReadFile_signals(buf) {
 /*
  * File 10
  */
-function ReadFile_Overview(buf) {
+async function ReadFile_Overview(buf, sim_id) {
 
 	let off = 0;
 	let obj = {};
@@ -1055,13 +1055,49 @@ function ReadFile_Overview(buf) {
 	off += 4;
 
 	for (let i = 0; i < obj.avgOD2.stats.length; i++) {
+		console.log( obj.avgOD2.stats.length)
 		obj.avgOD2.stats[i] = {};
 		off = ReadFromBufAny(obj.avgOD2.stats[i], [
-			"b_Origin Zone", "b_Destination Zone",
-			"i_Number Departed", "i_Number Arrived", "s_Number Entered",
-			"f_Avg Trip Time (min)", "f_Trip Time SD (min)", "f_Total Trip Time (min)",
-			"i_Max Pre-Trip Parked Vehicles", "s_Longest Pre-Trip Park Time", "f_Total Dist (Veh-Km)"
+			"b_OriginZone", "b_DestinationZone",
+			"i_NumberDeparted", "i_NumberArrived", "s_NumberEntered",
+			"f_AvgTripTime(min)", "f_TripTimeSD(min)", "f_TotalTripTime(min)",
+			"i_MaxPre-TripParkedVehicles", "s_LongestPre-TripParkTime", "f_TotalDist(Veh-Km)"
 		], buf, off);
+		try {
+			console.log(obj.avgOD2.stats[i])
+			await promisePool.query(
+				`INSERT INTO file10_ODstats (
+					sim_id, 
+					origin_zone,
+    				destination_zone,
+    				num_vehicles_departed,
+    				num_vehicles_arrived,
+    				num_vehicles_enroute,
+    				avg_trip_time,
+					sd_trip_time,
+					total_trip_time,
+					max_parked_vehicles,
+					max_park_time,
+					total_distance
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				[
+					sim_id,
+					obj.avgOD2.stats[i].OriginZone,
+					obj.avgOD2.stats[i].DestinationZone,
+					obj.avgOD2.stats[i].NumberDeparted,
+					obj.avgOD2.stats[i].NumberArrived,
+					obj.avgOD2.stats[i].NumberEntered,
+					obj.avgOD2.stats[i]['AvgTripTime(min)'],
+					obj.avgOD2.stats[i]['TripTimeSD(min)'],
+					obj.avgOD2.stats[i]['TotalTripTime(min)'],
+					obj.avgOD2.stats[i]['MaxPre-TripParkedVehicles'],
+					obj.avgOD2.stats[i]['LongestPre-TripParkTime'],
+					obj.avgOD2.stats[i]['TotalDist(Veh-Km)']
+				]
+			);
+		} catch (err) {
+			console.error(`Insert failed at iteration ${i}:`, err);
+		}
 	}
 
 	obj.avgOD2.totals = {};
@@ -1640,7 +1676,7 @@ async function ReadFile_EdgeProbes(buf, args, sim_id) {
  */
 function ReadFile_Any(buf, fileType, args, sim_id) {
 	switch (fileType) {
-		case FILE_OVERVIEW: return ReadFile_Overview(buf);
+		case FILE_OVERVIEW: return ReadFile_Overview(buf, sim_id);
 		case FILE_NODES: return ReadFile_nodes(buf);
 		case FILE_EDGES: return ReadFile_edges(buf);
 		case FILE_SIGNALS: return ReadFile_signals(buf);
