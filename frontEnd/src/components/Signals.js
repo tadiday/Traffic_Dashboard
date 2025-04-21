@@ -721,6 +721,7 @@ const Signals = (props) => {
     
     return (
         <div>
+            
             <div id="charts" ref={nodeGraphRef} style={{ width: props.dimensions.graphWidth, height: props.dimensions.graphHeight}}>
             </div>
             <p style={{ padding: '20px', paddingTop:'10px' }}> Timing Optimization at {time} minutes for {selectedOption}</p>
