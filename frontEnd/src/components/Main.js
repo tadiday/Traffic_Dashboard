@@ -171,10 +171,10 @@ function Main(props) {
                 </ul>
             </>
         ),
-        "Edge Logs Bar Chart": (
+        "Second-by-Second Table": (
             <>
                 <p>
-                    The <strong>Edge Logs Bar Chart</strong> tab allows the user to select and view second by second data for any specific vehicle ID.
+                    The <strong>Second-by-Second Table</strong> tab allows the user to select and view second by second data for any specific vehicle ID.
                 </p>
                 <h4>Features:</h4>
                 <ul>
@@ -183,10 +183,10 @@ function Main(props) {
                 </ul>
             </>
         ),
-        "Edge Logs Treemap": (
+        "CO2 Line Chart": (
             <>
                 <p>
-                    The <strong>Edge Logs Treemap</strong> tab allows the user to select and view CO2 emissions. 
+                    The <strong>CO2 Line Chart</strong> tab allows the user to select and view CO2 emissions. 
                 </p>
                 <h4>Features:</h4>
                 <ul>
