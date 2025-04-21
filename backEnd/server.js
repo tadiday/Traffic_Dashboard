@@ -995,6 +995,57 @@ async function ReadFile_Overview(buf, sim_id) {
 				"i_Total Travel Time (min)", "f_Free Travel Time (min)", "f_Avg Travel Time (min)",
 				"f_Avg Speed (kph)", "s_Avg Stops", "i_Max Veh Pos", "s_Max Veh Obs", "s_Cur Veh Obs"
 			], buf, off);
+
+			try {
+				console.log(entry.links[ii])
+				await promisePool.query(
+					`INSERT INTO file10_linkflow (
+						sim_id,
+						link_id,
+						start_node,
+						end_node,
+						speed_kmh,
+						saturation,
+						lane_num,
+						link_length,
+						link_flow,
+						green_time_percentage,
+						volume_capacity_ration,
+						total_travel_time,
+						free_travel_time,
+						average_travel_time,
+						average_speed,
+						average_num_stops,
+						max_possible_vehicles,
+						max_observed_vehicles,
+						current_observed_vehicles
+					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					[
+						sim_id,
+						entry.links[ii].link,
+						entry.links[ii].start,
+						entry.links[ii].end,
+						entry.links[ii].Speed,
+						entry.links[ii].Saturation,
+						entry.links[ii].Lanes,
+						entry.links[ii].Length,
+						entry.links[ii]['Link Flow (Vehs)'],
+						entry.links[ii]['Grn Time (%)'],
+						entry.links[ii]['V/C Rat (%)'],
+						entry.links[ii]['Total Travel Time (min)'],
+						entry.links[ii]['Free Travel Time (min)'],
+						entry.links[ii]['Avg Travel Time (min)'],
+						entry.links[ii]['Avg Speed (kph)'],
+						entry.links[ii]['Avg Stops'],
+						entry.links[ii]['Max Veh Pos'],
+						entry.links[ii]['Max Veh Obs'],
+						entry.links[ii]['Cur Veh Obs'],
+
+					]
+				);
+			} catch (err) {
+				console.error(`Insert failed at iteration ${i}:`, err);
+			}
 		}
 		off = ReadFromBufFloats(entry, [
 			"Total Travel Time (veh-min)",
