@@ -116,6 +116,7 @@ CREATE TABLE IF NOT EXISTS file16 (
 
 CREATE TABLE IF NOT EXISTS file10_linkflow (
     link_id INT PRIMARY KEY,
+    sim_id INT,
     start_node INT,
     end_node INT,
     speed_kmh INT,
@@ -132,13 +133,16 @@ CREATE TABLE IF NOT EXISTS file10_linkflow (
     average_num_stops INT,
     max_possible_vehicles INT,
     max_observed_vehicles INT,
-    current_observed_vehicles INT
+    current_observed_vehicles INT,
+    UNIQUE (vehicle_id, simulation_time_sec, sim_id),
+    FOREIGN KEY (sim_id) REFERENCES simulations(sim_id)
 );
 
 CREATE TABLE IF NOT EXISTS file10_ODstats (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    sim_id INT,
     origin_zone INT,
-    destination_zone INT
+    destination_zone INT,
     num_vehicles_departed INT,
     num_vehicles_arrived INT,
     num_vehicles_enroute INT,
@@ -147,8 +151,9 @@ CREATE TABLE IF NOT EXISTS file10_ODstats (
     total_trip_time FLOAT,
     max_parked_vehicles INT,
     max_park_time INT,
-    total_distance FLOAT
-    UNIQUE(origin_zone, destination_zone)
+    total_distance FLOAT,
+    UNIQUE(origin_zone, destination_zone, sim_id)
+    FOREIGN KEY (sim_id) REFERENCES simulations(sim_id)
 );
 
 
