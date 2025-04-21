@@ -73,7 +73,7 @@ function CustomSummaryChart(props) {
                         ? `${metric} (seconds)`
                         : metric}
                     </td>
-                    <td>{summaryData[dataType][metric][5]}</td> {/* Using index 5 as per your data structure */}
+                    <td>{Number(summaryData[dataType][metric][5]).toFixed(2)}</td> {/* Using index 5 as per your data structure */}
                   </tr>
                 ))}
               </tbody>

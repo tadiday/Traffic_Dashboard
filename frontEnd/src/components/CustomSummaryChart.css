@@ -32,6 +32,7 @@
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
+    table-layout: fixed; 
   }
   
   .summary-table th,
@@ -39,6 +40,7 @@
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
+    width: 50%;
   }
   
   .summary-table th {
