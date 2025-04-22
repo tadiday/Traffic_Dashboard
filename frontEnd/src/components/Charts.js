@@ -93,7 +93,7 @@ function Charts(props) {
                 );
                 break;
         case 'Road Probes':
-            if (props.selectedGraph === 'Edge Logs Bar Chart') {
+            if (props.selectedGraph === 'Second-by-Second Table') {
                 ret = (
                 <EdgeLogsBarChart
                     dimensions={dimensions}

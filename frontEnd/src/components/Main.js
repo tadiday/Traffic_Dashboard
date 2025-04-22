@@ -171,6 +171,48 @@ function Main(props) {
                 </ul>
             </>
         ),
+        "Second-by-Second Table": (
+            <>
+                <p>
+                    The <strong>Second-by-Second Table</strong> tab allows the user to select and view second by second data for any specific vehicle ID.
+                </p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>There is a drop down in the top left where the user can select a specific vehicle ID to view information for.</li>
+                    <li>For each vehicle ID, there will be a slider where the user can slide between a range of seconds. As the user slides the slider, the data in the table will change according to the second in the slider.</li>
+                </ul>
+            </>
+        ),
+        "CO2 Line Chart": (
+            <>
+                <p>
+                    The <strong>CO2 Line Chart</strong> tab allows the user to select and view CO2 emissions. 
+                </p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>When the user picks a specific vehicle ID, a graph will pop up with the CO2 emissions emmited data. The x-axis will be the seconds and the y-axis will be the amount in CO2 grams emmitted. </li>
+                    <li>When the user hovers over a specific second in the graph, they will see the exact amount of CO2 emmitted at that exact second. </li>
+                </ul>
+            </>
+        ),
+        "node": (
+            <>
+                <p>This is the landing page when the user logs into our application.</p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>On the left hand side, the user can choose a collection to upload, <strong>(it has to be a zip file only) </strong> 
+                    and then enter a collection name. </li>
+                    <li>Once the user has selected a file and entered a collection name, they can press the upload button to upload the file.</li>
+                    <li>Once the file is uploaded, the user can see all the collections they have uploaded on the left hand side.</li>
+                    <li>When the user clicks on a collection, they will be able to see all the files that are in that collection.</li>
+                    <li>When the user clicks on a file, they will be able to see all the visualizations that are available for that file.</li>
+                </ul>
+
+                <p>This is what the user sees when they follow the steps above and click on a collection name.</p>
+                <li>The user will be able to see seven (7) tabs on the right visualizing 7 different files <strong>(File 10 - Simulation Details, File 11 - Average Traffic Conditions, File 12 - Traffic Conditions, File 13 - Paths, Summary File, File 15 - Trip Completion Probes, and File 16 - Road Probes) </strong>
+                from the collection they just uploaded.</li>
+            </>
+        ),
 
     };
 
