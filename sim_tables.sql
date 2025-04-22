@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS file10_linkflow (
     link_length FLOAT,
     link_flow INT,
     green_time_percentage INT,
-    volume_capacity_ration INT,
+    volume_capacity_ratio INT,
     total_travel_time FLOAT,
     free_travel_time FLOAT,
     average_travel_time FLOAT,
