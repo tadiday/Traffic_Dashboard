@@ -78,7 +78,7 @@ function Sidebar(props) {
                 ) : (
                   props.files.map((file, fileIndex) => 
                   <li key={fileIndex}>
-                    {file} <span className='file-type'>(file {FileNumToFileType(fileIndex)})</span>
+                    {file}
                   </li>)
                 )}
               </ul>
