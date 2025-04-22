@@ -9,6 +9,8 @@ import Signals from './Signals';
 import CustomSummaryChart from './CustomSummaryChart';
 import EdgeLogsBarChart from './EdgeLogsBarChart';
 import EdgeLogsTreemap from './EdgeLogsTreemap';
+import TripDurationFrequency from './TripDurationFrequency';
+import OriginDestinationAvg from './OriginDestinationAvg';
 
 function Charts(props) {
     const dimensions = { graphWidth: window.innerWidth * 0.6, graphHeight: window.innerHeight * 0.7 };
@@ -53,13 +55,34 @@ function Charts(props) {
             );
             break;
         case "Trip Completion Probes":
-            ret = (
+            if (props.selectedGraph === 'Summary of Trip Probes') {
+                ret = (
                 <TripProbe
                     dimensions={dimensions}
                     selectedGraph={props.selectedGraph}
                     expandedCollection={props.expandedCollection}
                 />
-            );
+                );
+            }
+            else if (props.selectedGraph === 'Trip Duration Frequency') {
+                ret = (
+                <TripDurationFrequency
+                    dimensions={dimensions}
+                    selectedGraph={props.selectedGraph}
+                    expandedCollection={props.expandedCollection}
+                />
+                );
+            }
+            else {
+                ret = (
+                <OriginDestinationAvg
+                    dimensions={dimensions}
+                    selectedGraph={props.selectedGraph}
+                    expandedCollection={props.expandedCollection}
+                />
+                );
+            }
+
             break; // Added missing break statement here
         case "Paths":
             ret = (

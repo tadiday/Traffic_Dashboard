@@ -13,7 +13,7 @@ function RightSidebar(props) {
         'Traffic Conditions': ['Traffic in Series'],
         'Paths' : ['Minimum Path Trees'],
         'Simulation Details': ['Time Optimizations'],
-        'Trip Completion Probes' : ["Car Information Filter"],
+        'Trip Completion Probes' : ["Summary of Trip Probes", "Trip Duration Frequency", "Origin-Destination Averages"],
     });
     const outputFileTypes = ['Summary', 'Average Traffic Conditions', 'Traffic Conditions', 'Paths', 'Simulation Details', 'Trip Completion Probes','Road Probes'];
 

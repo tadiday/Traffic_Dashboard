@@ -623,6 +623,127 @@ app.get('/api/file-vehicle-dropdown', async (req, res) => {
 	}
 });
 
+app.get('/api/file-origin-zone-dropdown', async (req, res) => {
+	// Extract the simulation identifier from the query parameters
+	const sim = req.query.sim;
+	console.log(sim);
+
+	// Step 1: Verify the user's token and extract the user ID
+	try {
+		var user_id = verifyToken(req).user_id; // Extract user ID from the token
+	} catch (exception) {
+		var user_id = 1; // Default to user ID 1 (for testing or fallback)
+		// Uncomment the return statement below when ready for production use
+		return res.status(exception.status).send(exception.message); // Return error if token verification fails
+	}
+
+	// Step 2: Retrieve the simulation ID
+	let sim_id;
+	try {
+		// Attempt to parse the `sim` variable into an integer
+		sim_id = parseInt(sim);
+
+		// If `sim` is not a valid number, query the database to find the `sim_id`
+		// based on the `sim_name` (provided in `sim`) and the `sim_owner` (user_id)
+		if (isNaN(sim_id)) {
+			const [[simRow]] = await promisePool.query(
+				"SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?",
+				[sim, user_id] // Use placeholders to prevent SQL injection
+			);
+
+			// Extract the `sim_id` from the query result, if it exists
+			sim_id = simRow?.sim_id; // Use optional chaining to avoid errors if `simRow` is undefined
+		}
+
+		// If `sim_id` is still undefined or falsy, the simulation could not be found
+		if (!sim_id) {
+			return res.status(404).send('Simulation not found'); // Respond with a 404 status code
+		}
+	} catch (err) {
+		// Log any errors that occur during the process (e.g., database query fails)
+		console.error('Error resolving sim_id:', err);
+
+		// Respond with a 500 status code and a generic error message
+		return res.status(500).send('Error resolving simulation ID');
+	}
+
+	// Step 3: Query the database for distinct vehicle IDs in file16 for the given simulation
+	try {
+		const [rows] = await promisePool.query(
+			`SELECT DISTINCT origin_node FROM file15`
+		);
+
+		// Respond with the retrieved data as JSON
+		res.json({ data: rows });
+	} catch (err) {
+		// Log any errors that occur during the query
+		console.error('Error fetching file15 rows:', err);
+
+		// Respond with a 500 status code and an error message
+		res.status(500).send('Error fetching file15 data');
+	}
+});
+
+app.get('/api/file-destination-zone-dropdown', async (req, res) => {
+	// Extract the simulation identifier from the query parameters
+	const sim = req.query.sim;
+	console.log(sim);
+
+	// Step 1: Verify the user's token and extract the user ID
+	try {
+		var user_id = verifyToken(req).user_id; // Extract user ID from the token
+	} catch (exception) {
+		var user_id = 1; // Default to user ID 1 (for testing or fallback)
+		// Uncomment the return statement below when ready for production use
+		return res.status(exception.status).send(exception.message); // Return error if token verification fails
+	}
+
+	// Step 2: Retrieve the simulation ID
+	let sim_id;
+	try {
+		// Attempt to parse the `sim` variable into an integer
+		sim_id = parseInt(sim);
+
+		// If `sim` is not a valid number, query the database to find the `sim_id`
+		// based on the `sim_name` (provided in `sim`) and the `sim_owner` (user_id)
+		if (isNaN(sim_id)) {
+			const [[simRow]] = await promisePool.query(
+				"SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?",
+				[sim, user_id] // Use placeholders to prevent SQL injection
+			);
+
+			// Extract the `sim_id` from the query result, if it exists
+			sim_id = simRow?.sim_id; // Use optional chaining to avoid errors if `simRow` is undefined
+		}
+
+		// If `sim_id` is still undefined or falsy, the simulation could not be found
+		if (!sim_id) {
+			return res.status(404).send('Simulation not found'); // Respond with a 404 status code
+		}
+	} catch (err) {
+		// Log any errors that occur during the process (e.g., database query fails)
+		console.error('Error resolving sim_id:', err);
+
+		// Respond with a 500 status code and a generic error message
+		return res.status(500).send('Error resolving simulation ID');
+	}
+
+	// Step 3: Query the database for distinct vehicle IDs in file16 for the given simulation
+	try {
+		const [rows] = await promisePool.query(
+			`SELECT DISTINCT destination_node FROM file15`
+		);
+
+		// Respond with the retrieved data as JSON
+		res.json({ data: rows });
+	} catch (err) {
+		// Log any errors that occur during the query
+		console.error('Error fetching file15 rows:', err);
+
+		// Respond with a 500 status code and an error message
+		res.status(500).send('Error fetching file15 data');
+	}
+});
 
 function IsValidUserInfo(str) {
 	if (!str || !("" + str === str))
