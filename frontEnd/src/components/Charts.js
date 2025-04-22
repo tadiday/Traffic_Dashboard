@@ -9,6 +9,8 @@ import Signals from './Signals';
 import CustomSummaryChart from './CustomSummaryChart';
 import EdgeLogsBarChart from './EdgeLogsBarChart';
 import EdgeLogsTreemap from './EdgeLogsTreemap';
+import LinkFlow from './LinkFlow';
+import ODByVehicleClass from './ODByVehicleClass';
 import TripDurationFrequency from './TripDurationFrequency';
 import OriginDestinationAvg from './OriginDestinationAvg';
 
@@ -84,6 +86,25 @@ function Charts(props) {
             );
             break;
         case "Simulation Details":
+            if (props.selectedGraph === 'O-D Trip Times By Vehicle Class') {
+                ret = (
+                    <ODByVehicleClass
+                        dimensions={dimensions}
+                        selectedGraph={props.selectedGraph}
+                        expandedCollection={props.expandedCollection}
+                    />
+                );
+            }
+            else if (props.selectedGraph === "Link Flow Table") {
+                ret = (
+                    <LinkFlow
+                        dimensions={dimensions}
+                        selectedGraph={props.selectedGraph}
+                        expandedCollection={props.expandedCollection}
+                    />
+                );
+            }
+            else {
                 ret = (
                     <Signals
                         dimensions={dimensions}
@@ -91,23 +112,24 @@ function Charts(props) {
                         expandedCollection={props.expandedCollection}
                     />
                 );
-                break;
+            }
+            break;
         case 'Road Probes':
             if (props.selectedGraph === 'Second-by-Second Table') {
                 ret = (
-                <EdgeLogsBarChart
-                    dimensions={dimensions}
-                    selectedGraph={props.selectedGraph}
-                    expandedCollection={props.expandedCollection}
-                />
+                    <EdgeLogsBarChart
+                        dimensions={dimensions}
+                        selectedGraph={props.selectedGraph}
+                        expandedCollection={props.expandedCollection}
+                    />
                 );
             } else {
                 ret = (
-                <EdgeLogsTreemap
-                    dimensions={dimensions}
-                    selectedGraph={props.selectedGraph}
-                    expandedCollection={props.expandedCollection}
-                />
+                    <EdgeLogsTreemap
+                        dimensions={dimensions}
+                        selectedGraph={props.selectedGraph}
+                        expandedCollection={props.expandedCollection}
+                    />
                 );
             }
             break;

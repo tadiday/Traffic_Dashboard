@@ -229,6 +229,9 @@ const Signals = (props) => {
         var edges = [];
         var minPaths = [];
         var signals = [];
+        var linkflow = [];
+        var odstat1 = [];
+
 
         const token = sessionStorage.getItem('token');
         
@@ -271,6 +274,7 @@ const Signals = (props) => {
                 }
             });
 
+
             console.log("Response 4: ", response4);
 
             edges = response.data.edges.map(obj => {
@@ -304,6 +308,9 @@ const Signals = (props) => {
                 }
             })
 
+            // linkflow = response5.data
+            // odstat1 = response6.data
+
 
         
         } catch (error) {
@@ -313,7 +320,7 @@ const Signals = (props) => {
 
         assignIcons(nodes);
 
-        return { nodes: nodes, edges: edges, minPaths: minPaths, signals: signals};
+        return { nodes: nodes, edges: edges, minPaths: minPaths, signals: signals, linkflow: linkflow, odstat1: odstat1};
     };
 
     var chart;
