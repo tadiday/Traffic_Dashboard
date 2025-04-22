@@ -8,7 +8,7 @@ function RightSidebar(props) {
     // Fix dependecies for node graphs TBD 
     const visualizations = ({
         'Road Probes': ['Second-by-Second Table', 'CO2 Line Chart'],
-        'Summary': ['Traffic Map', 'Custom Summary Chart'],
+        'Summary': ['Summary Chart'],
         'Average Traffic Conditions': ['Traffic Map','Avg Crashes', 'Avg CO2'],
         'Traffic Conditions': ['Traffic in Series'],
         'Paths' : ['Minimum Path Trees'],

@@ -144,10 +144,23 @@ function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
                 <th style={{ padding: '12px 8px' }}>Time</th>
                 <th style={{ padding: '12px 8px' }}>Link</th>
                 <th style={{ padding: '12px 8px' }}>Lane</th>
+                <th style={{ padding: '12px 8px' }}>Next Link</th>
+                <th style={{ padding: '12px 8px' }}>Next Lane</th>
+                <th style={{ padding: '12px 8px' }}>Origin Zone</th>
+                <th style={{ padding: '12px 8px' }}>Destination Zone</th>
                 <th style={{ padding: '12px 8px' }}>Speed</th>
+                <th style={{ padding: '12px 8px' }}>Exit Speed</th>
                 <th style={{ padding: '12px 8px' }}>Distance</th>
+                <th style={{ padding: '12px 8px' }}>Elapsed Time</th>
+                <th style={{ padding: '12px 8px' }}>Total Delay</th>
+                <th style={{ padding: '12px 8px' }}>Stops</th>
                 <th style={{ padding: '12px 8px' }}>Fuel</th>
+                <th style={{ padding: '12px 8px' }}>Energy (kW)</th>
                 <th style={{ padding: '12px 8px' }}>CO2 (g)</th>
+                <th style={{ padding: '12px 8px' }}>HC (g)</th>
+                <th style={{ padding: '12px 8px' }}>CO (g)</th>
+                <th style={{ padding: '12px 8px' }}>NOx (g)</th>
+                <th style={{ padding: '12px 8px' }}>PM (g)</th>
               </tr>
             </thead>
             <tbody>
@@ -157,15 +170,28 @@ function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
                     <td style={{ padding: '8px' }}>{row.simulation_time_sec}</td>
                     <td style={{ padding: '8px' }}>{row.current_link}</td>
                     <td style={{ padding: '8px' }}>{row.current_lane}</td>
+                    <td style={{ padding: '8px' }}>{row.next_link ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.next_lane ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.vehicle_origin_zone}</td>
+                    <td style={{ padding: '8px' }}>{row.vehicle_destination_zone}</td>
                     <td style={{ padding: '8px' }}>{row.average_speed_kmh ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.exit_speed_kmh ?? 'N/A'}</td>
                     <td style={{ padding: '8px' }}>{row.distance_covered_km}</td>
+                    <td style={{ padding: '8px' }}>{row.elapsed_time_sec ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.total_delay_sec ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.cumulative_stops ?? 'N/A'}</td>
                     <td style={{ padding: '8px' }}>{row.fuel_used_liters}</td>
+                    <td style={{ padding: '8px' }}>{row.energy_used_kw ?? 'N/A'}</td>
                     <td style={{ padding: '8px' }}>{row.co2_grams ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.hydrocarbon_grams ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.carbon_monoxide_grams ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.nitrous_oxide_grams ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.particulate_matter_grams ?? 'N/A'}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" style={{ padding: '8px', textAlign: 'center' }}>No data for this second</td>
+                  <td colSpan="20" style={{ padding: '8px', textAlign: 'center' }}>No data for this second</td>
                 </tr>
               )}
             </tbody>
