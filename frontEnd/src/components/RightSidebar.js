@@ -12,7 +12,7 @@ function RightSidebar(props) {
         'Average Traffic Conditions': ['Traffic Map','Avg Crashes', 'Avg CO2'],
         'Traffic Conditions': ['Traffic in Series'],
         'Paths' : ['Minimum Path Trees'],
-        'Simulation Details': ['Time Optimizations'],
+        'Simulation Details': ['Time Optimizations', "Link Flow Table", "AVERAGE/TOTAL O-D TRIP TIMES/DISTANCES BY VEHICLE TYPE"],
         'Trip Completion Probes' : ["Car Information Filter"],
     });
     const outputFileTypes = ['Summary', 'Average Traffic Conditions', 'Traffic Conditions', 'Paths', 'Simulation Details', 'Trip Completion Probes','Road Probes'];

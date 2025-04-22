@@ -229,6 +229,9 @@ const Signals = (props) => {
         var edges = [];
         var minPaths = [];
         var signals = [];
+        var linkflow = [];
+        var odstat1 = [];
+
 
         const token = sessionStorage.getItem('token');
         
@@ -271,6 +274,23 @@ const Signals = (props) => {
                 }
             });
 
+
+            console.log("Response 4: ", response4);
+
+            // const response5 = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file10-linkflow?sim=${props.expandedCollection}`, {
+            //     headers: {
+            //         'Authorization': `Bearer ${token}`,
+            //     }
+            // });
+            // console.log("Response 5: ", response5.data);
+
+            // const response6 = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file10-odstat?sim=${props.expandedCollection}`, {
+            //     headers: {
+            //         'Authorization': `Bearer ${token}`,
+            //     }
+            // });
+            // console.log("Response 6: ", response6.data);
+
             edges = response.data.edges.map(obj => {
                 const condition = response2.data.conditions.find(cond => cond.edgeID === obj.id);
                 
@@ -302,6 +322,9 @@ const Signals = (props) => {
                 }
             })
 
+            // linkflow = response5.data
+            // odstat1 = response6.data
+
 
         
         } catch (error) {
@@ -311,7 +334,7 @@ const Signals = (props) => {
 
         assignIcons(nodes);
 
-        return { nodes: nodes, edges: edges, minPaths: minPaths, signals: signals};
+        return { nodes: nodes, edges: edges, minPaths: minPaths, signals: signals, linkflow: linkflow, odstat1: odstat1};
     };
 
     var chart;

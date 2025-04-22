@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS file10_ODstats (
     max_parked_vehicles INT,
     max_park_time INT,
     total_distance FLOAT,
-    UNIQUE(origin_zone, destination_zone, sim_id)
+    UNIQUE(origin_zone, destination_zone, sim_id),
     FOREIGN KEY (sim_id) REFERENCES simulations(sim_id)
 );
 

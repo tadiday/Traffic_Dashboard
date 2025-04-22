@@ -269,7 +269,10 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
 	console.log("Import complete");
 	// app.get('/api/file-edgeprobes', async (req, res) => await tryGetFile(req, res, FILE_EDGEPROBES)); // here ??? can we update to parse only once???
-	const parsed = await uploadData(user_id, sim_id, FILE_EDGEPROBES);
+	const parsed = await uploadData(user_id, sim_id, FILE_OVERVIEW);
+	// const parsed1 = await uploadData(user_id, sim_id, FILE_TRIPPROBES);
+	const parsed2 = await uploadData(user_id, sim_id, FILE_EDGEPROBES);
+
 
 });
 
@@ -290,7 +293,7 @@ async function uploadData(user_id, sim_id, fileType) {
 	if (entry.file_owner != user_id) throw new Error("Wrong user");
 
 	const buf = Buffer.from(entry.file_content);
-	ReadFile_Any(buf, fileType, {}, sim_id); // no req.query needed
+	await ReadFile_Any(buf, fileType, {}, sim_id); // no req.query needed
 }
 
 
@@ -363,7 +366,7 @@ async function tryGetFile(req, res, fileType) {
 
 		// Step 5: Read and process the file content
 		let buf = Buffer.from(entry.file_content); // Convert the file content to a buffer
-		let obj = ReadFile_Any(buf, fileType, req.query, sim_id); // Parse the file content based on its type
+		let obj = await ReadFile_Any(buf, fileType, req.query, sim_id); // Parse the file content based on its type
 		return res.json(obj); // Return the parsed file content as a JSON response
 	} catch (err) {
 		// Step 6: Handle any errors that occur during the process
@@ -384,6 +387,93 @@ app.get('/api/file-summary', async (req, res) => await tryGetFile(req, res, FILE
  */
 
 app.get('/api/file-overview', async (req, res) => await tryGetFile(req, res, FILE_OVERVIEW));
+
+
+app.get('/api/file10-odstat', async (req, res) => {
+	const sim = req.query.sim;
+	console.log(sim);
+
+	try {
+		var user_id = verifyToken(req).user_id; // Extract user ID from the token
+	} catch (exception) {
+		var user_id = 1; // Default to user ID 1 (for testing or fallback)
+		// Uncomment the return statement below when ready for production use
+		return res.status(exception.status).send(exception.message); // Return error if token verification fails
+	}
+
+	const [[{ sim_id }]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?", [sim, user_id]);
+
+	const [rows] = await promisePool.query(
+		`SELECT * FROM file10_ODstats WHERE sim_id = ?`,
+		[sim_id]
+	);
+
+	res.json({ data: rows });
+});
+
+app.get('/api/file10-linkflow', async (req, res) => {
+	const sim = req.query.sim;
+	console.log(req.query);
+	console.log(sim);
+
+	try {
+		var user_id = verifyToken(req).user_id; // Extract user ID from the token
+	} catch (exception) {
+		var user_id = 1; // Default to user ID 1 (for testing or fallback)
+		// Uncomment the return statement below when ready for production use
+		return res.status(exception.status).send(exception.message); // Return error if token verification fails
+	}
+
+
+	// Step 2: Retrieve the simulation ID
+	let sim_id;
+	try {
+		// Attempt to parse the `sim` variable into an integer.
+		sim_id = parseInt(sim);
+
+		// Check if the parsed value is not a number (NaN).
+		if (isNaN(sim_id)) {
+			// If `sim` is not a valid number, query the database to find the `sim_id`
+			// based on the `sim_name` (provided in `sim`) and the `sim_owner` (user_id).
+			const [[simRow]] = await promisePool.query(
+				"SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?",
+				[sim, user_id] // Use placeholders to prevent SQL injection.
+			);
+
+			// Extract the `sim_id` from the query result, if it exists.
+			sim_id = simRow?.sim_id; // Use optional chaining to avoid errors if `simRow` is undefined.
+		}
+
+		// If `sim_id` is still undefined or falsy after the above steps,
+		// it means the simulation could not be found.
+		if (!sim_id) {
+			// Respond with a 404 status code and an error message.
+			return res.status(404).send('Simulation not found');
+		}
+	} catch (err) {
+		// If any error occurs during the process (e.g., database query fails),
+		// log the error to the console for debugging purposes.
+		console.error('Error resolving sim_id:', err);
+
+		// Respond with a 500 status code and a generic error message.
+		return res.status(500).send('Error resolving simulation ID');
+	}
+
+
+	// Step 3: Query file16 for rows matching this sim_id
+	try {
+		const [rows] = await promisePool.query(
+			`SELECT * FROM file10_linkflow WHERE sim_id = ?`,
+			[sim_id]
+		);
+
+		res.json({ data: rows });
+	} catch (err) {
+		console.error('Error fetching file16 rows:', err);
+		res.status(500).send('Error fetching file16 data');
+	}
+});
+
 
 /*
  * Gets the node file (input file 1)
@@ -997,9 +1087,8 @@ async function ReadFile_Overview(buf, sim_id) {
 			], buf, off);
 
 			try {
-				console.log(entry.links[ii])
 				await promisePool.query(
-					`INSERT INTO file10_linkflow (
+					`REPLACE INTO file10_linkflow (
 						sim_id,
 						link_id,
 						start_node,
@@ -1106,7 +1195,7 @@ async function ReadFile_Overview(buf, sim_id) {
 	off += 4;
 
 	for (let i = 0; i < obj.avgOD2.stats.length; i++) {
-		console.log( obj.avgOD2.stats.length)
+
 		obj.avgOD2.stats[i] = {};
 		off = ReadFromBufAny(obj.avgOD2.stats[i], [
 			"b_OriginZone", "b_DestinationZone",
@@ -1115,9 +1204,8 @@ async function ReadFile_Overview(buf, sim_id) {
 			"i_MaxPre-TripParkedVehicles", "s_LongestPre-TripParkTime", "f_TotalDist(Veh-Km)"
 		], buf, off);
 		try {
-			console.log(obj.avgOD2.stats[i])
 			await promisePool.query(
-				`INSERT INTO file10_ODstats (
+				`REPLACE INTO file10_ODstats (
 					sim_id, 
 					origin_zone,
     				destination_zone,
@@ -1185,6 +1273,7 @@ async function ReadFile_Overview(buf, sim_id) {
 		[off, obj.incd[i]["Lane Losses"]] = ReadString(buf, off);
 	}
 
+	console.log("done parsing file 10");
 	return obj;
 }
 
@@ -1725,9 +1814,9 @@ async function ReadFile_EdgeProbes(buf, args, sim_id) {
  * @return (table) The interpretation of the file from the buffer
  * @throws Probably something if you use this wrong
  */
-function ReadFile_Any(buf, fileType, args, sim_id) {
+async function ReadFile_Any(buf, fileType, args, sim_id) {
 	switch (fileType) {
-		case FILE_OVERVIEW: return ReadFile_Overview(buf, sim_id);
+		case FILE_OVERVIEW: return await ReadFile_Overview(buf, sim_id);
 		case FILE_NODES: return ReadFile_nodes(buf);
 		case FILE_EDGES: return ReadFile_edges(buf);
 		case FILE_SIGNALS: return ReadFile_signals(buf);
@@ -1735,8 +1824,8 @@ function ReadFile_Any(buf, fileType, args, sim_id) {
 		case FILE_AVGCONDS: return ReadFile_AvgConditions(buf);
 		case FILE_CONDS: return ReadFile_Conditions(buf);
 		case FILE_PATHS: return ReadFile_paths(buf);
-		case FILE_TRIPPROBES: return ReadFile_TripProbes(buf, args);
-		case FILE_EDGEPROBES: return ReadFile_EdgeProbes(buf, args, sim_id);
+		case FILE_TRIPPROBES: return await ReadFile_TripProbes(buf, args);
+		case FILE_EDGEPROBES: return await ReadFile_EdgeProbes(buf, args, sim_id);
 	}
 }
 
