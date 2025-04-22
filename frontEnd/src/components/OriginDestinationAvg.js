@@ -185,7 +185,7 @@ function OriginDestinationAverages({ dimensions, selectedGraph, expandedCollecti
                     <p className="text-gray-500">No data available for the selected origin-destination pair.</p>
                 )
             ) : (
-                <p className="text-yellow-600 font-medium">Please select both an origin and a destination to view average data.</p>
+                <p className="text-yellow-600 font-medium">Please select both an origin and a destination to view data.</p>
             )}
         </div>
     );
