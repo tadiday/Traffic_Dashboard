@@ -19,22 +19,12 @@ function Charts(props) {
 
     switch (props.file_type) {
         case "Summary":
-            if (props.selectedGraph === "Custom Summary Chart") {
-                ret = (
-                    <CustomSummaryChart
-                        dimensions={dimensions}
-                        expandedCollection={props.expandedCollection}
-                    />
-                );
-            } else {
-                ret = (
-                    <Summary
-                        dimensions={dimensions}
-                        selectedGraph={props.selectedGraph}
-                        expandedCollection={props.expandedCollection}
-                    />
-                );
-            }
+            ret = (
+                <CustomSummaryChart
+                    dimensions={dimensions}
+                    expandedCollection={props.expandedCollection}
+                />
+            );
             break;
         case "Average Traffic Conditions":
             ret = (
