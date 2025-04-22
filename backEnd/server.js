@@ -1099,7 +1099,7 @@ async function ReadFile_Overview(buf, sim_id) {
 						link_length,
 						link_flow,
 						green_time_percentage,
-						volume_capacity_ration,
+						volume_capacity_ratio,
 						total_travel_time,
 						free_travel_time,
 						average_travel_time,

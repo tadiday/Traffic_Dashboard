@@ -2,27 +2,27 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './LinkFlow.css';
 
-function LinkFlow({ dimensions, selectedGraph, expandedCollection }) {
+function OdByVehicleType({ dimensions, selectedGraph, expandedCollection }) {
     const [linkFlow, setLinkFlow] = useState([]);
 
     useEffect(() => {
-        const fetchEdgeData = async () => {
+        const fetchODStats = async () => {
             const token = sessionStorage.getItem('token');
             try {
                 const response = await axios.get(
-                    `${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file10-linkflow?sim=${expandedCollection}`,
+                    `${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file10-odstat?sim=${expandedCollection}`,
                     {
                         headers: { Authorization: `Bearer ${token}` },
                     }
                 );
-                console.log('Fetched file 10 linkflow data:', response.data);
+                console.log('Fetched file10 OD stats data:', response.data);
                 setLinkFlow(response.data.data || []);
             } catch (error) {
-                console.error('Error fetching edge data:', error);
+                console.error('Error fetching OD stats data:', error);
             }
         };
 
-        fetchEdgeData();
+        fetchODStats();
     }, [expandedCollection]);
 
     if (!linkFlow.length) return <div>Loading...</div>;
@@ -44,7 +44,7 @@ function LinkFlow({ dimensions, selectedGraph, expandedCollection }) {
                 marginBottom: '1.5rem', 
                 fontSize: '1.5rem',
                 fontWeight: '600' 
-            }}>Link-Specific Metrics</h2>
+            }}>Origin-Destination Stats</h2>
             <div style={{
                 overflowX: 'auto',
                 overflowY: 'auto',
@@ -76,7 +76,7 @@ function LinkFlow({ dimensions, selectedGraph, expandedCollection }) {
                     <thead>
                         <tr>
                             {Object.keys(linkRows[0] || {})
-                                .filter(key => key !== 'sim_id') // Filter out sim_id
+                                .filter(key => key !== 'sim_id' && key !== 'id')
                                 .map(key => (
                                     <th key={key} style={{
                                         padding: '14px 16px',
@@ -97,11 +97,11 @@ function LinkFlow({ dimensions, selectedGraph, expandedCollection }) {
                     </thead>
                     <tbody>
                         {linkRows.map((row, index) => (
-                            <tr key={row.link_id} style={{
+                            <tr key={index} style={{
                                 backgroundColor: index % 2 === 0 ? 'white' : '#f8fafc'
                             }}>
                                 {Object.entries(row)
-                                    .filter(([key]) => key !== 'sim_id') // Filter out sim_id
+                                    .filter(([key]) => key !== 'sim_id' && key !== 'id')
                                     .map(([key, value], cellIndex) => (
                                         <td key={cellIndex} style={{
                                             padding: '12px 16px',
@@ -121,4 +121,4 @@ function LinkFlow({ dimensions, selectedGraph, expandedCollection }) {
     );
 }
 
-export default LinkFlow;
+export default OdByVehicleType;

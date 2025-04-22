@@ -10,6 +10,7 @@ import CustomSummaryChart from './CustomSummaryChart';
 import EdgeLogsBarChart from './EdgeLogsBarChart';
 import EdgeLogsTreemap from './EdgeLogsTreemap';
 import LinkFlow from './LinkFlow';
+import ODByVehicleClass from './ODByVehicleClass';
 
 function Charts(props) {
     const dimensions = { graphWidth: window.innerWidth * 0.6, graphHeight: window.innerHeight * 0.7 };
@@ -72,9 +73,13 @@ function Charts(props) {
             );
             break;
         case "Simulation Details":
-            if (props.selectedGraph === 'AVERAGE/TOTAL O-D TRIP TIMES/DISTANCES BY VEHICLE TYPE') {
+            if (props.selectedGraph === 'O-D Trip Times By Vehicle Class') {
                 ret = (
-                    <div></div>
+                    <ODByVehicleClass
+                        dimensions={dimensions}
+                        selectedGraph={props.selectedGraph}
+                        expandedCollection={props.expandedCollection}
+                    />
                 );
             }
             else if (props.selectedGraph === "Link Flow Table") {
