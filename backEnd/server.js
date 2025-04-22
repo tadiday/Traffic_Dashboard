@@ -166,8 +166,8 @@ app.post('/api/delete-collection', async (req, res) => {
 		// bad, but this entire thing is bad
 		const [[{ sim_id }]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_owner = ? AND sim_name = ?", [user_id, collection_name]);
 
-		const deleteDataFile16Query = "DELETE FROM file16 WHERE sim_id = ?; DELETE FROM text_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
-		await promisePool.query(deleteDataFile16Query, [sim_id, sim_id, sim_id]);
+		const deleteDataFile16Query = "DELETE FROM file10_linkflow WHERE sim_id = ?;DELETE FROM file10_ODstats WHERE sim_id = ?;DELETE FROM file15 WHERE sim_id = ?;DELETE FROM file16 WHERE sim_id = ?; DELETE FROM text_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
+		await promisePool.query(deleteDataFile16Query, [sim_id, sim_id, sim_id, sim_id, sim_id, sim_id]);
 
 		// const deleteFileQuery = "DELETE FROM text_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
 		// await promisePool.query(deleteFileQuery, [sim_id, sim_id, sim_id]);
@@ -274,7 +274,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 	// const file16parse = await uploadData(user_id, sim_id, FILE_EDGEPROBES);
 	const [file10parse, file15parse, file16parse] = await Promise.all([
 		// uploadData(user_id, sim_id, FILE_OVERVIEW),
-    uploadData(user_id, sim_id, FILE_OVERVIEW);
+    	uploadData(user_id, sim_id, FILE_OVERVIEW),
 		uploadData(user_id, sim_id, FILE_TRIPPROBES),
 		uploadData(user_id, sim_id, FILE_EDGEPROBES)
 	  ]);
@@ -758,7 +758,7 @@ app.get('/api/file-origin-zone-dropdown', async (req, res) => {
 	// Step 3: Query the database for distinct vehicle IDs in file16 for the given simulation
 	try {
 		const [rows] = await promisePool.query(
-			`SELECT DISTINCT origin_node FROM file15`
+			`SELECT DISTINCT origin_node FROM file15 ORDER BY origin_node ASC`
 		);
 
 		// Respond with the retrieved data as JSON
@@ -819,7 +819,7 @@ app.get('/api/file-destination-zone-dropdown', async (req, res) => {
 	// Step 3: Query the database for distinct vehicle IDs in file16 for the given simulation
 	try {
 		const [rows] = await promisePool.query(
-			`SELECT DISTINCT destination_node FROM file15`
+			`SELECT DISTINCT destination_node FROM file15 ORDER BY destination_node ASC`
 		);
 
 		// Respond with the retrieved data as JSON
