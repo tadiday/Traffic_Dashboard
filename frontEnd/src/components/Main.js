@@ -112,7 +112,7 @@ function Main(props) {
                </ul>
            </>
        ),
-       "Car Information Filter": (
+       "Summary of Trip Probes": (
            <>
                <p>
                    The<strong> Car Information Filter </strong> provides a visual representation of all the metrics and their values.

@@ -271,6 +271,8 @@ const Signals = (props) => {
                 }
             });
 
+            console.log("Response 4: ", response4);
+
             edges = response.data.edges.map(obj => {
                 const condition = response2.data.conditions.find(cond => cond.edgeID === obj.id);
                 

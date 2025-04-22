@@ -4,54 +4,114 @@
     flex-direction: column;
     font-family: Arial, sans-serif;
     margin: 20px;
-  }
-  
-  .controls {
+    background-color: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.controls {
     display: flex;
     align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .controls label {
+    margin-bottom: 24px;
+}
+
+.controls label {
     margin-right: 15px;
     font-weight: bold;
-  }
-  
-  .controls select {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.controls select {
     margin-left: 5px;
     padding: 5px;
     border: 1px solid #ccc;
     border-radius: 4px;
-  }
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
 
-  .table-container {
+.controls select:hover {
+    border-color: #d0d0d0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+}
+
+.controls select:focus {
+    border-color: #2196f3;
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.table-container {
     margin-top: 20px;
-  }
-  
-  .summary-table {
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.summary-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
     table-layout: fixed; 
-  }
-  
-  .summary-table th,
-  .summary-table td {
+}
+
+.summary-table th,
+.summary-table td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
     width: 50%;
-  }
-  
-  .summary-table th {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.summary-table th {
     background-color: #f4f4f4;
     font-weight: bold;
-  }
-  
-  .summary-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #444;
+    font-size: 14px;
+}
+
+.summary-table td {
+    color: #666;
+    font-size: 14px;
+}
+
+.summary-table tr:nth-child(even) {
     background-color: #f9f9f9;
-  }
-  
-  .summary-table tr:hover {
+}
+
+.summary-table tr:hover {
     background-color: #f1f1f1;
-  }
+}
+
+.summary-table tr:last-child td {
+    border-bottom: none;
+}
+
+.summary-table tr:hover td {
+    background-color: #f8f9fa;
+}
+
+h3 {
+    margin: 0 0 16px 0;
+    color: #333;
+    font-weight: 500;
+    font-size: 18px;
+}
