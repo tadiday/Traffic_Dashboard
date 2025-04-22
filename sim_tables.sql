@@ -132,7 +132,6 @@ CREATE TABLE IF NOT EXISTS file10_linkflow (
     max_possible_vehicles INT,
     max_observed_vehicles INT,
     current_observed_vehicles INT,
-    UNIQUE (vehicle_id, simulation_time_sec, sim_id),
     FOREIGN KEY (sim_id) REFERENCES simulations(sim_id)
 );
 
