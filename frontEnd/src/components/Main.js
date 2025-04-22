@@ -213,6 +213,52 @@ function Main(props) {
                 from the collection they just uploaded.</li>
             </>
         ),
+        "Link Flow Table": (
+            <>
+                <p>The <strong>Link Flow Table</strong> tab will allow the user to view link specific metrics.</p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>The user is able to scroll left/right and up/down and view all the corresponding link-specific metrics for the 18 column headers.</li>
+                </ul>
+            </>
+        ),
+        "O-D Trip Times By Vehicle Class": (
+            <>
+                <p>The <strong>O-D Trip Times By Vehicle Class</strong> tab will allow the user to view origin destinaton statistics.</p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>The user will be able to scroll left/right and up/down and view all the corresponding origin-destination statistics.</li>
+                </ul>
+            </>
+        ),
+        "Summary of Trip Probes": (
+            <>
+                <p>The <strong>Summary of Trip Probes</strong> tab will allow the user to view total stats, the average stats and the advanced stats of the trip probes</p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>In the <strong>Total Stats</strong> header, the user is able to view the value of four different statistics including: Total vehicles, total fuel used, total CO2 produced, and Expected crashes.</li>
+                    <li>In the <strong>Average Stats</strong> header, the user is able to view the value of three different statistics including: Average Trip Duration, Average Delay, and Average Speed</li>
+                    <li>In the <strong>Total Stats</strong> header, the user is able to view the value of three different statistics including: Minimum delay, Maximum delay, and Delay Standard Deviation.</li>
+                </ul>
+            </>
+        ),
+        "Origin-Destination Averages": (
+            <>
+                <p>The <strong>Origin-Destination Averages</strong> tab will allow the user to </p>
+                <ul>
+                    <li>The user will be able to view the origin-destination averages for a pair of values (Origin Node and Destination Node).</li>
+                    <li><strong>Currently, there is no data that is populating for a random pair, but that just means that there was never been a completed trip from that node to the other. Therefore, there is no data to display. </strong></li>
+                </ul>
+            </>
+        ),
+        "Trip Duration Frequency": (
+            <>
+                <p>The <strong>Trip Duration Frequency</strong> tab will allow the user to view the number of trips taken between every 60 seconds in histogram form. </p>
+                <ul>
+                    <li>The user is able to see the number of trips for each minute interval. When the user hovers over a specific bar at a specific time interval, they are able to see the exact number of trips taken at that time. </li>
+                </ul>
+            </>
+        ),
 
     };
 
