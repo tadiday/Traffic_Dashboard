@@ -277,20 +277,6 @@ const Signals = (props) => {
 
             console.log("Response 4: ", response4);
 
-            // const response5 = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file10-linkflow?sim=${props.expandedCollection}`, {
-            //     headers: {
-            //         'Authorization': `Bearer ${token}`,
-            //     }
-            // });
-            // console.log("Response 5: ", response5.data);
-
-            // const response6 = await axios.get(`${process.env.REACT_APP_API_URL}:${process.env.REACT_APP_API_BACKEND_PORT}/api/file10-odstat?sim=${props.expandedCollection}`, {
-            //     headers: {
-            //         'Authorization': `Bearer ${token}`,
-            //     }
-            // });
-            // console.log("Response 6: ", response6.data);
-
             edges = response.data.edges.map(obj => {
                 const condition = response2.data.conditions.find(cond => cond.edgeID === obj.id);
                 

@@ -96,7 +96,7 @@ function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
 
   return (
     <div style={{ width: dimensions.graphWidth, height: dimensions.graphHeight, padding: '1rem' }}>
-      <h3>Top 20 Edges by Number of Logs</h3>
+      <h3>Second-by-Second Table</h3>
 
       <Select
         options={vehicleOptions}
@@ -139,7 +139,7 @@ function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
               borderCollapse: 'collapse'
             }}
           >
-            <thead style={{ backgroundColor: '#4a90e2', color: 'white' }}>
+            <thead style={{ backgroundColor: '#680404', color: 'white' }}>
               <tr>
                 <th style={{ padding: '12px 8px' }}>Time</th>
                 <th style={{ padding: '12px 8px' }}>Link</th>

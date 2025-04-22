@@ -11,6 +11,8 @@ import EdgeLogsBarChart from './EdgeLogsBarChart';
 import EdgeLogsTreemap from './EdgeLogsTreemap';
 import LinkFlow from './LinkFlow';
 import ODByVehicleClass from './ODByVehicleClass';
+import TripDurationFrequency from './TripDurationFrequency';
+import OriginDestinationAvg from './OriginDestinationAvg';
 
 function Charts(props) {
     const dimensions = { graphWidth: window.innerWidth * 0.6, graphHeight: window.innerHeight * 0.7 };
@@ -19,22 +21,12 @@ function Charts(props) {
 
     switch (props.file_type) {
         case "Summary":
-            if (props.selectedGraph === "Custom Summary Chart") {
-                ret = (
-                    <CustomSummaryChart
-                        dimensions={dimensions}
-                        expandedCollection={props.expandedCollection}
-                    />
-                );
-            } else {
-                ret = (
-                    <Summary
-                        dimensions={dimensions}
-                        selectedGraph={props.selectedGraph}
-                        expandedCollection={props.expandedCollection}
-                    />
-                );
-            }
+            ret = (
+                <CustomSummaryChart
+                    dimensions={dimensions}
+                    expandedCollection={props.expandedCollection}
+                />
+            );
             break;
         case "Average Traffic Conditions":
             ret = (
@@ -55,13 +47,34 @@ function Charts(props) {
             );
             break;
         case "Trip Completion Probes":
-            ret = (
+            if (props.selectedGraph === 'Summary of Trip Probes') {
+                ret = (
                 <TripProbe
                     dimensions={dimensions}
                     selectedGraph={props.selectedGraph}
                     expandedCollection={props.expandedCollection}
                 />
-            );
+                );
+            }
+            else if (props.selectedGraph === 'Trip Duration Frequency') {
+                ret = (
+                <TripDurationFrequency
+                    dimensions={dimensions}
+                    selectedGraph={props.selectedGraph}
+                    expandedCollection={props.expandedCollection}
+                />
+                );
+            }
+            else {
+                ret = (
+                <OriginDestinationAvg
+                    dimensions={dimensions}
+                    selectedGraph={props.selectedGraph}
+                    expandedCollection={props.expandedCollection}
+                />
+                );
+            }
+
             break; // Added missing break statement here
         case "Paths":
             ret = (
@@ -102,7 +115,7 @@ function Charts(props) {
             }
             break;
         case 'Road Probes':
-            if (props.selectedGraph === 'Edge Logs Bar Chart') {
+            if (props.selectedGraph === 'Second-by-Second Table') {
                 ret = (
                     <EdgeLogsBarChart
                         dimensions={dimensions}

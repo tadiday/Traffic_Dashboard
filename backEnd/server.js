@@ -7,6 +7,7 @@ const AdmZip = require('adm-zip');
 //const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const e = require('express');
 require('dotenv').config(); // Gets environment variables working
 // Used for uploading a file, though its not stored locally with this config
 const upload = multer();
@@ -269,10 +270,14 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
 	console.log("Import complete");
 	// app.get('/api/file-edgeprobes', async (req, res) => await tryGetFile(req, res, FILE_EDGEPROBES)); // here ??? can we update to parse only once???
-	const parsed = await uploadData(user_id, sim_id, FILE_OVERVIEW);
-	// const parsed1 = await uploadData(user_id, sim_id, FILE_TRIPPROBES);
-	const parsed2 = await uploadData(user_id, sim_id, FILE_EDGEPROBES);
-
+	// const file15parse = await uploadData(user_id, sim_id, FILE_TRIPPROBES);
+	// const file16parse = await uploadData(user_id, sim_id, FILE_EDGEPROBES);
+	const [file10parse, file15parse, file16parse] = await Promise.all([
+		// uploadData(user_id, sim_id, FILE_OVERVIEW),
+    uploadData(user_id, sim_id, FILE_OVERVIEW);
+		uploadData(user_id, sim_id, FILE_TRIPPROBES),
+		uploadData(user_id, sim_id, FILE_EDGEPROBES)
+	  ]);
 
 });
 
@@ -509,7 +514,71 @@ app.get('/api/file-paths', async (req, res) => await tryGetFile(req, res, FILE_P
 /*
  * Gets the trip probes file (output file 15)
  */
-app.get('/api/file-tripprobes', async (req, res) => await tryGetFile(req, res, FILE_TRIPPROBES));
+// app.get('/api/file-tripprobes', async (req, res) => await tryGetFile(req, res, FILE_TRIPPROBES));
+
+app.get('/api/file-tripprobes', async (req, res) => {
+	const sim = req.query.sim;
+	console.log(sim);
+
+	try {
+		var user_id = verifyToken(req).user_id; // Extract user ID from the token
+	} catch (exception) {
+		var user_id = 1; // Default to user ID 1 (for testing or fallback)
+		// Uncomment the return statement below when ready for production use
+		return res.status(exception.status).send(exception.message); // Return error if token verification fails
+	}
+
+
+	// Step 2: Retrieve the simulation ID
+	let sim_id;
+	try {
+		// Attempt to parse the `sim` variable into an integer.
+		sim_id = parseInt(sim);
+
+		// Check if the parsed value is not a number (NaN).
+		if (isNaN(sim_id)) {
+			// If `sim` is not a valid number, query the database to find the `sim_id`
+			// based on the `sim_name` (provided in `sim`) and the `sim_owner` (user_id).
+			const [[simRow]] = await promisePool.query(
+				"SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?",
+				[sim, user_id] // Use placeholders to prevent SQL injection.
+			);
+
+			// Extract the `sim_id` from the query result, if it exists.
+			sim_id = simRow?.sim_id; // Use optional chaining to avoid errors if `simRow` is undefined.
+		}
+
+		// If `sim_id` is still undefined or falsy after the above steps,
+		// it means the simulation could not be found.
+		if (!sim_id) {
+			// Respond with a 404 status code and an error message.
+			return res.status(404).send('Simulation not found');
+		}
+	} catch (err) {
+		// If any error occurs during the process (e.g., database query fails),
+		// log the error to the console for debugging purposes.
+		console.error('Error resolving sim_id:', err);
+
+		// Respond with a 500 status code and a generic error message.
+		return res.status(500).send('Error resolving simulation ID');
+	}
+
+
+	// Step 3: Query file16 for rows matching this sim_id
+	try {
+		const [rows] = await promisePool.query(
+			`SELECT * FROM file15 WHERE sim_id = ?`,
+			[sim_id]
+		);
+
+		res.json({ data: rows });
+	} catch (err) {
+		console.error('Error fetching file15 rows:', err);
+		res.status(500).send('Error fetching file15 data');
+	}
+
+
+});
 
 /*
  * Gets the edge probes file (output file 16)
@@ -578,6 +647,9 @@ app.get('/api/file-edgeprobes', async (req, res) => {
 	}
 });
 
+
+
+
 app.get('/api/file-vehicle-dropdown', async (req, res) => {
 	// Extract the simulation identifier from the query parameters
 	const sim = req.query.sim;
@@ -639,6 +711,127 @@ app.get('/api/file-vehicle-dropdown', async (req, res) => {
 	}
 });
 
+app.get('/api/file-origin-zone-dropdown', async (req, res) => {
+	// Extract the simulation identifier from the query parameters
+	const sim = req.query.sim;
+	console.log(sim);
+
+	// Step 1: Verify the user's token and extract the user ID
+	try {
+		var user_id = verifyToken(req).user_id; // Extract user ID from the token
+	} catch (exception) {
+		var user_id = 1; // Default to user ID 1 (for testing or fallback)
+		// Uncomment the return statement below when ready for production use
+		return res.status(exception.status).send(exception.message); // Return error if token verification fails
+	}
+
+	// Step 2: Retrieve the simulation ID
+	let sim_id;
+	try {
+		// Attempt to parse the `sim` variable into an integer
+		sim_id = parseInt(sim);
+
+		// If `sim` is not a valid number, query the database to find the `sim_id`
+		// based on the `sim_name` (provided in `sim`) and the `sim_owner` (user_id)
+		if (isNaN(sim_id)) {
+			const [[simRow]] = await promisePool.query(
+				"SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?",
+				[sim, user_id] // Use placeholders to prevent SQL injection
+			);
+
+			// Extract the `sim_id` from the query result, if it exists
+			sim_id = simRow?.sim_id; // Use optional chaining to avoid errors if `simRow` is undefined
+		}
+
+		// If `sim_id` is still undefined or falsy, the simulation could not be found
+		if (!sim_id) {
+			return res.status(404).send('Simulation not found'); // Respond with a 404 status code
+		}
+	} catch (err) {
+		// Log any errors that occur during the process (e.g., database query fails)
+		console.error('Error resolving sim_id:', err);
+
+		// Respond with a 500 status code and a generic error message
+		return res.status(500).send('Error resolving simulation ID');
+	}
+
+	// Step 3: Query the database for distinct vehicle IDs in file16 for the given simulation
+	try {
+		const [rows] = await promisePool.query(
+			`SELECT DISTINCT origin_node FROM file15`
+		);
+
+		// Respond with the retrieved data as JSON
+		res.json({ data: rows });
+	} catch (err) {
+		// Log any errors that occur during the query
+		console.error('Error fetching file15 rows:', err);
+
+		// Respond with a 500 status code and an error message
+		res.status(500).send('Error fetching file15 data');
+	}
+});
+
+app.get('/api/file-destination-zone-dropdown', async (req, res) => {
+	// Extract the simulation identifier from the query parameters
+	const sim = req.query.sim;
+	console.log(sim);
+
+	// Step 1: Verify the user's token and extract the user ID
+	try {
+		var user_id = verifyToken(req).user_id; // Extract user ID from the token
+	} catch (exception) {
+		var user_id = 1; // Default to user ID 1 (for testing or fallback)
+		// Uncomment the return statement below when ready for production use
+		return res.status(exception.status).send(exception.message); // Return error if token verification fails
+	}
+
+	// Step 2: Retrieve the simulation ID
+	let sim_id;
+	try {
+		// Attempt to parse the `sim` variable into an integer
+		sim_id = parseInt(sim);
+
+		// If `sim` is not a valid number, query the database to find the `sim_id`
+		// based on the `sim_name` (provided in `sim`) and the `sim_owner` (user_id)
+		if (isNaN(sim_id)) {
+			const [[simRow]] = await promisePool.query(
+				"SELECT sim_id FROM simulations WHERE sim_name = ? AND sim_owner = ?",
+				[sim, user_id] // Use placeholders to prevent SQL injection
+			);
+
+			// Extract the `sim_id` from the query result, if it exists
+			sim_id = simRow?.sim_id; // Use optional chaining to avoid errors if `simRow` is undefined
+		}
+
+		// If `sim_id` is still undefined or falsy, the simulation could not be found
+		if (!sim_id) {
+			return res.status(404).send('Simulation not found'); // Respond with a 404 status code
+		}
+	} catch (err) {
+		// Log any errors that occur during the process (e.g., database query fails)
+		console.error('Error resolving sim_id:', err);
+
+		// Respond with a 500 status code and a generic error message
+		return res.status(500).send('Error resolving simulation ID');
+	}
+
+	// Step 3: Query the database for distinct vehicle IDs in file16 for the given simulation
+	try {
+		const [rows] = await promisePool.query(
+			`SELECT DISTINCT destination_node FROM file15`
+		);
+
+		// Respond with the retrieved data as JSON
+		res.json({ data: rows });
+	} catch (err) {
+		// Log any errors that occur during the query
+		console.error('Error fetching file15 rows:', err);
+
+		// Respond with a 500 status code and an error message
+		res.status(500).send('Error fetching file15 data');
+	}
+});
 
 function IsValidUserInfo(str) {
 	if (!str || !("" + str === str))
@@ -1441,8 +1634,9 @@ function ReadFile_paths(buf) {
  * @param buf (nodejs buffer) The nodejs buffer to read from
  * @return (table) The summary file as a table/object
  */
-function ReadFile_TripProbes(buf, args) {
+async function ReadFile_TripProbes(buf, args, sim_id) {
 
+	console.log("Reading file 15");
 	const len = buf.readInt32LE(0);
 	const pairC = buf.readInt32LE(4);
 	let off = 8;
@@ -1475,6 +1669,7 @@ function ReadFile_TripProbes(buf, args) {
 	// find out how many we want
 	let totalPairs = len;
 	if (restBeg != -1 || restEnd != -1) {
+		console.log("if condition");
 		totalPairs = 0;
 		for (let i = 0; i < pairC; i++) {
 			const beg = buf.readInt16LE(off + 0);
@@ -1493,82 +1688,130 @@ function ReadFile_TripProbes(buf, args) {
 
 			off += 16;
 		}
-	} else if (!args || (!args.origin && !args.dest)) {
-		let out = { time0: 999999999, time1: 0, total: 0 };
+	} 
+	// else if (!args || (!args.origin && !args.dest)) {
+	// 	console.log("else if condition");
+	// 	let out = { time0: 999999999, time1: 0, total: 0 };
 
-		out.pairs = Array(pairC).fill({});
-		for (let i = 0; i < pairC; i++) {
-			let obj = {};
-			obj.beg = buf.readInt16LE(off + 0);
-			obj.end = buf.readInt16LE(off + 2);
-			obj.quant = buf.readInt32LE(off + 4);
-			obj.time0 = buf.readFloatLE(off + 8);
-			obj.time1 = buf.readFloatLE(off + 12);
-			off += 16;
+	// 	out.pairs = Array(pairC).fill({});
+	// 	for (let i = 0; i < pairC; i++) {
+	// 		let obj = {};
+	// 		obj.beg = buf.readInt16LE(off + 0);
+	// 		obj.end = buf.readInt16LE(off + 2);
+	// 		obj.quant = buf.readInt32LE(off + 4);
+	// 		obj.time0 = buf.readFloatLE(off + 8);
+	// 		obj.time1 = buf.readFloatLE(off + 12);
+	// 		off += 16;
 
-			out.time0 = Math.min(out.time0, obj.time0);
-			out.time1 = Math.max(out.time1, obj.time1);
-			out.total += obj.quant;
+	// 		out.time0 = Math.min(out.time0, obj.time0);
+	// 		out.time1 = Math.max(out.time1, obj.time1);
+	// 		out.total += obj.quant;
 
-			out.pairs[i] = obj;
-		}
+	// 		out.pairs[i] = obj;
+	// 	}
 
-		return out;
+		// return out;
 
-	} else
+	else
+		console.log("else condition");
 		off += 16 * pairC;
 
 	let totalMax = Math.max(0, Math.min(max, Math.floor((totalPairs - skip) / stride)));
 	let out = Array(totalMax);
 
-	if (totalMax == 0)
-		return out;
+	// if (totalMax == 0)
+	// 	return out;
 
 	let totalCount = 0;
+	// console.log("Begining to parse file 15");
 	for (let i = 0; i < len; i++) {
+		// console.log("Parsing");
+		// parse the data
 		let entry = {};
 		off = ReadFromBufAny(entry, [
-			"f_Time simulation produced record",
-			"i_Vehicle ID number", "b_Vehicle class",
-			"s_Vehicle last link", "s_Origin node", "s_Destination node",
+		  "f_timeSimulationProducedRecord",
+		  "i_vehicleIdNumber", "b_vehicleClass",
+		  "s_vehicleLastLink", "s_originNode", "s_destinationNode",
 		], buf, off);
 		off = ReadFromBufFloats(entry, [
-			"Scheduled departure time", "Actual departure time", "Trip duration", "Total delay", "Stopped delay",
-			"Number of stops", "Distance covered", "Average speed",
-			"Fuel used (L)", "Hydrocarbon produced", "Carbon monoxide produced", "Nitrous oxide produced",
-			"CO2 produced", "PM produced", "hydrogen consumption (kg)", // in grams
-			"Number of expected crashes", "Where injury was highest level", "Where expected a fatal crash",
-			"Where maximum damage was low", "Where maximum damage was moderate", "Where maximum damage was high",
-			"Total toll paid", "Total acceleration noise"
+		  "scheduledDepartureTime", "actualDepartureTime", "tripDuration", "totalDelay", "stoppedDelay",
+		  "numberOfStops", "distanceCovered", "averageSpeed",
+		  "fuelUsedL", "hydrocarbonProduced", "carbonMonoxideProduced", "nitrousOxideProduced",
+		  "co2Produced", "pmProduced", "hydrogenConsumptionKg",
+		  "numberOfExpectedCrashes", "whereInjuryWasHighestLevel", "whereExpectedAFatalCrash",
+		  "whereMaxDamageWasLow", "whereMaxDamageWasModerate", "whereMaxDamageWasHigh",
+		  "totalTollPaid", "totalAccelerationNoise"
 		], buf, off);
 
-		// make sure its what we are looking for
-		if (entry["Time simulation produced record"] >= time0
-			&& (restBeg == -1 || entry["Origin node"] == restBeg)
-			&& (restEnd == -1 || entry["Destination node"] == restEnd)) {
-
-			// limit the time
-			if (entry["Time simulation produced record"] >= time1) {
-				out = out.slice(0, Math.floor((totalCount - skip) / stride) + 1);
-				break;
-			}
-
-			// skip some number of elements
-			if (totalCount >= skip) {
-				const indx = totalCount - skip;
-				// only get a percentage
-				if (indx % stride == 0) {
-					out[indx / stride] = entry;
-					// get only a limited amount
-					if (indx / stride + 1 >= max) {
-						break;
-					}
-				}
-			}
-
-			totalCount++;
+		// console.log(entry);
+		// console.log(entry.timeSimulationProducedRecord);
+		// // console.log(i);
+		// // insert the data into the database
+		try {
+			await promisePool.query(
+				`INSERT INTO file15 (
+				  time_simulation_produced_record,
+				  vehicle_id, vehicle_class,
+				  vehicle_last_link, origin_node, destination_node,
+				  scheduled_departure_time, actual_departure_time, trip_duration,
+				  total_delay, stopped_delay, number_of_stops,
+				  distance_covered, average_speed,
+				  fuel_used_liters, hydrocarbon_produced, carbon_monoxide_produced, nitrous_oxide_produced,
+				  co2_produced, pm_produced, hydrogen_consumption_kg,
+				  expected_crashes, injury_highest_level, expected_fatal_crash,
+				  max_damage_low, max_damage_moderate, max_damage_high,
+				  total_toll_paid, total_acceleration_noise,
+				  sim_id
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				[
+				  entry.timeSimulationProducedRecord,
+				  entry.vehicleIdNumber, entry.vehicleClass,
+				  entry.vehicleLastLink, entry.originNode, entry.destinationNode,
+				  entry.scheduledDepartureTime, entry.actualDepartureTime, entry.tripDuration,
+				  entry.totalDelay, entry.stoppedDelay, entry.numberOfStops,
+				  entry.distanceCovered, entry.averageSpeed,
+				  entry.fuelUsedL, entry.hydrocarbonProduced, entry.carbonMonoxideProduced, entry.nitrousOxideProduced,
+				  entry.co2Produced, entry.pmProduced, entry.hydrogenConsumptionKg,
+				  entry.numberOfExpectedCrashes, entry.whereInjuryWasHighestLevel, entry.whereExpectedAFatalCrash,
+				  entry.whereMaxDamageWasLow, entry.whereMaxDamageWasModerate, entry.whereMaxDamageWasHigh,
+				  entry.totalTollPaid, entry.totalAccelerationNoise,
+				  sim_id // make sure you define or pass this in your scope
+				]
+			  );			  
 		}
+		catch (err) {
+			console.error(`Insert failed at iteration ${i}:`, err);
+		}
+		// break;
+
+		// make sure its what we are looking for
+		// if (entry["Time simulation produced record"] >= time0
+		// 	&& (restBeg == -1 || entry["Origin node"] == restBeg)
+		// 	&& (restEnd == -1 || entry["Destination node"] == restEnd)) {
+
+		// 	// limit the time
+		// 	if (entry["Time simulation produced record"] >= time1) {
+		// 		out = out.slice(0, Math.floor((totalCount - skip) / stride) + 1);
+		// 		break;
+		// 	}
+
+		// 	// skip some number of elements
+		// 	if (totalCount >= skip) {
+		// 		const indx = totalCount - skip;
+		// 		// only get a percentage
+		// 		if (indx % stride == 0) {
+		// 			out[indx / stride] = entry;
+		// 			// get only a limited amount
+		// 			if (indx / stride + 1 >= max) {
+		// 				break;
+		// 			}
+		// 		}
+		// 	}
+
+		// 	totalCount++;
+		// }
 	}
+	console.log("done parsing file 15");
 
 	return out;
 }
@@ -1674,6 +1917,8 @@ async function ReadFile_EdgeProbes(buf, args, sim_id) {
 	console.log(lineC);
 	let objs = {};
 	for (let i = 0; i < lineC; i++) {
+
+		// parse the data
 		let obj = {};
 		const type = buf.readInt8(off);
 		obj.type = type;
@@ -1706,17 +1951,9 @@ async function ReadFile_EdgeProbes(buf, args, sim_id) {
 			return out;
 		}
 
-		// Convert `f_time` to an integer second
-		let second = Math.floor(obj.time);
 
-		// Group objects by second
-		if (!objs[second]) {
-			objs[second] = [];
-		}
-		objs[second].push(obj);
-		// console.log(obj);
+		// insert into the database		
 		try {
-			// console.log(sim_id)
 			await promisePool.query(
 				`INSERT INTO file16 (
 					sim_id, report_type, simulation_time_sec, vehicle_id, vehicle_class,
@@ -1769,36 +2006,10 @@ async function ReadFile_EdgeProbes(buf, args, sim_id) {
 		} catch (err) {
 			console.error(`Insert failed at iteration ${i}:`, err);
 		}
-		// if (i == 2)
-		// 	break;
 
 
-
-		// make sure its what we are looking for
-		// if((restEdge == -1 || obj.edge == restEdge) && obj.time >= time0){
-
-		// 	// limit the time
-		// 	if(obj.time >= time1){
-		// 		out = out.slice(0, Math.floor((totalCount-skip)/stride) + 1);
-		// 		break;
-		// 	}
-
-		// 	// skip some number of elements
-		// 	if(totalCount >= skip){
-		// 		const indx = totalCount - skip;
-		// 		// only get a percentage
-		// 		if(indx % stride == 0){
-		// 			out[indx/stride] = obj;
-		// 			// get only a limited amount
-		// 			if(indx/stride + 1 >= max){
-		// 				break;
-		// 			}
-		// 		}
-		// 	}
-
-		// 	totalCount++;
-		// }
 	}
+
 	console.log("done parsing file 16");
 	return out;
 }
@@ -1824,8 +2035,8 @@ async function ReadFile_Any(buf, fileType, args, sim_id) {
 		case FILE_AVGCONDS: return ReadFile_AvgConditions(buf);
 		case FILE_CONDS: return ReadFile_Conditions(buf);
 		case FILE_PATHS: return ReadFile_paths(buf);
-		case FILE_TRIPPROBES: return await ReadFile_TripProbes(buf, args);
-		case FILE_EDGEPROBES: return await ReadFile_EdgeProbes(buf, args, sim_id);
+		case FILE_TRIPPROBES: return ReadFile_TripProbes(buf, args, sim_id);
+		case FILE_EDGEPROBES: return ReadFile_EdgeProbes(buf, args, sim_id);
 	}
 }
 
