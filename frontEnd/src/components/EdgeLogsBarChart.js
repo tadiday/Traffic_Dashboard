@@ -139,7 +139,7 @@ function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
               borderCollapse: 'collapse'
             }}
           >
-            <thead style={{ backgroundColor: '#4a90e2', color: 'white' }}>
+            <thead style={{ backgroundColor: '#680404', color: 'white' }}>
               <tr>
                 <th style={{ padding: '12px 8px' }}>Time</th>
                 <th style={{ padding: '12px 8px' }}>Link</th>
