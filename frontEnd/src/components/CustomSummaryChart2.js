@@ -45,22 +45,24 @@ function CustomSummaryChart(props) {
     <div className="custom-summary-chart">
       <div className="controls">
         <label>
-          Select Data Type
+          Data Type:
           <select value={dataType} onChange={handleDataTypeChange}>
-            <option value="total">Total Metrics</option>
-            <option value="average">Average Metrics</option>
+            <option value="total">Total</option>
+            <option value="average">Average</option>
           </select>
         </label>
       </div>
       <div className="table-container">
         {summaryData ? (
           <>
-            <h3>{dataType === 'total' ? 'Total Metrics Summary' : 'Average Metrics Summary'}</h3>
+            <h3>{dataType === 'total' ? 'Total Metrics' : 'Average Metrics'}</h3>
             <table className="summary-table">
               <thead>
                 <tr>
-                  <th>Metric Name</th>
-                  <th>Value</th>
+                  <th>Metric</th>
+                  <th>
+                    Value
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -71,16 +73,14 @@ function CustomSummaryChart(props) {
                         ? `${metric} (seconds)`
                         : metric}
                     </td>
-                    <td>{Number(summaryData[dataType][metric][5]).toFixed(2)}</td> {/* Using index 5 as per your data structure */}
+                    <td>{summaryData[dataType][metric][5]}</td> {/* Using index 5 as per your data structure */}
                   </tr>
                 ))}
               </tbody>
             </table>
           </>
         ) : (
-          <div style={{ padding: '24px', textAlign: 'center', color: '#666' }}>
-            Loading data...
-          </div>
+          <p>Loading data...</p>
         )}
       </div>
     </div>

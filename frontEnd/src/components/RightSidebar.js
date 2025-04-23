@@ -7,13 +7,13 @@ function RightSidebar(props) {
     // props.files is the list returned from the backend of the file types associated with the collection
     // Fix dependecies for node graphs TBD 
     const visualizations = ({
-        'Road Probes': ['Edge Logs Bar Chart', 'Edge Logs Treemap'],
-        'Summary': ['Traffic Map', 'Custom Summary Chart'],
+        'Road Probes': ['Second-by-Second Table', 'CO2 Line Chart'],
+        'Summary': ['Summary Chart'],
         'Average Traffic Conditions': ['Traffic Map','Avg Crashes', 'Avg CO2'],
         'Traffic Conditions': ['Traffic in Series'],
         'Paths' : ['Minimum Path Trees'],
-        'Simulation Details': ['Time Optimizations'],
-        'Trip Completion Probes' : ["Car Information Filter"],
+        'Simulation Details': ['Time Optimizations', "Link Flow Table", "O-D Trip Times By Vehicle Class"],
+        'Trip Completion Probes' : ["Summary of Trip Probes", "Origin-Destination Averages", "Trip Duration Frequency"],
     });
     const outputFileTypes = ['Summary', 'Average Traffic Conditions', 'Traffic Conditions', 'Paths', 'Simulation Details', 'Trip Completion Probes','Road Probes'];
 
@@ -30,7 +30,7 @@ function RightSidebar(props) {
             }
         }
     };
-
+    //
     if(props.expandedCollection != null){
         
         return ( 
@@ -41,7 +41,8 @@ function RightSidebar(props) {
                 .map((file, index) => ( 
                     <li key={index}> 
                         <div className="file-type" onClick={() => toggleFile(file)}> 
-                            {file} 
+                            {file} (file {index === 4 ? 'summary' : `${index > 4 ? index + 9 : index + 10}`})
+                            {/* {console.log(props.files)} */}
                         </div> {/* Display visualizations if the file type is expanded */} 
                         {props.file_type === file && ( 
                             <ul className="visualization-list"> 

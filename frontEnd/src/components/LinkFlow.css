@@ -1,0 +1,28 @@
+.link-flow-table tr:hover {
+    background-color: #f1f5f9 !important;
+    transition: background-color 0.2s ease;
+}
+
+.link-flow-container {
+    transition: all 0.3s ease;
+}
+
+/* Custom scrollbar styling */
+.link-flow-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.link-flow-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.link-flow-container::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.link-flow-container::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}

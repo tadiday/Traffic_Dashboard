@@ -112,7 +112,7 @@ function Main(props) {
                </ul>
            </>
        ),
-       "Car Information Filter": (
+       "Summary of Trip Probes": (
            <>
                <p>
                    The<strong> Car Information Filter </strong> provides a visual representation of all the metrics and their values.
@@ -168,6 +168,94 @@ function Main(props) {
 
                     <li>There is a search bar at the top of the page and the user has the ability to enter any edge number. This will allow the user to see the minimum path tree by its root which will dynamically be changed on the graph. </li>
                     <li>There are two additional text boxes underneath the search bar where the user can indicate whether or not they want the graph to display the searched root information and the origins of the edge they entered. </li>
+                </ul>
+            </>
+        ),
+        "Second-by-Second Table": (
+            <>
+                <p>
+                    The <strong>Second-by-Second Table</strong> tab allows the user to select and view second by second data for any specific vehicle ID.
+                </p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>There is a drop down in the top left where the user can select a specific vehicle ID to view information for.</li>
+                    <li>For each vehicle ID, there will be a slider where the user can slide between a range of seconds. As the user slides the slider, the data in the table will change according to the second in the slider.</li>
+                </ul>
+            </>
+        ),
+        "CO2 Line Chart": (
+            <>
+                <p>
+                    The <strong>CO2 Line Chart</strong> tab allows the user to select and view CO2 emissions. 
+                </p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>When the user picks a specific vehicle ID, a graph will pop up with the CO2 emissions emmited data. The x-axis will be the seconds and the y-axis will be the amount in CO2 grams emmitted. </li>
+                    <li>When the user hovers over a specific second in the graph, they will see the exact amount of CO2 emmitted at that exact second. </li>
+                </ul>
+            </>
+        ),
+        "node": (
+            <>
+                <p>This is the landing page when the user logs into our application.</p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>On the left hand side, the user can choose a collection to upload, <strong>(it has to be a zip file only) </strong> 
+                    and then enter a collection name. </li>
+                    <li>Once the user has selected a file and entered a collection name, they can press the upload button to upload the file.</li>
+                    <li>Once the file is uploaded, the user can see all the collections they have uploaded on the left hand side.</li>
+                    <li>When the user clicks on a collection, they will be able to see all the files that are in that collection.</li>
+                    <li>When the user clicks on a file, they will be able to see all the visualizations that are available for that file.</li>
+                </ul>
+
+                <p>This is what the user sees when they follow the steps above and click on a collection name.</p>
+                <li>The user will be able to see seven (7) tabs on the right visualizing 7 different files <strong>(File 10 - Simulation Details, File 11 - Average Traffic Conditions, File 12 - Traffic Conditions, File 13 - Paths, Summary File, File 15 - Trip Completion Probes, and File 16 - Road Probes) </strong>
+                from the collection they just uploaded.</li>
+            </>
+        ),
+        "Link Flow Table": (
+            <>
+                <p>The <strong>Link Flow Table</strong> tab will allow the user to view link specific metrics.</p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>The user is able to scroll left/right and up/down and view all the corresponding link-specific metrics for the 18 column headers.</li>
+                </ul>
+            </>
+        ),
+        "O-D Trip Times By Vehicle Class": (
+            <>
+                <p>The <strong>O-D Trip Times By Vehicle Class</strong> tab will allow the user to view origin destinaton statistics.</p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>The user will be able to scroll left/right and up/down and view all the corresponding origin-destination statistics.</li>
+                </ul>
+            </>
+        ),
+        "Summary of Trip Probes": (
+            <>
+                <p>The <strong>Summary of Trip Probes</strong> tab will allow the user to view total stats, the average stats and the advanced stats of the trip probes</p>
+                <h4>Features:</h4>
+                <ul>
+                    <li>In the <strong>Total Stats</strong> header, the user is able to view the value of four different statistics including: Total vehicles, total fuel used, total CO2 produced, and Expected crashes.</li>
+                    <li>In the <strong>Average Stats</strong> header, the user is able to view the value of three different statistics including: Average Trip Duration, Average Delay, and Average Speed</li>
+                    <li>In the <strong>Total Stats</strong> header, the user is able to view the value of three different statistics including: Minimum delay, Maximum delay, and Delay Standard Deviation.</li>
+                </ul>
+            </>
+        ),
+        "Origin-Destination Averages": (
+            <>
+                <p>The <strong>Origin-Destination Averages</strong> tab will allow the user to </p>
+                <ul>
+                    <li>The user will be able to view the origin-destination averages for a pair of values (Origin Node and Destination Node).</li>
+                    <li><strong>Currently, there is no data that is populating for a random pair, but that just means that there was never been a completed trip from that node to the other. Therefore, there is no data to display. </strong></li>
+                </ul>
+            </>
+        ),
+        "Trip Duration Frequency": (
+            <>
+                <p>The <strong>Trip Duration Frequency</strong> tab will allow the user to view the number of trips taken between every 60 seconds in histogram form. </p>
+                <ul>
+                    <li>The user is able to see the number of trips for each minute interval. When the user hovers over a specific bar at a specific time interval, they are able to see the exact number of trips taken at that time. </li>
                 </ul>
             </>
         ),
