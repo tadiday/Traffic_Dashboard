@@ -41,7 +41,7 @@ function RightSidebar(props) {
                 .map((file, index) => ( 
                     <li key={index}> 
                         <div className="file-type" onClick={() => toggleFile(file)}> 
-                            {file} (file {index === 4 ? 'summary' : `${index > 4 ? index + 9 : index + 10}`})
+                            {file}
                             {/* {console.log(props.files)} */}
                         </div> {/* Display visualizations if the file type is expanded */} 
                         {props.file_type === file && ( 

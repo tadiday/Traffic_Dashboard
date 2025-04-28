@@ -19,15 +19,15 @@ app.use(express.json());
 
 // Create a sql connection pool, using mysql 2 its already promise based
 const pool = mysql.createPool({
-  host: process.env.SQL_HOST, // 'localhost' for us but 'traffic_visual-mysqlserver' for docker,
-  port: process.env.DATABASE_PORT,
-  user: 'root',
-  password: process.env.ROOT_PASSWORD,
-  database: 'traffic_visual',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  multipleStatements: true
+	host: process.env.SQL_HOST, // 'localhost' for us but 'traffic_visual-mysqlserver' for docker,
+	port: process.env.DATABASE_PORT,
+	user: 'root',
+	password: process.env.ROOT_PASSWORD,
+	database: 'traffic_visual',
+	waitForConnections: true,
+	connectionLimit: 10,
+	queueLimit: 0,
+	multipleStatements: true
 });
 
 const promisePool = pool.promise() // Makes the query commands return a promise
@@ -274,10 +274,10 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 	// const file16parse = await uploadData(user_id, sim_id, FILE_EDGEPROBES);
 	const [file10parse, file15parse, file16parse] = await Promise.all([
 		// uploadData(user_id, sim_id, FILE_OVERVIEW),
-    	uploadData(user_id, sim_id, FILE_OVERVIEW),
+		uploadData(user_id, sim_id, FILE_OVERVIEW),
 		uploadData(user_id, sim_id, FILE_TRIPPROBES),
 		uploadData(user_id, sim_id, FILE_EDGEPROBES)
-	  ]);
+	]);
 
 });
 
@@ -1688,7 +1688,7 @@ async function ReadFile_TripProbes(buf, args, sim_id) {
 
 			off += 16;
 		}
-	} 
+	}
 	// else if (!args || (!args.origin && !args.dest)) {
 	// 	console.log("else if condition");
 	// 	let out = { time0: 999999999, time1: 0, total: 0 };
@@ -1710,11 +1710,11 @@ async function ReadFile_TripProbes(buf, args, sim_id) {
 	// 		out.pairs[i] = obj;
 	// 	}
 
-		// return out;
+	// return out;
 
 	else
 		console.log("else condition");
-		off += 16 * pairC;
+	off += 16 * pairC;
 
 	let totalMax = Math.max(0, Math.min(max, Math.floor((totalPairs - skip) / stride)));
 	let out = Array(totalMax);
@@ -1729,18 +1729,18 @@ async function ReadFile_TripProbes(buf, args, sim_id) {
 		// parse the data
 		let entry = {};
 		off = ReadFromBufAny(entry, [
-		  "f_timeSimulationProducedRecord",
-		  "i_vehicleIdNumber", "b_vehicleClass",
-		  "s_vehicleLastLink", "s_originNode", "s_destinationNode",
+			"f_timeSimulationProducedRecord",
+			"i_vehicleIdNumber", "b_vehicleClass",
+			"s_vehicleLastLink", "s_originNode", "s_destinationNode",
 		], buf, off);
 		off = ReadFromBufFloats(entry, [
-		  "scheduledDepartureTime", "actualDepartureTime", "tripDuration", "totalDelay", "stoppedDelay",
-		  "numberOfStops", "distanceCovered", "averageSpeed",
-		  "fuelUsedL", "hydrocarbonProduced", "carbonMonoxideProduced", "nitrousOxideProduced",
-		  "co2Produced", "pmProduced", "hydrogenConsumptionKg",
-		  "numberOfExpectedCrashes", "whereInjuryWasHighestLevel", "whereExpectedAFatalCrash",
-		  "whereMaxDamageWasLow", "whereMaxDamageWasModerate", "whereMaxDamageWasHigh",
-		  "totalTollPaid", "totalAccelerationNoise"
+			"scheduledDepartureTime", "actualDepartureTime", "tripDuration", "totalDelay", "stoppedDelay",
+			"numberOfStops", "distanceCovered", "averageSpeed",
+			"fuelUsedL", "hydrocarbonProduced", "carbonMonoxideProduced", "nitrousOxideProduced",
+			"co2Produced", "pmProduced", "hydrogenConsumptionKg",
+			"numberOfExpectedCrashes", "whereInjuryWasHighestLevel", "whereExpectedAFatalCrash",
+			"whereMaxDamageWasLow", "whereMaxDamageWasModerate", "whereMaxDamageWasHigh",
+			"totalTollPaid", "totalAccelerationNoise"
 		], buf, off);
 
 		// console.log(entry);
@@ -1764,20 +1764,20 @@ async function ReadFile_TripProbes(buf, args, sim_id) {
 				  sim_id
 				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				[
-				  entry.timeSimulationProducedRecord,
-				  entry.vehicleIdNumber, entry.vehicleClass,
-				  entry.vehicleLastLink, entry.originNode, entry.destinationNode,
-				  entry.scheduledDepartureTime, entry.actualDepartureTime, entry.tripDuration,
-				  entry.totalDelay, entry.stoppedDelay, entry.numberOfStops,
-				  entry.distanceCovered, entry.averageSpeed,
-				  entry.fuelUsedL, entry.hydrocarbonProduced, entry.carbonMonoxideProduced, entry.nitrousOxideProduced,
-				  entry.co2Produced, entry.pmProduced, entry.hydrogenConsumptionKg,
-				  entry.numberOfExpectedCrashes, entry.whereInjuryWasHighestLevel, entry.whereExpectedAFatalCrash,
-				  entry.whereMaxDamageWasLow, entry.whereMaxDamageWasModerate, entry.whereMaxDamageWasHigh,
-				  entry.totalTollPaid, entry.totalAccelerationNoise,
-				  sim_id // make sure you define or pass this in your scope
+					entry.timeSimulationProducedRecord,
+					entry.vehicleIdNumber, entry.vehicleClass,
+					entry.vehicleLastLink, entry.originNode, entry.destinationNode,
+					entry.scheduledDepartureTime, entry.actualDepartureTime, entry.tripDuration,
+					entry.totalDelay, entry.stoppedDelay, entry.numberOfStops,
+					entry.distanceCovered, entry.averageSpeed,
+					entry.fuelUsedL, entry.hydrocarbonProduced, entry.carbonMonoxideProduced, entry.nitrousOxideProduced,
+					entry.co2Produced, entry.pmProduced, entry.hydrogenConsumptionKg,
+					entry.numberOfExpectedCrashes, entry.whereInjuryWasHighestLevel, entry.whereExpectedAFatalCrash,
+					entry.whereMaxDamageWasLow, entry.whereMaxDamageWasModerate, entry.whereMaxDamageWasHigh,
+					entry.totalTollPaid, entry.totalAccelerationNoise,
+					sim_id // make sure you define or pass this in your scope
 				]
-			  );			  
+			);
 		}
 		catch (err) {
 			console.error(`Insert failed at iteration ${i}:`, err);
@@ -1952,19 +1952,19 @@ async function ReadFile_EdgeProbes(buf, args, sim_id) {
 		}
 
 
-		// insert into the database		
 		try {
 			await promisePool.query(
-				`INSERT INTO file16 (
+
+				`INSERT INTO file16_format21 (
 					sim_id, report_type, simulation_time_sec, vehicle_id, vehicle_class,
-					current_link, current_lane, next_link, next_lane, vehicle_origin_zone, vehicle_destination_zone,
+					current_link, current_lane, vehicle_origin_zone, vehicle_destination_zone,
 					scheduled_departure_time_sec, actual_departure_time_sec, elapsed_time_sec, total_delay_sec,
-					stopped_delay_sec, cumulative_stops, distance_covered_km, average_speed_kmh, exit_speed_kmh,
-					fuel_used_liters, hydrocarbon_grams, carbon_monoxide_grams, nitrous_oxide_grams,
-					co2_grams, particulate_matter_grams, energy_used_kw, expected_crashes, expected_injury_crashes,
+					stopped_delay_sec, cumulative_stops, distance_covered_km, spacing_between_vehicle, speed_kmh, accel_ms2,
+					fuel_used_liters, energy_rate, hydrocarbon_grams, carbon_monoxide_grams, nitrous_oxide_grams,
+					co2_grams, particulate_matter_grams, expected_crashes, expected_injury_crashes,
 					expected_fatal_crashes, low_damage_crashes, moderate_damage_crashes, high_damage_crashes,
 					toll_paid_dollars, acceleration_noise
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				[
 					sim_id,
 					obj.type,
@@ -1973,26 +1973,25 @@ async function ReadFile_EdgeProbes(buf, args, sim_id) {
 					obj.vehicleClass,
 					obj.edge,
 					obj.lane,
-					obj.nextEdge,
-					obj.nextLane,
 					obj.origin,
 					obj.dest,
-					obj.schedDepart,
+					obj.departSched,
 					obj.departTime,
 					obj.edgeTime,
 					obj.delay,
 					obj.stopDelay,
 					obj.stops,
 					obj.dist,
-					obj.avgSpeed,
-					obj.finalSpeed,
+					obj.n1space,
+					obj.speed,
+					obj.accel,
 					obj.fuel,
+					obj.energyRate,
 					obj.HC,
 					obj.CO,
 					obj.NO,
 					obj.CO2,
 					obj.PM,
-					obj.energy,
 					obj.expectCrash,
 					obj.expectHighInjury,
 					obj.expectFatal,
