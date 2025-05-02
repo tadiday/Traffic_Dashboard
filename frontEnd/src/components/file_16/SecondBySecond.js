@@ -1,7 +1,6 @@
-// EdgeLogsBarChart.js
+// SecondbySecond.js
 
 import React, { useEffect, useState } from 'react';
-import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -16,7 +15,7 @@ import Select from 'react-select';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
+function SecondBySecond({ dimensions, selectedGraph, expandedCollection }) {
   const [edgeData, setEdgeData] = useState([]);
   const [dropdownData, setDropDownData] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
@@ -136,7 +135,7 @@ function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
             cellPadding="8" 
             style={{ 
               width: '100%',
-              borderCollapse: 'collapse'
+              borderCollapse: 'collapse',
             }}
           >
             <thead style={{ backgroundColor: '#680404', color: 'white' }}>
@@ -144,12 +143,10 @@ function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
                 <th style={{ padding: '12px 8px' }}>Time</th>
                 <th style={{ padding: '12px 8px' }}>Link</th>
                 <th style={{ padding: '12px 8px' }}>Lane</th>
-                <th style={{ padding: '12px 8px' }}>Next Link</th>
-                <th style={{ padding: '12px 8px' }}>Next Lane</th>
                 <th style={{ padding: '12px 8px' }}>Origin Zone</th>
                 <th style={{ padding: '12px 8px' }}>Destination Zone</th>
-                <th style={{ padding: '12px 8px' }}>Speed</th>
-                <th style={{ padding: '12px 8px' }}>Exit Speed</th>
+                <th style={{ padding: '12px 8px' }}>Speed (km/h)</th>
+                <th style={{ padding: '12px 8px' }}>Acceleration (m/s^2)</th>
                 <th style={{ padding: '12px 8px' }}>Distance</th>
                 <th style={{ padding: '12px 8px' }}>Elapsed Time</th>
                 <th style={{ padding: '12px 8px' }}>Total Delay</th>
@@ -170,23 +167,21 @@ function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
                     <td style={{ padding: '8px' }}>{row.simulation_time_sec}</td>
                     <td style={{ padding: '8px' }}>{row.current_link}</td>
                     <td style={{ padding: '8px' }}>{row.current_lane}</td>
-                    <td style={{ padding: '8px' }}>{row.next_link ?? 'N/A'}</td>
-                    <td style={{ padding: '8px' }}>{row.next_lane ?? 'N/A'}</td>
                     <td style={{ padding: '8px' }}>{row.vehicle_origin_zone}</td>
                     <td style={{ padding: '8px' }}>{row.vehicle_destination_zone}</td>
-                    <td style={{ padding: '8px' }}>{row.average_speed_kmh ?? 'N/A'}</td>
-                    <td style={{ padding: '8px' }}>{row.exit_speed_kmh ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.speed_kmh.toFixed(2)?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.accel_ms2.toFixed(2) ?? 'N/A'}</td>
                     <td style={{ padding: '8px' }}>{row.distance_covered_km}</td>
                     <td style={{ padding: '8px' }}>{row.elapsed_time_sec ?? 'N/A'}</td>
                     <td style={{ padding: '8px' }}>{row.total_delay_sec ?? 'N/A'}</td>
-                    <td style={{ padding: '8px' }}>{row.cumulative_stops ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.cumulative_stops}</td>
                     <td style={{ padding: '8px' }}>{row.fuel_used_liters}</td>
-                    <td style={{ padding: '8px' }}>{row.energy_used_kw ?? 'N/A'}</td>
-                    <td style={{ padding: '8px' }}>{row.co2_grams ?? 'N/A'}</td>
-                    <td style={{ padding: '8px' }}>{row.hydrocarbon_grams ?? 'N/A'}</td>
-                    <td style={{ padding: '8px' }}>{row.carbon_monoxide_grams ?? 'N/A'}</td>
-                    <td style={{ padding: '8px' }}>{row.nitrous_oxide_grams ?? 'N/A'}</td>
-                    <td style={{ padding: '8px' }}>{row.particulate_matter_grams ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.energy_rate ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.co2_grams.toFixed(2) ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.hydrocarbon_grams.toFixed(2) ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.carbon_monoxide_grams.toFixed(2) ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.nitrous_oxide_grams.toFixed(2) ?? 'N/A'}</td>
+                    <td style={{ padding: '8px' }}>{row.particulate_matter_grams.toFixed(2) ?? 'N/A'}</td>
                   </tr>
                 ))
               ) : (
@@ -202,4 +197,4 @@ function EdgeLogsBarChart({ dimensions, selectedGraph, expandedCollection }) {
   );
 }
 
-export default EdgeLogsBarChart;
+export default SecondBySecond;
