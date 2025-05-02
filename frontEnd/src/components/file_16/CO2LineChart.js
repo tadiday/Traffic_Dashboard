@@ -1,4 +1,4 @@
-// EdgeLogsTreemap.js
+// CO2LineChart.js
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -14,7 +14,7 @@ import {
 import axios from 'axios';
 import Select from 'react-select';
 
-function EdgeLogsTreemap({ dimensions, selectedGraph, expandedCollection }) {
+function CO2LineChart({ dimensions, selectedGraph, expandedCollection }) {
   const [edgeData, setEdgeData] = useState([]);
   const [dropdownData, setDropDownData] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
@@ -120,4 +120,4 @@ function EdgeLogsTreemap({ dimensions, selectedGraph, expandedCollection }) {
   );
 }
 
-export default EdgeLogsTreemap;
+export default CO2LineChart;

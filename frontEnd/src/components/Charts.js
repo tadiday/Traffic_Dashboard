@@ -3,16 +3,16 @@ import React from 'react';
 import AveTrafficConds from './AveTrafficConds';
 import TrafficConds from './TrafficConds';
 import Summary from './Summary';
-import TripProbe from './TripProbe';
+import TripProbe from './file_15/TripProbe';
 import MinPathTree from './MinPathTree';
-import Signals from './Signals';
-import CustomSummaryChart from './CustomSummaryChart';
-import EdgeLogsBarChart from './EdgeLogsBarChart';
-import EdgeLogsTreemap from './EdgeLogsTreemap';
-import LinkFlow from './LinkFlow';
-import ODByVehicleClass from './ODByVehicleClass';
-import TripDurationFrequency from './TripDurationFrequency';
-import OriginDestinationAvg from './OriginDestinationAvg';
+import Signals from './file_10/Signals';
+import CustomSummaryChart from './file_summary/CustomSummaryChart';
+import SecondBySecond from './file_16/SecondBySecond';
+import CO2LineChart from './file_16/CO2LineChart';
+import LinkFlow from './file_10/LinkFlow';
+import ODByVehicleClass from './file_10/ODByVehicleClass';
+import TripDurationFrequency from './file_15/TripDurationFrequency';
+import OriginDestinationAvg from './file_15/OriginDestinationAvg';
 
 function Charts(props) {
     const dimensions = { graphWidth: window.innerWidth * 0.6, graphHeight: window.innerHeight * 0.7 };
@@ -117,7 +117,7 @@ function Charts(props) {
         case 'Road Probes':
             if (props.selectedGraph === 'Second-by-Second Table') {
                 ret = (
-                    <EdgeLogsBarChart
+                    <SecondBySecond
                         dimensions={dimensions}
                         selectedGraph={props.selectedGraph}
                         expandedCollection={props.expandedCollection}
@@ -125,7 +125,7 @@ function Charts(props) {
                 );
             } else {
                 ret = (
-                    <EdgeLogsTreemap
+                    <CO2LineChart
                         dimensions={dimensions}
                         selectedGraph={props.selectedGraph}
                         expandedCollection={props.expandedCollection}

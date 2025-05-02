@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Graph, registerEdge, registerNode} from '@antv/g6';
 //import * as G6 from '@antv/g6';
 import axios from 'axios';
-import Popup from './Popup';
+import Popup from '../Popup';
 import { Tabs } from 'antd';
 
 const { TabPane } = Tabs;
