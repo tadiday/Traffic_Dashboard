@@ -14,4 +14,4 @@ services:
       - "4626:3306"
     volumes:
       - ./sim_tables.sql:/docker-entrypoint-initdb.d/sim_tables.sql
-      - ./init-root-user.sql:/docker-entrypoint-initdb.d/02_init-root-user.sql
+      - ./init_root_user.sql:/docker-entrypoint-initdb.d/02_init-root-user.sql
