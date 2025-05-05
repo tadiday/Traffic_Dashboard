@@ -166,7 +166,7 @@ app.post('/api/delete-collection', async (req, res) => {
 		// bad, but this entire thing is bad
 		const [[{ sim_id }]] = await promisePool.query("SELECT sim_id FROM simulations WHERE sim_owner = ? AND sim_name = ?", [user_id, collection_name]);
 
-		const deleteDataFile16Query = "DELETE FROM file10_linkflow WHERE sim_id = ?;DELETE FROM file10_ODstats WHERE sim_id = ?;DELETE FROM file15 WHERE sim_id = ?;DELETE FROM file16 WHERE sim_id = ?; DELETE FROM text_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
+		const deleteDataFile16Query = "DELETE FROM file10_linkflow WHERE sim_id = ?;DELETE FROM file10_ODstats WHERE sim_id = ?;DELETE FROM file15 WHERE sim_id = ?;DELETE FROM file16_format21 WHERE sim_id = ?; DELETE FROM text_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
 		await promisePool.query(deleteDataFile16Query, [sim_id, sim_id, sim_id, sim_id, sim_id, sim_id]);
 
 		// const deleteFileQuery = "DELETE FROM text_files WHERE file_sim = ?; DELETE FROM simulations WHERE sim_id = ?;";
@@ -636,7 +636,7 @@ app.get('/api/file-edgeprobes', async (req, res) => {
 	// Step 3: Query file16 for rows matching this sim_id
 	try {
 		const [rows] = await promisePool.query(
-			`SELECT * FROM file16 WHERE sim_id = ?`,
+			`SELECT * FROM file16_format21 WHERE sim_id = ?`,
 			[sim_id]
 		);
 
@@ -697,7 +697,7 @@ app.get('/api/file-vehicle-dropdown', async (req, res) => {
 	// Step 3: Query the database for distinct vehicle IDs in file16 for the given simulation
 	try {
 		const [rows] = await promisePool.query(
-			`SELECT DISTINCT vehicle_id FROM file16`
+			`SELECT DISTINCT vehicle_id FROM file16_format21`
 		);
 
 		// Respond with the retrieved data as JSON
