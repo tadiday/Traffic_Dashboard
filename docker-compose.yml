@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql/mysql-server:8.0
+    container_name: mysql_container
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: P@ssw0rd1234!
+      MYSQL_DATABASE: traffic_visual
+      MYSQL_USER: simuser
+      MYSQL_PASSWORD: simpassword
+    ports:
+      - "4626:3306"
+    volumes:
+      - ./sim_tables.sql:/docker-entrypoint-initdb.d/sim_tables.sql
+      - ./init_root_user.sql:/docker-entrypoint-initdb.d/02_init-root-user.sql
