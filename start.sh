@@ -26,7 +26,9 @@ sleep 8
 
 # Start backend (make sure it listens on 0.0.0.0)
 cd backEnd
+npm install
 nohup node server.js &
 
 cd ../frontEnd
+npm install
 nohup npm start --host 0.0.0.0
