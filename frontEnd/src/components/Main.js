@@ -86,7 +86,7 @@ function Main(props) {
                 </ul>
             </>
         ),
-        "Summary Chart": (
+        "Custom Summary Chart": (
            <>
                <p>
                    The <strong>Summary Chart </strong> provides a summary chart of the values of the total metrics and the average metrics.
