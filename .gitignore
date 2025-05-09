@@ -4,3 +4,5 @@ frontEnd/.env
 backEnd/.env
 
 backEnd/tests-db-connection.js
+
+**/nohup.out

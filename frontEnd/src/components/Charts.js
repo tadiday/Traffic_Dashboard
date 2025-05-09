@@ -2,7 +2,6 @@
 import React from 'react';
 import AveTrafficConds from './AveTrafficConds';
 import TrafficConds from './TrafficConds';
-import Summary from './Summary';
 import TripProbe from './file_15/TripProbe';
 import MinPathTree from './MinPathTree';
 import Signals from './file_10/Signals';
